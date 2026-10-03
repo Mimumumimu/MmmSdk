@@ -11,6 +11,7 @@
 - Win32 の P/Invoke は各プロジェクトの `Interop/NativeMethods.cs`（internal）に置く。アプリの NativeMethods とは別
 - JSON のソース生成の Context は部品ごと（`SettingsJsonContext` / `WindowPositionJsonContext`。どちらも internal）。アプリ固有の型の登録はアプリ側の Context で行い、`ISettingsStore` / `JsonFileStore` には `JsonTypeInfo<T>` を渡す。シリアライザの設定は `ReadableJsonOptions.Create()`（public）に 1 か所だけ書き、SDK とアプリの Context がそれを使う（設定は Context に結び付くので Context ごとに作る）
 - アプリ側の取り込み方: アプリ側は Git サブモジュール（`external/MmmSdk`）として取り込み、プロジェクト参照でつなぐ。SDK の変更は、サブモジュールの中でコミット・push（先に）→ アプリ側で参照先の更新をコミット。サブモジュールの中で作業するときは、先に master ブランチに切り替える（detached HEAD にしない）
+- 設計・レビューの方針: 将来を見越して、完璧な形を目指す。アプリ側にある汎用の部品は、使うアプリが今 1 つだけでも、「他のアプリで使う予定がない」「優先度が低い」を理由に後回しにせず、SDK に移す。レビューで「現状維持」「対応不要」と判定した項目には、必ず理由（なぜ今の形・場所が正しいか）を書く
 - コミット・push は、ユーザーが明示的に指示するまで行わない
 
 ## ドキュメント
