@@ -6,10 +6,11 @@ namespace MmmSdk.WinUI.Interop;
 
 internal static partial class NativeMethods
 {
-    // Win32 のメニューは既定では常にライトの見た目になる。uxtheme の非公開 API（序数指定）でシステムのダーク設定に従わせる。
-    // Windows 10 1903 以降で使える（エクスプローラー等も使っている）。見つからない環境では何もしない（ライトのまま）
-
     /// <summary>uxtheme の SetPreferredAppMode の序数</summary>
+    /// <remarks>
+    /// Win32 のメニューは既定では常にライトの見た目になる。uxtheme の非公開 API（序数指定）でシステムのダーク設定に従わせる。
+    /// Windows 10 1903 以降で使える（エクスプローラー等も使っている）。見つからない環境では何もしない（ライトのまま）。
+    /// </remarks>
     private const int UxThemeOrdinalSetPreferredAppMode = 135;
     /// <summary>uxtheme の FlushMenuThemes の序数</summary>
     private const int UxThemeOrdinalFlushMenuThemes = 136;

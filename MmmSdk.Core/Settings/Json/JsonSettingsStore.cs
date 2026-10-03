@@ -180,8 +180,8 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     /// <param name="change">辞書のコピーを書き換える処理</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>保存したら true。読み取り専用（読み込みに失敗している）ため保存しなかったら false</returns>
-    /// <exception cref="DataFileException">保存に失敗した（ロック・権限など）。このときメモリの辞書は変えない。</exception>
     /// <remarks>書き換えたあとの内容を保存の順番どおりに書く。何も変わらなかったときも書くが、実害はない。</remarks>
+    /// <exception cref="DataFileException">保存に失敗した（ロック・権限など）。このときメモリの辞書は変えない。</exception>
     private async Task<bool> UpdateAsync(Action<Dictionary<string, JsonElement>> change, CancellationToken cancellationToken)
     {
         await _saveLock.WaitAsync(cancellationToken).ConfigureAwait(false);
