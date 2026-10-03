@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using MmmSdk.Core.Notifications;
+using MmmSdk.Core.Storage;
 using MmmSdk.Core.WindowPositions;
 using MmmSdk.WinUI.Interop;
 using MmmSdk.WinUI.Windowing;
@@ -218,12 +219,22 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>現在の位置を保存する</summary>
-    /// <remarks>閉じ方（クリック・×・Alt+F4）に関わらず閉じるときと、ドラッグが終わったときに呼ぶ。保存の失敗は握りつぶさない。</remarks>
+    /// <remarks>
+    /// 閉じ方（クリック・×・Alt+F4）に関わらず閉じるときと、ドラッグが終わったときに呼ぶ。
+    /// 保存に失敗（ロック・権限・ディスク）しても、位置が戻らないだけで、通知は使える。<c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける（次の保存でやり直す）。
+    /// </remarks>
     private async void SavePosition()
     {
         if (_positionKey is not { } key) return;
         var position = AppWindow.Position;
-        await _positions.SaveAsync(key, new WindowPosition(position.X, position.Y));
+        try
+        {
+            await _positions.SaveAsync(key, new WindowPosition(position.X, position.Y));
+        }
+        catch (DataFileException)
+        {
+            // 位置が保存できないだけなので、続ける
+        }
     }
 
     #region ドラッグ移動・クリックで閉じる
