@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MmmSdk.WinUI.Dialogs;
 using MmmSdk.WinUI.Notifications;
+using MmmSdk.WinUI.Tray;
 
 namespace MmmSdk.WinUI;
 
@@ -26,6 +27,22 @@ public static class SdkWinUIServiceCollectionExtensions
         services.AddSingleton<IDialogHost>(provider => provider.GetRequiredService<DialogService>());
         services.AddSingleton<IFilePickerService, FilePickerService>();
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
+        return services;
+    }
+
+    /// <summary>トレイアイコンを登録する</summary>
+    /// <param name="services">登録先のサービスコレクション</param>
+    /// <param name="options">アプリごとの設定</param>
+    /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
+    /// <remarks>
+    /// トレイを使うアプリだけが呼ぶ（<see cref="AddMmmSdkWinUI"/> には含まれない）。
+    /// <see cref="TrayIcon"/> は Singleton。メニューの項目は、<see cref="ITrayMenuSource"/> を Singleton で登録した順に並ぶ。
+    /// <see cref="TrayIcon"/> は UI スレッドで解決すること（UI スレッドのディスパッチャーを覚えるため）。
+    /// </remarks>
+    public static IServiceCollection AddMmmSdkTray(this IServiceCollection services, TrayIconOptions options)
+    {
+        services.AddSingleton(options);
+        services.AddSingleton<TrayIcon>();
         return services;
     }
 }

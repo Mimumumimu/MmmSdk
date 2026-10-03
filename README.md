@@ -39,16 +39,18 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
 | `MmmSdk.Core.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
+| `MmmSdk.Core.Logging` | エラーログの追記（`ErrorLog`。`yyyy-MM-dd.log`） |
+| `MmmSdk.Core.Tasks` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`） |
 | `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
 | `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`）・標準のメッセージボックス（`NativeMessageBox`） |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
 | `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
-| `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray` |
+| `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray`（`SdkWinUIServiceCollectionExtensions` の中） |
 | `MmmSdk.WinUI.ConPty` | ConPTY にプロセスをつないで起動する（`PseudoConsole`） |
-| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`） |
-| `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける） |
+| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
+| `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける）・復旧できないエラーの最後の受け皿（`FatalErrorHandler`） |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
 | `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
 
