@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Media;
 using MmmSdk.Core.Notifications;
 using MmmSdk.Core.WindowPositions;
 using MmmSdk.WinUI.Interop;
+using MmmSdk.WinUI.Windowing;
 using Windows.Graphics;
 
 namespace MmmSdk.WinUI.Notifications;
@@ -220,9 +221,7 @@ public sealed partial class NotificationWindow : Window
         var size = AppWindow.Size;
         var work = DisplayArea.GetFromRect(new RectInt32(position.X, position.Y, size.Width, size.Height), DisplayAreaFallback.Nearest).WorkArea;
 
-        var x = Math.Min(position.X, work.X + work.Width - size.Width);
-        var y = Math.Min(position.Y, work.Y + work.Height - size.Height);
-        return new PointInt32(Math.Max(x, work.X), Math.Max(y, work.Y));
+        return WindowPlacement.ClampToWorkArea(position, size, work);
     }
 
     /// <summary>現在の位置を保存する</summary>

@@ -2,6 +2,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using MmmSdk.WinUI.Interop;
+using MmmSdk.WinUI.Windowing;
 using Windows.Graphics;
 
 namespace MmmSdk.WinUI.Dialogs;
@@ -64,14 +65,9 @@ public sealed class PseudoModal
             return;
         }
 
-        var size = _window.AppWindow.Size;
-        var x = _ownerWindow.Position.X + (_ownerWindow.Size.Width - size.Width) / 2;
-        var y = _ownerWindow.Position.Y + (_ownerWindow.Size.Height - size.Height) / 2;
-
-        var workArea = DisplayArea.GetFromWindowId(_ownerWindow.Id, DisplayAreaFallback.Nearest).WorkArea;
-        x = Math.Clamp(x, workArea.X, Math.Max(workArea.X, workArea.X + workArea.Width - size.Width));
-        y = Math.Clamp(y, workArea.Y, Math.Max(workArea.Y, workArea.Y + workArea.Height - size.Height));
-        _window.AppWindow.Move(new PointInt32(x, y));
+        var position = _ownerWindow.Position;
+        var size = _ownerWindow.Size;
+        _window.MoveCentered(new RectInt32(position.X, position.Y, size.Width, size.Height));
     }
 
     /// <summary>コードから閉じる（OK・キャンセル等）</summary>
