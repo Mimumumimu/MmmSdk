@@ -4,7 +4,7 @@
 
 - 各チャットの最初の応答の前に、`/winui3-mvvm` スキルを Skill ツールで読み込み、そのルールに従う（コメントの書き方など）。
 - 構成: `MmmSdk.Core`（`net10.0`。Windows / WinUI を参照しない）と `MmmSdk.WinUI`（WinUI 3 のクラスライブラリ。Core を参照）
-- プロジェクトの中は部品ごとのフォルダ（アプリの機能別フォルダと同じ考え方。層ごとの `Views/` `Services/` 等は作らない）。名前空間はフォルダどおり：`MmmSdk.Core.Storage`（JsonFileStore・ReadableJsonOptions・DataLoadResult・DataFileException）/ `.Settings`（ISettingsStore。JSON 実装と `SettingsJsonContext` は `.Settings.Json`）/ `.WindowPositions`（WindowPositionService・WindowPosition・`WindowPositionJsonContext`・ScreenGeometry）/ `.Paths`（PathOpener・PathOpenException・PathTarget）/ `.Notifications`（NotificationItem）/ `.SingleInstance`（SingleInstanceGuard）、`MmmSdk.WinUI.Notifications`（通知ダイアログの Window・ViewModel・サービス）/ `.Dialogs`（IDialogService・IDialogHost・DialogService・ファイル/フォルダー選択・PseudoModal）/ `.Windowing`（WindowExtensions）/ `.Tray`（TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem。`TrayMenuRenderer` は internal）/ `.VisualTree`（VisualTreeSearch）。DI 登録はプロジェクト直下（`MmmSdk.Core` / `MmmSdk.WinUI`）
+- プロジェクトの中は部品ごとのフォルダ（アプリの機能別フォルダと同じ考え方。層ごとの `Views/` `Services/` 等は作らない）。名前空間はフォルダどおり：`MmmSdk.Core.Storage`（JsonFileStore・ReadableJsonOptions・DataLoadResult・DataFileException）/ `.Settings`（ISettingsStore。JSON 実装と `SettingsJsonContext` は `.Settings.Json`）/ `.WindowPositions`（WindowPositionService・WindowPosition・`WindowPositionJsonContext`・ScreenGeometry）/ `.Paths`（PathOpener・PathOpenException・PathTarget）/ `.Notifications`（NotificationItem）/ `.SingleInstance`（SingleInstanceGuard）/ `.Attachments`（AttachmentStore）、`MmmSdk.WinUI.Notifications`（通知ダイアログの Window・ViewModel・サービス）/ `.Dialogs`（IDialogService・IDialogHost・DialogService・ファイル/フォルダー選択・PseudoModal）/ `.Windowing`（WindowExtensions）/ `.Controls`（TimeInputBox・LinkArea）/ `.Input`（ImeControl）/ `.Tray`（TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem。`TrayMenuRenderer` は internal）/ `.VisualTree`（VisualTreeSearch）。DI 登録はプロジェクト直下（`MmmSdk.Core` / `MmmSdk.WinUI`）
 - DI は拡張メソッドで登録する：`AddMmmSdkCore(dataDirectory)`（JsonFileStore・ISettingsStore・WindowPositionService・PathOpener）→ `AddMmmSdkWinUI()`（通知ダイアログ・DialogService・ファイル/フォルダー選択。Core を先に登録すること）。トレイを使うアプリは別に `AddMmmSdkTray(options)`
 - ビルドの共通設定はリポジトリ直下の `Directory.Build.props`（バージョン・Nullable・ImplicitUsings・XML コメントの検査・コードスタイルのビルド時検査）/ `Directory.Packages.props`（中央パッケージ管理。csproj にバージョンを書かない）/ `.editorconfig`（`root = true`）。アプリに取り込まれても MSBuild は近いこちらを使うので、アプリの設定とは混ざらない。アプリと共通のパッケージは SDK を先に上げる
 - バージョンは `Directory.Build.props` の `Version`（現在 0.1.0。ファイル・アセンブリのバージョンは自動で 0.1.0.0）。アプリとは別に上げる
@@ -19,6 +19,7 @@
 - `docs/notification-dialog.md`: 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理
 - `docs/dialogs.md`: 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止
 - `docs/tray.md`: タスクトレイのアイコン・メニューの仕組み
+- `docs/controls.md`: `TimeInputBox`・`LinkArea`・IME・添付の一時保存
 - 機能の区切りで、変更した部分の README・docs と、下の「未実装・残りの作業」を更新してから終える
 
 ## 未実装・残りの作業

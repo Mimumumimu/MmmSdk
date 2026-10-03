@@ -16,6 +16,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - 確認ダイアログ・ファイル/フォルダー選択（親ウィンドウを自動で決める）と、ウィンドウを親の上に擬似モーダルで出す部品
 - 同一 EXE の多重起動の防止
 - タスクトレイのアイコンと右クリックメニュー（Win32 を直接使う。メニューは自前描画でダーク/ライト対応）
+- 時刻の入力欄（`TimeInputBox`）・押せる領域（`LinkArea`）・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理（コントロールのテンプレート内の要素に触るため）
 
 ## 構成
@@ -34,9 +35,12 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
 | `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
+| `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
 | `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`） |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
+| `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
 | `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray` |
 | `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`） |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
@@ -276,6 +280,35 @@ tray.ShowNotification("タイトル", "本文", isError: false);   // バルー�
 - 項目の処理が例外を投げたら、トレイの通知（エラー）でメッセージを知らせます
 - 終了時は `TrayIcon` を `Dispose` する（DI の破棄で行われる）。各機能の後始末のあとに消したいときは、機能より先に解決しておく（DI は作った順の逆に破棄する）
 
+### コントロール・IME（`MmmSdk.WinUI.Controls` / `Input`）
+
+```xml
+<!-- xmlns:controls="using:MmmSdk.WinUI.Controls" -->
+<controls:TimeInputBox Hour="{x:Bind ViewModel.Hour, Mode=TwoWay}" Minute="{x:Bind ViewModel.Minute, Mode=TwoWay}" />
+
+<controls:LinkArea IsLinkEnabled="{x:Bind HasLink}" Tapped="OnLinkTapped">
+    <TextBlock Text="件名" />
+</controls:LinkArea>
+```
+
+```csharp
+ImeControl.TurnOn();    // 日本語を打つ欄にフォーカスが来たとき
+ImeControl.TurnOff();   // 英数字を打つ欄にフォーカスが来たとき
+```
+
+### 添付ファイルの一時保存（`AttachmentStore`）
+
+アプリごとの名前を渡して登録します（`AddMmmSdkCore` には含まれません）。
+
+```csharp
+services.AddSingleton(provider => new AttachmentStore("MyApp", provider.GetRequiredService<TimeProvider>()));
+
+var path = await store.AddFileAsync(sourcePath);          // コピーして添付（連番付き）
+var path2 = await store.AddAsync(bytes, "image.jpg");     // データをファイルとして添付
+store.Remove(path);                                       // 取り除く（空ならフォルダごと削除）
+store.CloseSession();                                     // 送信済み。次の添付は新しいセッションへ
+```
+
 ### ビジュアルツリーの検索（`VisualTreeSearch`）
 
 ```csharp
@@ -291,6 +324,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
+| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存 |
 
 ## バージョン
 
