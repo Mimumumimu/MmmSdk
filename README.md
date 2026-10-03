@@ -25,7 +25,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 
 | プロジェクト | 対象 |
 | --- | --- |
-| `MmmSdk.Core` | `net10.0`（Windows / WinUI に依存しない） |
+| `MmmSdk.Core` | `net10.0`（WinUI に依存しない。トリミング・AOT 互換の分析を有効にしている。`Paths`（`PathOpener` / `PathTarget`）だけは Windows 前提） |
 | `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`（WinUI 3） |
 
 プロジェクトの中は、部品ごとのフォルダーに分けています。名前空間はフォルダーと同じです。
@@ -57,7 +57,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - WinUI 3（Windows App SDK 2.5）… `MmmSdk.WinUI` のみ
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
 - Microsoft.Extensions.DependencyInjection.Abstractions（DI 登録用の拡張メソッド）
-- System.Text.Json（ソース生成。トリミングしても動く形）
+- System.Text.Json（ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する）
 
 ## 必要環境
 
@@ -143,7 +143,7 @@ await store.WriteAsync("Links.json", menu, MyJsonContext.Readable.LinkMenu);
 var minutes = settings.Get("Reminder.SnoozeIntervalMinutes", 15);         // 無い・型が合わないときは既定値
 await settings.SetAsync("Reminder.SnoozeIntervalMinutes", 30);            // 保存し終えるまで待つ
 
-// string / bool / int / long / double 以外は JsonTypeInfo を渡す
+// string / bool / int / long / double は型ごとの専用メソッド（それ以外の型は、ビルドで誤りになる）。それ以外の型は JsonTypeInfo を渡す
 var options = settings.Get("Foo.Options", new FooOptions(), MyJsonContext.Default.FooOptions);
 ```
 

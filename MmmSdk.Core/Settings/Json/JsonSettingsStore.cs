@@ -33,7 +33,19 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     public string? RecoveryMessage { get; private set; }
 
     /// <inheritdoc />
-    public T Get<T>(string key, T defaultValue) => Get(key, defaultValue, GetBuiltInTypeInfo<T>());
+    public string Get(string key, string defaultValue) => Get(key, defaultValue, GetBuiltInTypeInfo<string>());
+
+    /// <inheritdoc />
+    public bool Get(string key, bool defaultValue) => Get(key, defaultValue, GetBuiltInTypeInfo<bool>());
+
+    /// <inheritdoc />
+    public int Get(string key, int defaultValue) => Get(key, defaultValue, GetBuiltInTypeInfo<int>());
+
+    /// <inheritdoc />
+    public long Get(string key, long defaultValue) => Get(key, defaultValue, GetBuiltInTypeInfo<long>());
+
+    /// <inheritdoc />
+    public double Get(string key, double defaultValue) => Get(key, defaultValue, GetBuiltInTypeInfo<double>());
 
     /// <inheritdoc />
     public T Get<T>(string key, T defaultValue, JsonTypeInfo<T> typeInfo)
@@ -59,8 +71,24 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     }
 
     /// <inheritdoc />
-    public Task SetAsync<T>(string key, T value, CancellationToken cancellationToken = default)
-        => SetAsync(key, value, GetBuiltInTypeInfo<T>(), cancellationToken);
+    public Task SetAsync(string key, string value, CancellationToken cancellationToken = default)
+        => SetAsync(key, value, GetBuiltInTypeInfo<string>(), cancellationToken);
+
+    /// <inheritdoc />
+    public Task SetAsync(string key, bool value, CancellationToken cancellationToken = default)
+        => SetAsync(key, value, GetBuiltInTypeInfo<bool>(), cancellationToken);
+
+    /// <inheritdoc />
+    public Task SetAsync(string key, int value, CancellationToken cancellationToken = default)
+        => SetAsync(key, value, GetBuiltInTypeInfo<int>(), cancellationToken);
+
+    /// <inheritdoc />
+    public Task SetAsync(string key, long value, CancellationToken cancellationToken = default)
+        => SetAsync(key, value, GetBuiltInTypeInfo<long>(), cancellationToken);
+
+    /// <inheritdoc />
+    public Task SetAsync(string key, double value, CancellationToken cancellationToken = default)
+        => SetAsync(key, value, GetBuiltInTypeInfo<double>(), cancellationToken);
 
     /// <inheritdoc />
     public Task SetAsync<T>(string key, T value, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
