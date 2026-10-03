@@ -37,3 +37,7 @@
 - `SetForeground`: ウィンドウを前面に出す（`Activate` のあとに呼ぶ）。別のアプリが前面にあると、Windows の制限で前面にならないことがある
 - `GetDpiScale`: ウィンドウがあるモニターの DPI 倍率（100% で 1.0）。`XamlRoot` は表示するまで無いので、表示前に大きさを決めるときに使う
 - アプリ側にも同じ P/Invoke を持たなくて済むようにするための公開口（SDK の `NativeMethods` は internal）
+- `UseCustomTitleBar`: アプリのアイコンを付け、タイトルバーを自分で描く（コンテンツをタイトルバーまで広げ、ドラッグできる領域を指定する）
+- `UseFixedPresenter`: 最大化・最小化できない重ね合わせ型のウィンドウにする（ダイアログ用の見た目か・大きさを変えられるか・最小の大きさ）
+- `ResizeClientDip`: クライアント領域の大きさを、論理サイズ（DIP）と DPI 倍率から決める（中身をちょうど収めたいときは切り上げ）
+- `MoveCentered`: 指定した範囲（親ウィンドウや作業領域）の中央に置き、はみ出す分はその範囲にいちばん近いモニターの作業領域の内側へ寄せる。収める計算は `WindowPlacement.ClampToWorkArea`（`PseudoModal.CenterOnOwner` と通知ウィンドウも同じ計算を使う）

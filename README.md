@@ -42,7 +42,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
 | `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
 | `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray` |
-| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`） |
+| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`） |
+| `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける） |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
 | `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
 
@@ -224,12 +225,34 @@ await dialogs.ShowModalAsync(window, owner =>
 });
 ```
 
-ウィンドウを前面に出す・DPI 倍率を取る処理は、`Window` の拡張メソッド（`MmmSdk.WinUI.Windowing`）です。
+ウィンドウの前面表示・DPI 倍率・タイトルバー・大きさ・位置合わせは、`Window` の拡張メソッド（`MmmSdk.WinUI.Windowing`）です。
 
 ```csharp
 window.Activate();
 window.SetForeground();            // 前面に出す
 var scale = window.GetDpiScale();  // 100% で 1.0。表示の前でも取れる
+
+window.UseCustomTitleBar(titleBarArea, iconPath);                        // アイコン + タイトルバーを自分で描く
+window.UseFixedPresenter(isDialog: true, isResizable: false);            // 最大化・最小化できないウィンドウ
+window.ResizeClientDip(360, 440, scale);                                 // 論理サイズ（DIP）と倍率で大きさを決める
+window.MoveCentered(new RectInt32(x, y, width, height));                 // 範囲の中央に置く（作業領域に収める）
+```
+
+### 画面に出すエラー（`ErrorState`）
+
+ViewModel が `ErrorState` を 1 つ持ち、`InfoBar` に結び付けます。閉じるボタンは TwoWay の結び付けで `IsOpen` を false にするので、閉じる処理は書かなくてよい。
+
+```csharp
+public ErrorState Error { get; } = new();
+
+Error.Show("保存できませんでした");     // 表示する
+Error.Set(loadError ?? recoveryMessage); // あれば表示、null なら消す
+Error.Clear();                           // 消す
+```
+
+```xml
+<InfoBar IsOpen="{x:Bind ViewModel.Error.IsOpen, Mode=TwoWay}"
+         Message="{x:Bind ViewModel.Error.Message, Mode=OneWay}" Severity="Error" />
 ```
 
 ### 多重起動の防止（`SingleInstanceGuard`）
