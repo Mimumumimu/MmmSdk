@@ -28,6 +28,8 @@ public sealed partial class LinkArea : Grid
         PointerExited += (_, _) => SetPointerOver(false);
         PointerCanceled += (_, _) => SetPointerOver(false);
         PointerCaptureLost += (_, _) => SetPointerOver(false);
+        // 背景のブラシはテーマごとに違うので、テーマが切り替わったら取り直す
+        ActualThemeChanged += (_, _) => UpdateLook();
     }
 
     /// <summary>押してリンクを開けるか</summary>

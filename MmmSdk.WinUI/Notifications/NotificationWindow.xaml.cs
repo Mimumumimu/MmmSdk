@@ -64,12 +64,12 @@ public sealed partial class NotificationWindow : Window
     private PointInt32 _startWindow;
 
     /// <summary>ウィンドウの ViewModel</summary>
-    public NotificationDialogViewModel ViewModel { get; }
+    public NotificationWindowViewModel ViewModel { get; }
 
     /// <summary>ウィンドウを作る</summary>
     /// <param name="viewModel">ウィンドウの ViewModel</param>
     /// <param name="positions">位置の保存・復元</param>
-    public NotificationWindow(NotificationDialogViewModel viewModel, IWindowPositionService positions)
+    public NotificationWindow(NotificationWindowViewModel viewModel, IWindowPositionService positions)
     {
         ViewModel = viewModel;
         _positions = positions;

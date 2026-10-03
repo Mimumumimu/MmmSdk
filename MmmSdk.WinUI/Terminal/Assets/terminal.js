@@ -41,7 +41,7 @@
         return true;
     });
 
-    term.onData(data =>host.postMessage({ type: "input", data }));
+    term.onData(data => host.postMessage({ type: "input", data }));
     term.onResize(({ cols, rows }) => host.postMessage({ type: "resize", cols, rows }));
 
     // サイズ変更の通知は 1 フレームに 1 回にまとめる（ドラッグ中に fit() を連打しない。onResize は、列・行が実際に変わったときだけ ConPTY へ伝える）

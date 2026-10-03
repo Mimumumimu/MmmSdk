@@ -68,7 +68,7 @@ public sealed class DialogService : IDialogService, IDialogHost
     }
 
     /// <inheritdoc />
-    public async Task<bool> ConfirmAsync(string title, string message, string primaryText)
+    public async Task<bool> ConfirmAsync(string title, string message, string primaryText, string closeText)
     {
         await _confirmLock.WaitAsync();
         try
@@ -82,7 +82,7 @@ public sealed class DialogService : IDialogService, IDialogHost
                 Title = title,
                 Content = message,
                 PrimaryButtonText = primaryText,
-                CloseButtonText = "キャンセル",
+                CloseButtonText = closeText,
                 // 取り消しにくい操作なので、Enter で誤って実行しないようキャンセルを既定にする
                 DefaultButton = ContentDialogButton.Close,
             };

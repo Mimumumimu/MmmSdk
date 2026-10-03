@@ -46,7 +46,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Collections` | 「最近使った順」のリストの操作（`AddRecent`） |
 | `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
-| `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
+| `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`） |
 | `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`）・標準のメッセージボックス（`NativeMessageBox`） |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
 | `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
@@ -109,7 +109,7 @@ services.AddMmmSdkWinUI();
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`（すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる） |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`（すべて Singleton）、`NotificationWindow`・`NotificationWindowViewModel`（Transient） |
 
 ## 使い方
 
@@ -177,8 +177,8 @@ var visible = ScreenGeometry.IsVisibleEnough(windowRect, workAreas, 0.5);
 位置と大きさ（`WindowBounds`）は `LoadBounds(key)` / `SaveBoundsAsync(key, bounds)` で、`WindowBounds.<キー>` として保存されます。WinUI のウィンドウには、これを使って復元・保存を自動で行う `WindowBoundsKeeper`（`MmmSdk.WinUI.Windowing`）があります。
 
 ```csharp
-// コンストラクターで 1 回作るだけ（ウィンドウが閉じたら自分で後始末する）
-_ = new WindowBoundsKeeper(this, positions, "MainWindow", defaultWidthDip: 1280, defaultHeightDip: 720);
+// コンストラクターで 1 回呼ぶだけ（ウィンドウが閉じたら自分で後始末する）
+WindowBoundsKeeper.Attach(this, positions, "MainWindow", defaultWidthDip: 1280, defaultHeightDip: 720);
 ```
 
 保存が無い・画面外のときは既定の大きさ（DIP を DPI に合わせる）で出します。変更は 1 秒まとめて保存し、最小化・最大化・非表示の間は保存しません。
@@ -230,7 +230,7 @@ UI スレッドから呼びます。ダイアログの親は `IDialogHost`（実
 // 起動時に、親の候補にするウィンドウを登録する（最初に登録したウィンドウが、最後の手段の親になる）
 dialogs.TrackWindow(mainWindow);
 
-if (await dialogs.ConfirmAsync("削除", "削除しますか？", "削除")) { /* 「削除」が押された */ }  // 既定のボタンはキャンセル
+if (await dialogs.ConfirmAsync("削除", "削除しますか？", "削除", "キャンセル")) { /* 「削除」が押された */ }  // 既定のボタンはキャンセル
 
 var file = await filePicker.PickFileAsync();       // キャンセルなら null
 var folder = await folderPicker.PickFolderAsync(); // キャンセルなら null
@@ -386,8 +386,8 @@ ThreadPool.RegisterWaitForSingleObject(console.ExitHandle, (_, _) => { /* プロ
 services.AddMmmSdkTray(new TrayIconOptions(
     ToolTip: "MyApp",                  // ツールチップ。エラー通知のタイトルにも使う
     WindowClassName: "MyApp_Tray",     // 通知を受ける非表示ウィンドウのクラス名（アプリごとに別の名前）
-    IconPath: Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico"),   // 省略すると標準のアイコン
-    ExitText: "終了"));                // メニュー末尾の終了項目（既定は「終了」）
+    ExitText: "終了",                  // メニュー末尾の終了項目（アプリの言語で渡す）
+    IconPath: Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico")));   // 省略すると標準のアイコン
 
 // 機能ごとにメニューの項目を足す（Singleton で登録した順に並ぶ）
 services.AddSingleton<ITrayMenuSource, MyTrayMenuSource>();

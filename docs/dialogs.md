@@ -9,7 +9,7 @@
 - 確認ダイアログ（`ConfirmAsync`）は `SemaphoreSlim(1)` で順番に開く（`ContentDialog` は、同じ画面に 2 つ同時に開くと例外になる）。親は、順番が来てから決める
 - 普通のウィンドウは `TrackWindow` で登録する。アクティブになるたびに「最後に操作したウィンドウ」を更新し、閉じたら候補から外す
 - モーダルウィンドウは `ShowModalAsync` で開く間だけ覚える（その上に開くダイアログの親にするため。一覧の上に入力画面・確認を重ねられる）
-- `ConfirmAsync`: 確認ダイアログ。取り消しにくい操作の確認用に、既定のボタンはキャンセル（Enter で誤って実行しない）。コードで作る `ContentDialog` には既定のスタイルが当たらないので、`DefaultContentDialogStyle` を明示している
+- `ConfirmAsync(title, message, primaryText, closeText)`: 確認ダイアログ。ボタンの文言は、実行・取りやめとも、アプリが言語に合わせて渡す（SDK は日本語を埋め込まない）。取り消しにくい操作の確認用に、既定のボタンはキャンセル（Enter で誤って実行しない）。コードで作る `ContentDialog` には既定のスタイルが当たらないので、`DefaultContentDialogStyle` を明示している
 - 口は 2 つ。確認ダイアログは `IDialogService`、親の決定（`Owner` / `TrackWindow` / `ShowModalAsync`）は `IDialogHost`。どちらも同じ `DialogService` が実装し、DI では同じインスタンスを返す。ViewModel は `IDialogService`、ウィンドウを開くアプリ側のサービスは `IDialogHost` を受け取る（具象型には依存しない）
 - UI スレッドから呼ぶ
 

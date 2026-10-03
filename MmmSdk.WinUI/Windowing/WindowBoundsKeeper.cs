@@ -13,9 +13,9 @@ namespace MmmSdk.WinUI.Windowing;
 /// 既定の大きさ（論理サイズ。DPI に合わせる）にして、位置は Windows に任せる。
 /// 位置・大きさが変わったら、動かし終わるのを待ってから（<see cref="SaveDelay"/>）保存する。
 /// 最小化・最大化・非表示の間は保存しない（最小化の座標や、最大化の大きさを、復元の対象にしないため）。
-/// UI スレッドで作る。ウィンドウが閉じたら自分で後始末する。
+/// UI スレッドで <see cref="Attach"/> する。ウィンドウに結び付いて動き、ウィンドウが閉じたら自分で後始末する（呼び出し側が持ち続けたり、破棄したりしなくてよい）。
 /// </remarks>
-public sealed class WindowBoundsKeeper : IDisposable
+public sealed class WindowBoundsKeeper
 {
     /// <summary>復元する位置を「十分に見える」とみなす、ウィンドウ面積に対する見えている割合</summary>
     private const double VisibleRatio = 0.5;
@@ -44,7 +44,17 @@ public sealed class WindowBoundsKeeper : IDisposable
     /// <param name="key">ウィンドウを区別するキー</param>
     /// <param name="defaultWidthDip">保存が無いときの幅（論理サイズ。DIP）</param>
     /// <param name="defaultHeightDip">保存が無いときの高さ（論理サイズ。DIP）</param>
-    public WindowBoundsKeeper(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip)
+    /// <remarks>戻り値は無い。ウィンドウのイベントの購読で生き続け、ウィンドウが閉じたら止まる。</remarks>
+    public static void Attach(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip)
+        => _ = new WindowBoundsKeeper(window, positions, key, defaultWidthDip, defaultHeightDip);
+
+    /// <summary>位置と大きさを復元して、変更の監視を始める</summary>
+    /// <param name="window">対象のウィンドウ</param>
+    /// <param name="positions">位置と大きさの保存・復元</param>
+    /// <param name="key">ウィンドウを区別するキー</param>
+    /// <param name="defaultWidthDip">保存が無いときの幅（論理サイズ。DIP）</param>
+    /// <param name="defaultHeightDip">保存が無いときの高さ（論理サイズ。DIP）</param>
+    private WindowBoundsKeeper(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip)
     {
         _window = window;
         _positions = positions;
@@ -61,7 +71,7 @@ public sealed class WindowBoundsKeeper : IDisposable
     }
 
     /// <summary>後始末をする（変更の監視とタイマーを止める）</summary>
-    public void Dispose()
+    private void Detach()
     {
         if (_disposed)
         {
@@ -135,5 +145,5 @@ public sealed class WindowBoundsKeeper : IDisposable
     /// <summary>ウィンドウが閉じたら、後始末をする</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="args">閉じたイベントの情報</param>
-    private void OnClosed(object sender, WindowEventArgs args) => Dispose();
+    private void OnClosed(object sender, WindowEventArgs args) => Detach();
 }
