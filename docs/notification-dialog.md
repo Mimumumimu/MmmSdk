@@ -5,7 +5,7 @@
 ## 概要
 - `INotificationDialogService.Show(title, items, onClicked?, positionKey)` / `Show(title, message)`。UI スレッドから呼ぶ
 - ウィンドウはアプリ内で常に 1 枚。新しい通知は内容を差し替えて再表示する。ユーザーが閉じたら破棄し、次の通知で作り直す
-- 項目は `NotificationItem(Text, LinkPath?)`。リンクを開く処理は `PathOpener`。開けなかったときは何も表示しない（通知ダイアログに失敗の表示は持たせない方針）
+- 項目は `NotificationItem(Text, LinkPath?)`。リンクを開く処理は `IPathOpener`。開けなかったときは何も表示しない（通知ダイアログに失敗の表示は持たせない方針）
 
 ## 見た目
 - 幅 400 固定。高さは本文に合わせて 160〜480（超えたらスクロール）
@@ -24,7 +24,7 @@
 - `onClicked` は本文クリックで閉じたときだけ呼ぶ（×・Alt+F4・差し替えでは呼ばない）。通知ごとに設定し直し、渡さなければクリアする
 - 差し替え時は、高さの変化で画面に収まらなくなるとき以外は位置を動かさない
 
-## 位置の保存と復元（`WindowPositionService`）
+## 位置の保存と復元（`IWindowPositionService` / `WindowPositionService`）
 - 位置は設定ストアに `WindowPosition.<キー>` として保存する。キー（`positionKey`）は通知の種類ごとに指定でき、既定は `Notification`
 - 保存するタイミング
   - ドラッグの終了（離した通知とキャプチャ喪失のどちらからでも 1 回）
@@ -37,6 +37,9 @@
 - `DisplayArea.FindAll()` は `foreach` せず、Count とインデクサで回す
 - 保存の失敗は握りつぶさない（`async void` なので未処理例外になる）
 
-## パスを開く（`PathOpener` / `PathTarget`）
+## パスを開く（`IPathOpener` / `PathOpener` / `PathTarget`）
 - `OpenAsync` は環境変数を展開し、前後の空白・引用符を取り除いてから、シェル実行をバックグラウンドで行う。実行ファイルはそのファイルのフォルダーを作業フォルダーにして起動する
 - `PathTarget.Classify` は URL / フォルダー / 実行ファイル / ファイル / 見つからない / 空 を判定する。ファイルの有無を調べるので、ネットワーク上のパスでは時間がかかる（UI スレッドから呼ばない）
+
+## 通知ウィンドウの作り方
+`NotificationDialogService` は、通知ウィンドウを作る処理（`Func<NotificationWindow>`）を DI から受け取る（`IServiceProvider` を持たない）。ウィンドウはユーザーが閉じたら破棄し、次の通知で作り直す。`AddMmmSdkWinUI` が、`NotificationWindow` を Transient で登録し、作る処理を渡す。

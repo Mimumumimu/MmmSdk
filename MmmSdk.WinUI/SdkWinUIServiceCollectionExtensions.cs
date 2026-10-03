@@ -19,6 +19,7 @@ public static class SdkWinUIServiceCollectionExtensions
     {
         services.AddSingleton<INotificationDialogService, NotificationDialogService>();
         services.AddTransient<NotificationWindow>();
+        services.AddSingleton<Func<NotificationWindow>>(provider => () => provider.GetRequiredService<NotificationWindow>());
         services.AddTransient<NotificationDialogViewModel>();
         services.AddSingleton<DialogService>();
         services.AddSingleton<IDialogService>(provider => provider.GetRequiredService<DialogService>());

@@ -15,16 +15,16 @@ public static class SdkCoreServiceCollectionExtensions
     /// <param name="dataDirectory">JSON を保存するフォルダ。</param>
     /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
     /// <remarks>
-    /// JSON ファイルの読み書き（<see cref="JsonFileStore"/>）・汎用設定ストア（<see cref="ISettingsStore"/>）・
+    /// JSON ファイルの読み書き（<see cref="IJsonFileStore"/>）・汎用設定ストア（<see cref="ISettingsStore"/>）・
     /// ウィンドウ位置の保存・パスを開く処理を、すべてアプリ全体で 1 つとして登録する。
-    /// アプリ固有の保存でも <see cref="JsonFileStore"/> を共有して使える。
+    /// アプリ固有の保存でも <see cref="IJsonFileStore"/> を共有して使える。いずれも、実装の型ではなく、インターフェース（<c>IJsonFileStore</c>・<c>ISettingsStore</c>・<c>IWindowPositionService</c>・<c>IPathOpener</c>）で受け取る。
     /// </remarks>
     public static IServiceCollection AddMmmSdkCore(this IServiceCollection services, string dataDirectory)
     {
-        services.AddSingleton(new JsonFileStore(dataDirectory));
+        services.AddSingleton<IJsonFileStore>(new JsonFileStore(dataDirectory));
         services.AddSingleton<ISettingsStore, JsonSettingsStore>();
-        services.AddSingleton<WindowPositionService>();
-        services.AddSingleton<PathOpener>();
+        services.AddSingleton<IWindowPositionService, WindowPositionService>();
+        services.AddSingleton<IPathOpener, PathOpener>();
         return services;
     }
 }

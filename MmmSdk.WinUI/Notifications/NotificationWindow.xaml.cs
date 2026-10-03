@@ -34,7 +34,7 @@ public sealed partial class NotificationWindow : Window
     private const double VisibleRatio = 0.5;
 
     /// <summary>位置の保存・復元</summary>
-    private readonly WindowPositionService _positions;
+    private readonly IWindowPositionService _positions;
 
     /// <summary>ウィンドウのハンドル</summary>
     private readonly nint _hwnd;
@@ -66,7 +66,7 @@ public sealed partial class NotificationWindow : Window
     /// <summary>ウィンドウを作る</summary>
     /// <param name="viewModel">ウィンドウの ViewModel</param>
     /// <param name="positions">位置の保存・復元</param>
-    public NotificationWindow(NotificationDialogViewModel viewModel, WindowPositionService positions)
+    public NotificationWindow(NotificationDialogViewModel viewModel, IWindowPositionService positions)
     {
         ViewModel = viewModel;
         _positions = positions;

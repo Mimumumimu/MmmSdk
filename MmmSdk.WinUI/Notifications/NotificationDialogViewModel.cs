@@ -8,7 +8,7 @@ namespace MmmSdk.WinUI.Notifications;
 /// <summary>通知ウィンドウの ViewModel</summary>
 /// <param name="opener">リンク先を開く処理</param>
 /// <remarks>本文の Inlines の組み立ては View 側で行う（リンクのクリックを含むため）。</remarks>
-public sealed partial class NotificationDialogViewModel(PathOpener opener) : ObservableObject
+public sealed partial class NotificationDialogViewModel(IPathOpener opener) : ObservableObject
 {
     /// <summary>タイトル</summary>
     [ObservableProperty]
