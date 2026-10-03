@@ -66,7 +66,7 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     public bool IsReadOnly => LoadError is not null;
 
     /// <inheritdoc />
-    public string Get(string key, string defaultValue) => TryGet(key, out string value) ? value : defaultValue;
+    public string Get(string key, string defaultValue) => TryGet(key, out string? value) ? value : defaultValue;
 
     /// <inheritdoc />
     public bool Get(string key, bool defaultValue) => TryGet(key, out bool value) ? value : defaultValue;
