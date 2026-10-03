@@ -1,8 +1,12 @@
+using System.Runtime.Versioning;
+
 namespace MmmSdk.Core.Paths;
 
 /// <summary>
 /// リンクのパスの解釈（環境変数の展開・種類の判定）。
 /// </summary>
+/// <remarks>Windows 前提（実行ファイルの拡張子・環境変数の展開が Windows の流儀。Windows 以外から使うと、ビルドで警告になる）。</remarks>
+[SupportedOSPlatform("windows")]
 public static class PathTarget
 {
     /// <summary>実行ファイルとみなす拡張子</summary>

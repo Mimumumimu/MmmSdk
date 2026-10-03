@@ -24,7 +24,11 @@ public static class SdkCoreServiceCollectionExtensions
         services.AddSingleton<IJsonFileStore>(new JsonFileStore(dataDirectory));
         services.AddSingleton<ISettingsStore, JsonSettingsStore>();
         services.AddSingleton<IWindowPositionService, WindowPositionService>();
-        services.AddSingleton<IPathOpener, PathOpener>();
+        // パスを開く処理は Windows 前提（PathTarget・PathOpener）。Windows 以外では登録しない
+        if (OperatingSystem.IsWindows())
+        {
+            services.AddSingleton<IPathOpener, PathOpener>();
+        }
         return services;
     }
 }
