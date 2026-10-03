@@ -23,6 +23,8 @@
 - WebView2 上の xterm.js で描く `UserControl`。`Session` に `ITerminalSession` を渡すと、入出力をつなぐ。`FocusTerminal()` でフォーカスを移す
 - xterm.js・addon-fit（MIT。ライセンスファイルも同梱）は `MmmSdk.WinUI/Terminal/Assets/`。SDK の csproj が、参照するアプリの出力フォルダー（`Assets/Terminal/`）へコピーする。**アプリは何も書かなくてよい**（アセットはフォルダー内に平らに置く。サブフォルダーを足すときは csproj のリンクの書き方を直す）
 - 仮想ホスト `terminal.mmmsdk.invalid` で `Assets/Terminal/` を読み込む（`DenyCors`）。守りは多重：ページの CSP（外部への通信・フレーム・フォームを禁止）・`AreHostObjectsAllowed = false`・ブラウザーの機能（再読み込み・検索・印刷・ズーム・右クリックメニュー）を止める・メッセージの送信元の検査・Release で DevTools を無効化
+- Ctrl+C のコピーは、クリップボードへ書き込めたときだけ選択を解除する。拒否されたときは選択を残し、`console.error` に出す（画面には出さない）。サイズ変更の通知は 1 フレームに 1 回にまとめる
+- ページの CSP は、Chromium で、違反が出ないことと、描画・サイズ変更の通知が動くことを確認済み（xterm.js が `<style>` を足すため、style だけ inline を許可）
 - C# ↔ JS は JSON メッセージ（C# → JS: `output` / `submit` / `focus`。JS → C#: `ready` / `input` / `resize` / `written`）。ページは `terminal.js`
 - 出力は細切れに届くので、UI スレッドへ渡す前にまとめる。xterm.js の書き込み待ちがあふれて出力が捨てられないよう、描画の受け取り（`written`）が返っていない文字数が 1M 文字を超えたら、受け取りが返るまで送らない
 - シェルが終了したあとは、何かキーを押すと再起動する（押されたキーは捨てる。終了待ちの間のキーも捨てて、二重に起動し直さない）
