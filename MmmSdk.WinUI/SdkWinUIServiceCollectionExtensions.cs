@@ -12,7 +12,7 @@ public static class SdkWinUIServiceCollectionExtensions
     /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
     /// <remarks>
     /// 先に <c>AddMmmSdkCore</c> を呼んでおくこと（位置の保存・リンクを開く処理を使う）。
-    /// <see cref="DialogService"/> は、具象型と <see cref="IDialogService"/> のどちらからも同じインスタンスを受け取れる（親にするウィンドウの登録を共有するため）。
+    /// <see cref="DialogService"/> は、<see cref="IDialogService"/>（確認ダイアログ）と <see cref="IDialogHost"/>（親の決定）のどちらからも同じインスタンスを受け取れる（親にするウィンドウの登録を共有するため）。アプリは具象型ではなく、この 2 つの口に依存する。
     /// 通知ウィンドウはユーザーが閉じたら作り直すので、ウィンドウと ViewModel は Transient で登録する。
     /// </remarks>
     public static IServiceCollection AddMmmSdkWinUI(this IServiceCollection services)
@@ -22,6 +22,7 @@ public static class SdkWinUIServiceCollectionExtensions
         services.AddTransient<NotificationDialogViewModel>();
         services.AddSingleton<DialogService>();
         services.AddSingleton<IDialogService>(provider => provider.GetRequiredService<DialogService>());
+        services.AddSingleton<IDialogHost>(provider => provider.GetRequiredService<DialogService>());
         services.AddSingleton<IFilePickerService, FilePickerService>();
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
         return services;

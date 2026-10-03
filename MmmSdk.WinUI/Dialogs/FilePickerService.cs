@@ -4,7 +4,7 @@ namespace MmmSdk.WinUI.Dialogs;
 
 /// <summary>ファイル選択を開く</summary>
 /// <param name="dialogs">ダイアログの親を決めるサービス</param>
-public sealed class FilePickerService(DialogService dialogs) : IFilePickerService
+public sealed class FilePickerService(IDialogHost dialogs) : IFilePickerService
 {
     /// <inheritdoc />
     public async Task<string?> PickFileAsync()
