@@ -1,7 +1,7 @@
 # MmmSdk
 
 MmmSdk は、複数の WinUI 3 デスクトップアプリ（[MmmTool](https://github.com/Mimumumimu/MmmTool) など）で共有する汎用部品のライブラリです。
-JSON ファイルへの保存、アプリ共通の設定ストア、ウィンドウ位置の保存、パスを開く処理、デスクトップ通知のダイアログを提供します。
+JSON ファイルへの保存、アプリ共通の設定ストア、ウィンドウ位置の保存、パスを開く処理、デスクトップ通知のダイアログ、確認ダイアログ・ファイル/フォルダー選択・擬似モーダル、多重起動の防止を提供します。
 
 アプリ固有のもの（データ構造・業務ロジック・画面）は含みません。アプリ側が SDK を参照し、SDK はアプリを参照しません。
 
@@ -13,6 +13,9 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - ウィンドウ位置の保存・復元、画面外に出たウィンドウの判定
 - URL・ファイル・フォルダー・実行ファイルを既定のアプリで開く処理と、パスの種類の判定（環境変数の展開つき）
 - デスクトップ通知のダイアログ（フォーカスを奪わない常に最前面のウィンドウ。ドラッグ移動・位置保存・クリックで閉じる・本文のリンク）
+- 確認ダイアログ・ファイル/フォルダー選択（親ウィンドウを自動で決める）と、ウィンドウを親の上に擬似モーダルで出す部品
+- 同一 EXE の多重起動の防止
+- ビジュアルツリーから要素を探す処理（コントロールのテンプレート内の要素に触るため）
 
 ## 構成
 
@@ -30,7 +33,10 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
 | `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
+| `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
+| `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService` / `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`） |
+| `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
 | `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
 
 ## 技術スタック
@@ -81,7 +87,7 @@ services.AddMmmSdkWinUI();
 | メソッド | 登録するもの |
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `JsonFileStore`・`ISettingsStore`・`WindowPositionService`・`PathOpener`（すべて Singleton） |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`（Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`DialogService`（`IDialogService` と同じインスタンス）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
 
 ## 使い方
 
@@ -183,12 +189,56 @@ notifications.Show("お知らせ", "メッセージだけの簡易通知");
 - 表示位置は `positionKey`（既定は `"Notification"`）ごとに保存・復元します。保存位置が画面外になっていたら、プライマリモニターの作業領域の右下に出します
 - 表示されたときに、ウィンドウ全体を数回点滅させて知らせます
 
+### 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル（`MmmSdk.WinUI.Dialogs`）
+
+UI スレッドから呼びます。ダイアログの親は `DialogService` が決めます（いちばん手前のモーダルウィンドウ → 最後に操作したウィンドウ → 最初に登録したウィンドウ）。
+
+```csharp
+// 起動時に、親の候補にするウィンドウを登録する（最初に登録したウィンドウが、最後の手段の親になる）
+dialogs.TrackWindow(mainWindow);
+
+if (await dialogs.ConfirmAsync("削除", "削除しますか？", "削除")) { /* 「削除」が押された */ }  // 既定のボタンはキャンセル
+
+var file = await filePicker.PickFileAsync();       // キャンセルなら null
+var folder = await folderPicker.PickFolderAsync(); // キャンセルなら null
+```
+
+アプリ固有のウィンドウを擬似モーダルで開くときは、ウィンドウに `PseudoModal` を付け、`DialogService.ShowModalAsync` で開きます（親は `Owner`）。
+
+```csharp
+var modal = new PseudoModal(window);                       // ウィンドウのコンストラクターで作る
+await dialogs.ShowModalAsync(window, owner =>
+{
+    modal.SetOwner(owner);                                 // 表示の前に親を設定
+    modal.Show();                                          // 親を操作できなくして表示
+    // …閉じるまで待つ。コードから閉じるときは modal.Close()…
+    return Task.FromResult(true);
+});
+```
+
+### 多重起動の防止（`SingleInstanceGuard`）
+
+アプリを区別する名前を渡します。EXE のパスごとに判定するので、別のフォルダーの EXE（Debug / Release など）は同時に起動できます。
+
+```csharp
+var guard = new SingleInstanceGuard("MyApp");   // アプリ起動の最初に作って、フィールドで持ち続ける
+if (!guard.IsFirstInstance) { /* すでに起動している。メッセージを出して終了する */ }
+```
+
+### ビジュアルツリーの検索（`VisualTreeSearch`）
+
+```csharp
+var scrollViewer = VisualTreeSearch.FindDescendant<ScrollViewer>(treeView);              // 型で探す
+var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");         // 型と名前で探す
+```
+
 ## ドキュメント
 
 | ファイル | 内容 |
 | --- | --- |
 | [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア |
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
+| [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止 |
 
 ## バージョン
 
