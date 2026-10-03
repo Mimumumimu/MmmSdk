@@ -1,0 +1,58 @@
+// CsWin32 が生成する Win32 API の一覧（生成されるのは internal。用途ごとにまとめる）
+
+// ウィンドウの表示・スタイル・入力
+EnableWindow
+GetCursorPos
+GetDpiForWindow
+GetSystemMetrics
+GetWindowLongPtr
+HWND_TOPMOST
+SetForegroundWindow
+SetWindowLongPtr
+SetWindowPos
+WINDOW_EX_STYLE
+
+// IME
+GetFocus
+ImmGetContext
+ImmReleaseContext
+ImmSetOpenStatus
+
+// 通知を受ける非表示ウィンドウ（トレイ用）
+CreateWindowEx
+DefWindowProc
+DestroyWindow
+GetModuleHandle
+PostMessage
+RegisterClassEx
+RegisterWindowMessage
+UnregisterClass
+WM_APP
+WM_CONTEXTMENU
+WM_DRAWITEM
+WM_MEASUREITEM
+WM_NULL
+WM_SETTINGCHANGE
+
+// トレイアイコン
+DestroyIcon
+GetDpiForSystem
+GetSystemMetricsForDpi
+IDI_APPLICATION
+LoadIcon
+LoadImage
+NIN_SELECT
+NOTIFYICON_VERSION_4
+Shell_NotifyIcon
+
+// ポップアップメニュー
+AppendMenu
+CreatePopupMenu
+DestroyMenu
+MENU_ITEM_FLAGS
+TRACK_POPUP_MENU_FLAGS
+TrackPopupMenuEx
+
+// uxtheme の非公開 API（序数指定）を呼ぶための読み込み
+GetProcAddress
+LoadLibrary

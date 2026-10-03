@@ -4,6 +4,8 @@ using Microsoft.UI.Xaml;
 using MmmSdk.WinUI.Interop;
 using MmmSdk.WinUI.Windowing;
 using Windows.Graphics;
+using Windows.Win32;
+using Windows.Win32.Foundation;
 
 namespace MmmSdk.WinUI.Dialogs;
 
@@ -53,7 +55,7 @@ public sealed class PseudoModal
         _window.Activate();
         if (_owner != 0)
         {
-            NativeMethods.EnableWindow(_owner, false);
+            PInvoke.EnableWindow((HWND)_owner, false);
         }
     }
 
@@ -86,7 +88,7 @@ public sealed class PseudoModal
         EnableOwner();
         if (_owner != 0)
         {
-            NativeMethods.SetForegroundWindow(_owner);
+            PInvoke.SetForegroundWindow((HWND)_owner);
         }
     }
 
@@ -99,7 +101,7 @@ public sealed class PseudoModal
     {
         if (_owner != 0)
         {
-            NativeMethods.EnableWindow(_owner, true);
+            PInvoke.EnableWindow((HWND)_owner, true);
         }
     }
 }

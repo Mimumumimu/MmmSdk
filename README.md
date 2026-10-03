@@ -381,6 +381,8 @@ dotnet build .\MmmSdk.slnx
 
 アプリと共通のパッケージ（Windows App SDK など）のバージョンを上げるときは、SDK を先に上げてから、アプリ側を同じバージョンにします。
 
+Win32 API の呼び出しは [CsWin32](https://github.com/microsoft/CsWin32)（`Microsoft.Windows.CsWin32`）が生成します（ビルド時だけ使い、配布物には入りません）。使う API は `MmmSdk.WinUI/NativeMethods.txt` に書きます。
+
 SDK 単体では実行できません。動作はアプリに組み込んで確認します。
 
 ## 更新の手順（アプリ側から）

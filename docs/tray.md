@@ -3,7 +3,7 @@
 アプリから移した汎用部品（`MmmSdk.WinUI.Tray`）。アプリ名・文言・アイコンは `TrayIconOptions` で受け取り、アプリ固有の知識は持たない。
 
 ## TrayIcon
-- `Shell_NotifyIcon` を直接 P/Invoke する（`NOTIFYICON_VERSION_4`）。WinForms には依存しない
+- `Shell_NotifyIcon` を直接呼ぶ（`NOTIFYICON_VERSION_4`。P/Invoke は CsWin32 が生成する）。WinForms には依存しない
 - 通知を受ける専用の非表示トップレベルウィンドウを UI スレッドで作る（`Show`）。メッセージ専用ウィンドウにしないのは、`TaskbarCreated`（エクスプローラーの再起動でアイコンを付け直す）がブロードキャストで、メッセージ専用ウィンドウには届かないため
 - ウィンドウクラス名は `TrayIconOptions.WindowClassName`。登録はプロセスごとなので、別の EXE と重なってもよい。アプリごとに別の名前にする
 - 左クリック（`NIN_SELECT`・`NIN_KEYSELECT`）で `OpenRequested`、右クリック（`WM_CONTEXTMENU`）で Win32 のポップアップメニュー。通知の中で画面を操作しないよう、`OpenRequested` は処理が戻ってから UI スレッドで呼ぶ

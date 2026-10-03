@@ -12,6 +12,9 @@ using MmmSdk.Core.WindowPositions;
 using MmmSdk.WinUI.Interop;
 using MmmSdk.WinUI.Windowing;
 using Windows.Graphics;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Notifications;
 
@@ -55,7 +58,7 @@ public sealed partial class NotificationWindow : Window
     private bool _linkClicked;
 
     /// <summary>押下したときのカーソル位置（画面座標）</summary>
-    private NativeMethods.POINT _startCursor;
+    private Point _startCursor;
 
     /// <summary>押下したときのウィンドウ位置</summary>
     private PointInt32 _startWindow;
@@ -164,7 +167,7 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>ウィンドウの DPI 倍率（論理サイズ→物理ピクセル）</summary>
-    private double Scale => NativeMethods.GetDpiForWindow(_hwnd) / 96.0;
+    private double Scale => PInvoke.GetDpiForWindow((HWND)_hwnd) / 96.0;
 
     /// <summary>本文に合わせて高さを決める（表示前に確定する）</summary>
     /// <remarks>幅は固定。タイトル帯 + 本文の必要高さを実測し、最低・最大の高さの範囲で合わせる。</remarks>
@@ -245,7 +248,7 @@ public sealed partial class NotificationWindow : Window
         if (!point.Properties.IsLeftButtonPressed) return;
         if (IsOnCaptionButtons(point.Position) || IsOnScrollBar(e.OriginalSource as DependencyObject)) return;
 
-        NativeMethods.GetCursorPos(out _startCursor);
+        PInvoke.GetCursorPos(out _startCursor);
         _startWindow = AppWindow.Position;
         _pressed = true;
         _dragging = false;
@@ -263,14 +266,14 @@ public sealed partial class NotificationWindow : Window
     {
         if (!_pressed) return;
 
-        NativeMethods.GetCursorPos(out var cursor);
-        var dx = cursor.x - _startCursor.x;
-        var dy = cursor.y - _startCursor.y;
+        PInvoke.GetCursorPos(out var cursor);
+        var dx = cursor.X - _startCursor.X;
+        var dy = cursor.Y - _startCursor.Y;
 
         if (!_dragging)
         {
-            if (Math.Abs(dx) < NativeMethods.GetSystemMetrics(NativeMethods.SM_CXDRAG)
-                && Math.Abs(dy) < NativeMethods.GetSystemMetrics(NativeMethods.SM_CYDRAG))
+            if (Math.Abs(dx) < PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CXDRAG)
+                && Math.Abs(dy) < PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYDRAG))
             {
                 return;
             }

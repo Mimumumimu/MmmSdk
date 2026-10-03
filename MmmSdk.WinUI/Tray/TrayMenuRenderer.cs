@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using Windows.Win32.UI.WindowsAndMessaging;
 using static MmmSdk.WinUI.Interop.NativeMethods;
 
 namespace MmmSdk.WinUI.Tray;
@@ -84,7 +85,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     public TrayMenuRenderer(int x, int y)
     {
         var monitor = MonitorFromPoint(new POINT { x = x, y = y }, MONITOR_DEFAULTTONEAREST);
-        var dpi = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX : GetDpiForSystem();
+        var dpi = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX : Windows.Win32.PInvoke.GetDpiForSystem();
         _scale = dpi / 96.0;
 
         _palette = IsDarkMode() ? Palette.Dark : Palette.Light;
@@ -104,37 +105,37 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <param name="id">コマンド ID（押せない項目は 0）</param>
     /// <param name="text">表示する文字</param>
     /// <param name="isEnabled">押せるか</param>
-    public void AppendCommand(nint menu, int id, string text, bool isEnabled)
-        => Append(menu, MF_STRING | (isEnabled ? 0 : MF_GRAYED), (nuint)id, new Entry(text, IsSeparator: false, HasSubmenu: false));
+    public void AppendCommand(HMENU menu, int id, string text, bool isEnabled)
+        => Append(menu, MENU_ITEM_FLAGS.MF_STRING | (isEnabled ? 0 : MENU_ITEM_FLAGS.MF_GRAYED), (nuint)id, new Entry(text, IsSeparator: false, HasSubmenu: false));
 
     /// <summary>サブメニューを開く項目を追加する。</summary>
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="submenu">開くサブメニューのハンドル</param>
     /// <param name="text">表示する文字</param>
     /// <param name="isEnabled">押せるか</param>
-    public void AppendSubmenu(nint menu, nint submenu, string text, bool isEnabled)
-        => Append(menu, MF_POPUP | (isEnabled ? 0 : MF_GRAYED), (nuint)submenu, new Entry(text, IsSeparator: false, HasSubmenu: true));
+    public void AppendSubmenu(HMENU menu, HMENU submenu, string text, bool isEnabled)
+        => Append(menu, MENU_ITEM_FLAGS.MF_POPUP | (isEnabled ? 0 : MENU_ITEM_FLAGS.MF_GRAYED), (nuint)(nint)submenu, new Entry(text, IsSeparator: false, HasSubmenu: true));
 
     /// <summary>区切り線を追加する</summary>
     /// <param name="menu">追加先のメニューのハンドル</param>
-    public void AppendSeparator(nint menu)
-        => Append(menu, MF_SEPARATOR, 0, new Entry("", IsSeparator: true, HasSubmenu: false));
+    public void AppendSeparator(HMENU menu)
+        => Append(menu, MENU_ITEM_FLAGS.MF_SEPARATOR, 0, new Entry("", IsSeparator: true, HasSubmenu: false));
 
     /// <summary>項目を追加して、描画内容を覚えておく</summary>
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="flags">項目の種類を示すフラグ（<c>MF_*</c>）</param>
     /// <param name="idOrSubmenu">コマンド ID、またはサブメニューのハンドル</param>
     /// <param name="entry">項目の描画内容</param>
-    private void Append(nint menu, uint flags, nuint idOrSubmenu, Entry entry)
+    private void Append(HMENU menu, MENU_ITEM_FLAGS flags, nuint idOrSubmenu, Entry entry)
     {
         _entries.Add(entry);
-        AppendOwnerDrawMenu(menu, flags | MF_OWNERDRAW, idOrSubmenu, _entries.Count);
+        AppendOwnerDrawMenu(menu, flags, idOrSubmenu, (nuint)_entries.Count);
     }
 
     /// <summary>メニューの背景を合わせ、チェックマーク用の左の余白を無くす</summary>
     /// <param name="menu">対象のメニューのハンドル</param>
     /// <remarks>サブメニューを含むメニュー全体が対象。 サブメニューにも反映させるため、項目をすべて追加したあとに呼ぶ。</remarks>
-    public void ApplyTo(nint menu)
+    public void ApplyTo(HMENU menu)
     {
         var info = new MENUINFO
         {

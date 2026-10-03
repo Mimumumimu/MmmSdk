@@ -1,5 +1,10 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.UI.Shell;
+using Windows.Win32.UI.WindowsAndMessaging;
 using static MmmSdk.WinUI.Interop.NativeMethods;
 
 namespace MmmSdk.WinUI.Tray;
@@ -18,7 +23,10 @@ public sealed class TrayIcon : IDisposable
     private const uint IconId = 1;
 
     /// <summary>トレイアイコンの操作（クリック・右クリック等）の通知。</summary>
-    private const uint CallbackMessage = WM_APP + 1;
+    private const uint CallbackMessage = PInvoke.WM_APP + 1;
+
+    /// <summary>アイコンがキーボードで選択された通知（NIN_SELECT に NINF_KEY を足したもの）</summary>
+    private const uint NinKeySelect = PInvoke.NIN_SELECT | 1;
 
     /// <summary>メッセージを受けるインスタンス</summary>
     /// <remarks>ウィンドウプロシージャは static のため。トレイはアプリに 1 つ。</remarks>
@@ -41,11 +49,11 @@ public sealed class TrayIcon : IDisposable
     private TrayMenuRenderer? _renderer;
 
     /// <summary>通知を受けるウィンドウのハンドル</summary>
-    private nint _hwnd;
+    private HWND _hwnd;
 
     /// <summary>ファイルから読んだアイコン</summary>
     /// <remarks>自分で破棄する。標準のアイコンは破棄しないので持たない。</remarks>
-    private nint _icon;
+    private HICON _icon;
     /// <summary>破棄済みか</summary>
     private bool _disposed;
 
@@ -56,7 +64,7 @@ public sealed class TrayIcon : IDisposable
     {
         _sources = sources;
         _options = options;
-        _taskbarCreatedMessage = RegisterWindowMessage("TaskbarCreated");
+        _taskbarCreatedMessage = PInvoke.RegisterWindowMessage("TaskbarCreated");
         _dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
@@ -70,13 +78,14 @@ public sealed class TrayIcon : IDisposable
     public unsafe void Show()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (_hwnd != 0) return;
+        if (!_hwnd.IsNull) return;
 
         s_current = this;
         AllowDarkMenus();
 
-        var hInstance = GetModuleHandle(null);
+        var hInstance = (HINSTANCE)PInvoke.GetModuleHandle((PCWSTR)null);
         fixed (char* className = _options.WindowClassName)
+        fixed (char* toolTip = _options.ToolTip)
         {
             var windowClass = new WNDCLASSEXW
             {
@@ -85,16 +94,16 @@ public sealed class TrayIcon : IDisposable
                 hInstance = hInstance,
                 lpszClassName = className,
             };
-            if (RegisterClassEx(&windowClass) == 0)
+            if (PInvoke.RegisterClassEx(windowClass) == 0)
             {
                 throw new InvalidOperationException($"トレイ用のウィンドウクラスを登録できませんでした（エラー {Marshal.GetLastPInvokeError()}）。");
             }
-        }
 
-        _hwnd = CreateWindowEx(0, _options.WindowClassName, _options.ToolTip, 0, 0, 0, 0, 0, 0, 0, hInstance, 0);
-        if (_hwnd == 0)
-        {
-            throw new InvalidOperationException($"トレイ用のウィンドウを作成できませんでした（エラー {Marshal.GetLastPInvokeError()}）。");
+            _hwnd = PInvoke.CreateWindowEx(0, className, toolTip, 0, 0, 0, 0, 0, HWND.Null, HMENU.Null, hInstance, null);
+            if (_hwnd.IsNull)
+            {
+                throw new InvalidOperationException($"トレイ用のウィンドウを作成できませんでした（エラー {Marshal.GetLastPInvokeError()}）。");
+            }
         }
 
         _icon = LoadTrayIcon();
@@ -103,7 +112,7 @@ public sealed class TrayIcon : IDisposable
 
     /// <summary>トレイに出すアイコン</summary>
     /// <remarks>読めなければ Windows 標準のアプリアイコン（トレイから操作できなくなるのを避ける）。</remarks>
-    private nint DisplayIcon => _icon != 0 ? _icon : LoadIcon(0, IDI_APPLICATION);
+    private HICON DisplayIcon => !_icon.IsNull ? _icon : PInvoke.LoadIcon(HINSTANCE.Null, PInvoke.IDI_APPLICATION);
 
     /// <summary>トレイから通知を出す</summary>
     /// <param name="title">通知のタイトル</param>
@@ -112,13 +121,13 @@ public sealed class TrayIcon : IDisposable
     /// <remarks>Windows の通知として表示される。</remarks>
     public unsafe void ShowNotification(string title, string message, bool isError)
     {
-        if (_hwnd == 0) return;
+        if (_hwnd.IsNull) return;
 
-        var data = CreateData(NIF_INFO);
-        CopyToFixed(title, data.szInfoTitle, 64);
-        CopyToFixed(message, data.szInfo, 256);
-        data.dwInfoFlags = isError ? NIIF_ERROR : NIIF_INFO;
-        Shell_NotifyIcon(NIM_MODIFY, &data);
+        var data = CreateData(NOTIFY_ICON_DATA_FLAGS.NIF_INFO);
+        CopyToBuffer(title, data.szInfoTitle.AsSpan());
+        CopyToBuffer(message, data.szInfo.AsSpan());
+        data.dwInfoFlags = isError ? NOTIFY_ICON_INFOTIP_FLAGS.NIIF_ERROR : NOTIFY_ICON_INFOTIP_FLAGS.NIIF_INFO;
+        PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_MODIFY, in data);
     }
 
     #region アイコン
@@ -126,7 +135,7 @@ public sealed class TrayIcon : IDisposable
     /// <summary>Shell_NotifyIcon に渡すデータを作る</summary>
     /// <param name="flags">有効にする項目を示すフラグ（<c>NIF_*</c>）</param>
     /// <returns>トレイアイコンの識別情報を入れたデータ</returns>
-    private unsafe NOTIFYICONDATAW CreateData(uint flags) => new()
+    private unsafe NOTIFYICONDATAW CreateData(NOTIFY_ICON_DATA_FLAGS flags) => new()
     {
         cbSize = (uint)sizeof(NOTIFYICONDATAW),
         hWnd = _hwnd,
@@ -138,38 +147,41 @@ public sealed class TrayIcon : IDisposable
     /// <remarks>エクスプローラーがまだ起動していない等で失敗しても、起動後の TaskbarCreated で登録し直す。</remarks>
     private unsafe void AddIcon()
     {
-        var data = CreateData(NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_SHOWTIP);
+        var data = CreateData(NOTIFY_ICON_DATA_FLAGS.NIF_MESSAGE | NOTIFY_ICON_DATA_FLAGS.NIF_ICON | NOTIFY_ICON_DATA_FLAGS.NIF_TIP | NOTIFY_ICON_DATA_FLAGS.NIF_SHOWTIP);
         data.uCallbackMessage = CallbackMessage;
         data.hIcon = DisplayIcon;
-        CopyToFixed(_options.ToolTip, data.szTip, 128);
-        if (!Shell_NotifyIcon(NIM_ADD, &data))
+        CopyToBuffer(_options.ToolTip, data.szTip.AsSpan());
+        if (!PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_ADD, in data))
         {
             return;
         }
 
         // 新しい通知の形式（クリック = NIN_SELECT、右クリック = WM_CONTEXTMENU、座標は wParam）を使う
-        data.uVersion = NOTIFYICON_VERSION_4;
-        Shell_NotifyIcon(NIM_SETVERSION, &data);
+        data.Anonymous.uVersion = PInvoke.NOTIFYICON_VERSION_4;
+        PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_SETVERSION, in data);
     }
 
     /// <summary>トレイからアイコンを消す</summary>
     private unsafe void RemoveIcon()
     {
         var data = CreateData(0);
-        Shell_NotifyIcon(NIM_DELETE, &data);
+        PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_DELETE, in data);
     }
 
     /// <summary>指定されたアイコンファイルを、トレイの大きさ（DPI に合わせた小アイコン）で読む。</summary>
-    /// <returns>アイコンのハンドル。パスが未指定・ファイルが無い等で読めなければ 0（呼び出し側で Windows 標準のアイコンに代える）</returns>
-    private nint LoadTrayIcon()
+    /// <returns>アイコンのハンドル。パスが未指定・ファイルが無い等で読めなければ null のハンドル（呼び出し側で Windows 標準のアイコンに代える）</returns>
+    private unsafe HICON LoadTrayIcon()
     {
         if (_options.IconPath is not { } path)
         {
-            return 0;
+            return HICON.Null;
         }
 
-        var size = GetSystemMetricsForDpi(SM_CXSMICON, GetDpiForSystem());
-        return LoadImage(0, path, IMAGE_ICON, size, size, LR_LOADFROMFILE);
+        var size = PInvoke.GetSystemMetricsForDpi(SYSTEM_METRICS_INDEX.SM_CXSMICON, PInvoke.GetDpiForSystem());
+        fixed (char* iconPath = path)
+        {
+            return new HICON(PInvoke.LoadImage(HINSTANCE.Null, iconPath, GDI_IMAGE_TYPE.IMAGE_ICON, size, size, IMAGE_FLAGS.LR_LOADFROMFILE).Value);
+        }
     }
 
     #endregion
@@ -182,9 +194,9 @@ public sealed class TrayIcon : IDisposable
     /// <param name="wParam">メッセージの付加情報（wParam）</param>
     /// <param name="lParam">メッセージの付加情報（lParam）</param>
     /// <returns>メッセージの処理結果</returns>
-    [UnmanagedCallersOnly]
-    private static nint WndProc(nint hwnd, uint msg, nint wParam, nint lParam)
-        => s_current?.HandleMessage(hwnd, msg, wParam, lParam) ?? DefWindowProc(hwnd, msg, wParam, lParam);
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static LRESULT WndProc(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
+        => s_current?.HandleMessage(hwnd, msg, wParam, lParam) ?? PInvoke.DefWindowProc(hwnd, msg, wParam, lParam);
 
     /// <summary>メッセージを処理する</summary>
     /// <param name="hwnd">ウィンドウのハンドル</param>
@@ -192,48 +204,48 @@ public sealed class TrayIcon : IDisposable
     /// <param name="wParam">メッセージの付加情報（wParam）</param>
     /// <param name="lParam">メッセージの付加情報（lParam）</param>
     /// <returns>メッセージの処理結果</returns>
-    private unsafe nint HandleMessage(nint hwnd, uint msg, nint wParam, nint lParam)
+    private unsafe LRESULT HandleMessage(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
     {
         // エクスプローラーが再起動するとトレイアイコンが消えるので、登録し直す
         if (msg == _taskbarCreatedMessage && _taskbarCreatedMessage != 0)
         {
             AddIcon();
-            return 0;
+            return new LRESULT(0);
         }
 
         switch (msg)
         {
             case CallbackMessage:
-                switch ((uint)(lParam & 0xFFFF))
+                switch ((uint)(lParam.Value & 0xFFFF))
                 {
-                    case NIN_SELECT:
-                    case NIN_KEYSELECT:
+                    case PInvoke.NIN_SELECT:
+                    case NinKeySelect:
                         // メッセージ処理の中で画面を操作しないよう、処理が戻ってから行う
                         _dispatcher.TryEnqueue(() => OpenRequested?.Invoke(this, EventArgs.Empty));
                         break;
-                    case WM_CONTEXTMENU:
+                    case PInvoke.WM_CONTEXTMENU:
                         // 座標は wParam の下位・上位 16 ビット（符号付き。マルチモニターで負になる）
-                        ShowMenu((short)(wParam & 0xFFFF), (short)((wParam >> 16) & 0xFFFF));
+                        ShowMenu((short)(wParam.Value & 0xFFFF), (short)((wParam.Value >> 16) & 0xFFFF));
                         break;
                 }
-                return 0;
+                return new LRESULT(0);
 
             // メニューの項目は自分で描く（メニューを開いている間だけ届く）
-            case WM_MEASUREITEM when _renderer is not null && ((MEASUREITEMSTRUCT*)lParam)->CtlType == ODT_MENU:
-                _renderer.Measure((MEASUREITEMSTRUCT*)lParam);
-                return 1;
+            case PInvoke.WM_MEASUREITEM when _renderer is not null && ((MEASUREITEMSTRUCT*)lParam.Value)->CtlType == ODT_MENU:
+                _renderer.Measure((MEASUREITEMSTRUCT*)lParam.Value);
+                return new LRESULT(1);
 
-            case WM_DRAWITEM when _renderer is not null && ((DRAWITEMSTRUCT*)lParam)->CtlType == ODT_MENU:
-                _renderer.Draw((DRAWITEMSTRUCT*)lParam);
-                return 1;
+            case PInvoke.WM_DRAWITEM when _renderer is not null && ((DRAWITEMSTRUCT*)lParam.Value)->CtlType == ODT_MENU:
+                _renderer.Draw((DRAWITEMSTRUCT*)lParam.Value);
+                return new LRESULT(1);
 
-            case WM_SETTINGCHANGE:
+            case PInvoke.WM_SETTINGCHANGE:
                 // ダーク／ライトの切り替えをメニューに反映する
                 FlushMenuThemes();
                 break;
         }
 
-        return DefWindowProc(hwnd, msg, wParam, lParam);
+        return PInvoke.DefWindowProc(hwnd, msg, wParam, lParam);
     }
 
     #endregion
@@ -244,10 +256,10 @@ public sealed class TrayIcon : IDisposable
     /// <param name="x">メニューを出す位置の X（画面座標）</param>
     /// <param name="y">メニューを出す位置の Y（画面座標）</param>
     /// <remarks>メニューは開くたびに作る（各機能の最新の内容を出すため）。</remarks>
-    private void ShowMenu(int x, int y)
+    private unsafe void ShowMenu(int x, int y)
     {
-        var menu = CreatePopupMenu();
-        if (menu == 0) return;
+        var menu = PInvoke.CreatePopupMenu();
+        if (menu.IsNull) return;
 
         var renderer = _renderer = new TrayMenuRenderer(x, y);
         try
@@ -269,14 +281,15 @@ public sealed class TrayIcon : IDisposable
             renderer.ApplyTo(menu);
 
             // 前面にしておかないと、メニューの外をクリックしても閉じない（Win32 のトレイメニューの決まり）
-            SetForegroundWindow(_hwnd);
-            var flags = TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY | TPM_BOTTOMALIGN;
-            if (GetSystemMetrics(SM_MENUDROPALIGNMENT) != 0)
+            PInvoke.SetForegroundWindow(_hwnd);
+            var flags = TRACK_POPUP_MENU_FLAGS.TPM_RIGHTBUTTON | TRACK_POPUP_MENU_FLAGS.TPM_RETURNCMD
+                | TRACK_POPUP_MENU_FLAGS.TPM_NONOTIFY | TRACK_POPUP_MENU_FLAGS.TPM_BOTTOMALIGN;
+            if (PInvoke.GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_MENUDROPALIGNMENT) != 0)
             {
-                flags |= TPM_RIGHTALIGN;
+                flags |= TRACK_POPUP_MENU_FLAGS.TPM_RIGHTALIGN;
             }
-            var selected = TrackPopupMenuEx(menu, flags, x, y, _hwnd, 0);
-            PostMessage(_hwnd, WM_NULL, 0, 0);
+            var selected = PInvoke.TrackPopupMenuEx(menu, (uint)flags, x, y, _hwnd, null).Value;
+            PInvoke.PostMessage(_hwnd, PInvoke.WM_NULL, 0, 0);
 
             if (_commands.TryGetValue(selected, out var command))
             {
@@ -286,7 +299,7 @@ public sealed class TrayIcon : IDisposable
         finally
         {
             // サブメニューも一緒に破棄される。描画用のブラシ・フォントはメニューが使っているので、メニューのあとに破棄する
-            DestroyMenu(menu);
+            PInvoke.DestroyMenu(menu);
             _renderer = null;
             renderer.Dispose();
         }
@@ -296,7 +309,7 @@ public sealed class TrayIcon : IDisposable
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="items">追加する項目</param>
     /// <param name="nextId">次に割り当てるコマンド ID。使った分だけ進む</param>
-    private void AppendItems(nint menu, IReadOnlyList<TrayMenuItem> items, ref int nextId)
+    private void AppendItems(HMENU menu, IReadOnlyList<TrayMenuItem> items, ref int nextId)
     {
         var renderer = _renderer!;
         foreach (var item in items)
@@ -307,7 +320,7 @@ public sealed class TrayIcon : IDisposable
             }
             else if (item.Children is { Count: > 0 } children)
             {
-                var submenu = CreatePopupMenu();
+                var submenu = PInvoke.CreatePopupMenu();
                 AppendItems(submenu, children, ref nextId);
                 renderer.AppendSubmenu(menu, submenu, item.Text, item.IsEnabled);
             }
@@ -327,7 +340,7 @@ public sealed class TrayIcon : IDisposable
     /// <param name="text">表示する文字</param>
     /// <param name="invoked">選ばれたときの処理</param>
     /// <param name="nextId">次に割り当てるコマンド ID。使った分だけ進む</param>
-    private void AddCommand(nint menu, string text, Func<Task> invoked, ref int nextId)
+    private void AddCommand(HMENU menu, string text, Func<Task> invoked, ref int nextId)
     {
         var id = nextId++;
         _commands[id] = invoked;
@@ -353,22 +366,25 @@ public sealed class TrayIcon : IDisposable
     #endregion
 
     /// <inheritdoc />
-    public void Dispose()
+    public unsafe void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
 
-        if (_hwnd != 0)
+        if (!_hwnd.IsNull)
         {
             RemoveIcon();
-            DestroyWindow(_hwnd);
-            UnregisterClass(_options.WindowClassName, GetModuleHandle(null));
-            _hwnd = 0;
+            PInvoke.DestroyWindow(_hwnd);
+            fixed (char* className = _options.WindowClassName)
+            {
+                PInvoke.UnregisterClass(className, (HINSTANCE)PInvoke.GetModuleHandle((PCWSTR)null));
+            }
+            _hwnd = HWND.Null;
         }
-        if (_icon != 0)
+        if (!_icon.IsNull)
         {
-            DestroyIcon(_icon);
-            _icon = 0;
+            PInvoke.DestroyIcon(_icon);
+            _icon = HICON.Null;
         }
         s_current = null;
     }
