@@ -152,14 +152,14 @@ await store.WriteAsync("Links.json", menu, MyJsonContext.Readable.LinkMenu);
 var minutes = settings.Get("Reminder.SnoozeIntervalMinutes", 15);         // 無い・型が合わないときは既定値
 await settings.SetAsync("Reminder.SnoozeIntervalMinutes", 30);            // 保存し終えるまで待つ
 
-// string / bool / int / long / double は型ごとの専用メソッド（それ以外の型は、ビルドで誤りになる）。それ以外の型は JsonTypeInfo を渡す
+// string / bool / int / long / double は型ごとの専用メソッド（`SettingsStoreExtensions` の拡張メソッド。それ以外の型は、ビルドで誤りになる）。それ以外の型は JsonTypeInfo を渡す
 var options = settings.Get("Foo.Options", new FooOptions(), MyJsonContext.Default.FooOptions);
 ```
 
 - `Get` は同期です。最初のアクセスで 1 度だけファイルを読み、以後はメモリから返します
 - ファイルが無い・空・壊れているときは空の設定として扱い、例外は出しません。壊れていたときは退避して `RecoveryMessage` に、読めなかったときは `LoadError` に理由が残ります
 - 例外を出さずに「ある・型が合う」を確かめたいときは `TryGet(key, out value)` を使います（`int.TryParse` と同じ形）。`Get` は既定値を返す版です
-- 読めなかった（`LoadError`）ときは `IsReadOnly` が true になり、元のデータを上書きで消さないよう、`SetAsync` / `RemoveAsync` は何も保存せず `false` を返します。保存できたときだけ `true` です（例外にはしません）
+- 読めなかった（`LoadError`）ときは `IsReadOnly` が true になり（一時的なロックだったときのために、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存します）、元のデータを上書きで消さないよう、`SetAsync` / `RemoveAsync` は何も保存せず `false` を返します。保存できたときだけ `true` です（例外にはしません）
 - ほかに `Contains(key)` / `RemoveAsync(key)` があります
 
 ### ウィンドウ位置の保存（`IWindowPositionService`）
@@ -463,7 +463,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY（`PseudoConsole`）の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面（xterm.js） |
-| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存 |
+| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存・添付の画像 |
 
 ## バージョン
 

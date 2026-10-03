@@ -12,7 +12,7 @@ namespace MmmSdk.Core.Settings.Json;
 /// <remarks>
 /// 内部では「キー → JSON 要素」の辞書をメモリに持ち、取得時に目的の型へ変換する。最初のアクセスで 1 度だけ読み込む。
 /// ファイルが無い・空・壊れているときは空として扱う。壊れていたファイルは退避してから作り直す（<see cref="RecoveryMessage"/> に残す）。
-/// ロック・権限などで読めなかったときは空として扱うが、元のファイルを上書きしないよう、保存はしない（<see cref="IsReadOnly"/>）。
+/// ロック・権限などで読めなかったときは空として扱うが、元のファイルを上書きしないよう、保存はしない（<see cref="IsReadOnly"/>）。一時的なロックだったかもしれないので、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存する。
 /// 保存は、変更後のコピーをファイルに書き、成功してからメモリの辞書を差し替える（保存に失敗したとき、メモリだけが新しい状態にならない）。
 /// </remarks>
 public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
@@ -30,11 +30,8 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     /// <remarks>書き換えず、保存に成功したときに、新しい辞書へ差し替える。</remarks>
     private Dictionary<string, JsonElement>? _values;
 
-    /// <summary>読み込みに失敗したときのメッセージ。最初のアクセスまでは null</summary>
-    private string? _loadError;
-
-    /// <summary>壊れたファイルを退避したときのメッセージ。最初のアクセスまでは null</summary>
-    private string? _recoveryMessage;
+    /// <summary>読み込みの結果（失敗したか・壊れたファイルを退避したか）</summary>
+    private readonly LoadStatus _status = new();
 
     /// <inheritdoc />
     public string? LoadError
@@ -44,7 +41,7 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
             lock (_gate)
             {
                 EnsureLoaded();
-                return _loadError;
+                return _status.LoadError;
             }
         }
     }
@@ -57,63 +54,13 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
             lock (_gate)
             {
                 EnsureLoaded();
-                return _recoveryMessage;
+                return _status.RecoveryMessage;
             }
         }
     }
 
     /// <inheritdoc />
     public bool IsReadOnly => LoadError is not null;
-
-    /// <inheritdoc />
-    public string Get(string key, string defaultValue) => TryGet(key, out string? value) ? value : defaultValue;
-
-    /// <inheritdoc />
-    public bool Get(string key, bool defaultValue) => TryGet(key, out bool value) ? value : defaultValue;
-
-    /// <inheritdoc />
-    public int Get(string key, int defaultValue) => TryGet(key, out int value) ? value : defaultValue;
-
-    /// <inheritdoc />
-    public long Get(string key, long defaultValue) => TryGet(key, out long value) ? value : defaultValue;
-
-    /// <inheritdoc />
-    public double Get(string key, double defaultValue) => TryGet(key, out double value) ? value : defaultValue;
-
-    /// <inheritdoc />
-    public bool TryGet(string key, [MaybeNullWhen(false)] out string value) => TryGet(key, GetBuiltInTypeInfo<string>(), out value);
-
-    /// <inheritdoc />
-    public bool TryGet(string key, out bool value) => TryGet(key, GetBuiltInTypeInfo<bool>(), out value);
-
-    /// <inheritdoc />
-    public bool TryGet(string key, out int value) => TryGet(key, GetBuiltInTypeInfo<int>(), out value);
-
-    /// <inheritdoc />
-    public bool TryGet(string key, out long value) => TryGet(key, GetBuiltInTypeInfo<long>(), out value);
-
-    /// <inheritdoc />
-    public bool TryGet(string key, out double value) => TryGet(key, GetBuiltInTypeInfo<double>(), out value);
-
-    /// <inheritdoc />
-    public Task<bool> SetAsync(string key, string value, CancellationToken cancellationToken = default)
-        => SetAsync(key, value, GetBuiltInTypeInfo<string>(), cancellationToken);
-
-    /// <inheritdoc />
-    public Task<bool> SetAsync(string key, bool value, CancellationToken cancellationToken = default)
-        => SetAsync(key, value, GetBuiltInTypeInfo<bool>(), cancellationToken);
-
-    /// <inheritdoc />
-    public Task<bool> SetAsync(string key, int value, CancellationToken cancellationToken = default)
-        => SetAsync(key, value, GetBuiltInTypeInfo<int>(), cancellationToken);
-
-    /// <inheritdoc />
-    public Task<bool> SetAsync(string key, long value, CancellationToken cancellationToken = default)
-        => SetAsync(key, value, GetBuiltInTypeInfo<long>(), cancellationToken);
-
-    /// <inheritdoc />
-    public Task<bool> SetAsync(string key, double value, CancellationToken cancellationToken = default)
-        => SetAsync(key, value, GetBuiltInTypeInfo<double>(), cancellationToken);
 
     /// <inheritdoc />
     public T Get<T>(string key, T defaultValue, JsonTypeInfo<T> typeInfo)
@@ -191,10 +138,17 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
             lock (_gate)
             {
                 var values = EnsureLoaded();
-                if (_loadError is not null)
+                if (_status.HasFailed)
                 {
-                    // 読めなかっただけの既存の設定を、空の辞書で上書きしてしまわないよう、書かない
-                    return false;
+                    // 最初の読み込みが、一時的なロックなどで失敗していたかもしれないので、保存のときに 1 度だけ読み直す
+                    Load();
+                    if (_status.HasFailed)
+                    {
+                        // 読めなかっただけの既存の設定を、空の辞書で上書きしてしまわないよう、書かない
+                        return false;
+                    }
+
+                    values = _values!;
                 }
 
                 next = new Dictionary<string, JsonElement>(values);
@@ -219,31 +173,31 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     /// <returns>キー → 値の辞書</returns>
     private Dictionary<string, JsonElement> EnsureLoaded()
     {
-        if (_values is not null)
+        if (_values is null)
         {
-            return _values;
+            Load();
         }
 
+        return _values!;
+    }
+
+    /// <summary>ファイルを読み込んで、辞書と読み込みの結果を更新する。呼ぶ側は <c>_gate</c> を取っておくこと</summary>
+    /// <remarks>
+    /// 読めなかったとき（<see cref="DataFileException"/>）は、結果を失敗にして、辞書は空のまま（すでに読めていた辞書は残す）にする。
+    /// 壊れたファイルを退避したときのメッセージは、読み直しても残す（最初の読み込みで起きた退避を、画面で知らせ続けるため）。
+    /// </remarks>
+    private void Load()
+    {
         try
         {
             var result = store.Read(FileName, SettingsJsonContext.Readable.DictionaryStringJsonElement);
             _values = result.Value ?? [];
-            _recoveryMessage = result.RecoveryMessage;
+            _status.Succeeded(result.RecoveryMessage, keepPreviousRecoveryMessage: true);
         }
         catch (DataFileException ex)
         {
-            _loadError = ex.Message;
-            _values = [];
+            _status.Failed(ex);
+            _values ??= [];
         }
-
-        return _values;
     }
-
-    /// <summary>基本型の <see cref="JsonTypeInfo{T}"/> を返す</summary>
-    /// <typeparam name="T">基本型（string / bool / int / long / double）。呼ぶのは、型ごとの専用のメソッドだけ</typeparam>
-    /// <returns>型のソース生成メタデータ</returns>
-    /// <exception cref="InvalidOperationException">基本型以外で呼んだとき（このクラスのプログラムの誤り）。</exception>
-    private static JsonTypeInfo<T> GetBuiltInTypeInfo<T>()
-        => SettingsJsonContext.Readable.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>
-            ?? throw new InvalidOperationException($"{typeof(T)} は JsonTypeInfo を渡さずに使えません。");
 }
