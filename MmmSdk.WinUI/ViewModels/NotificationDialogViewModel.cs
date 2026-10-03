@@ -6,7 +6,7 @@ namespace MmmSdk.WinUI.ViewModels;
 
 /// <summary>通知ウィンドウの ViewModel</summary>
 /// <remarks>本文の Inlines の組み立ては View 側で行う（リンクのクリックを含むため）。</remarks>
-public sealed partial class NotificationDialogViewModel(LinkOpener opener) : ObservableObject
+public sealed partial class NotificationDialogViewModel(PathOpener opener) : ObservableObject
 {
     /// <summary>タイトル</summary>
     [ObservableProperty]
@@ -25,7 +25,7 @@ public sealed partial class NotificationDialogViewModel(LinkOpener opener) : Obs
         {
             await opener.OpenAsync(path);
         }
-        catch (LinkOpenException)
+        catch (PathOpenException)
         {
         }
     }

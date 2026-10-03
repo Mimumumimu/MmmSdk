@@ -8,7 +8,7 @@ namespace MmmSdk.Core.Repositories.Json;
 /// </summary>
 /// <remarks>
 /// 内部では「キー → JSON 要素」の辞書をメモリに持ち、取得時に目的の型へ変換する。最初のアクセスで 1 度だけ読み込む。
-/// ファイルが無い・空・壊れているときは空として扱う。壊れていた場合は次の保存で上書きされる（<see cref="LoadError"/> には理由を残す）。
+/// ファイルが無い・空・壊れているときは空として扱う。壊れていたファイルは退避してから作り直す（<see cref="RecoveryMessage"/> に残す）。
 /// </remarks>
 public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
 {
@@ -26,6 +26,9 @@ public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
 
     /// <inheritdoc />
     public string? LoadError { get; private set; }
+
+    /// <inheritdoc />
+    public string? RecoveryMessage { get; private set; }
 
     /// <inheritdoc />
     public T Get<T>(string key, T defaultValue) => Get(key, defaultValue, GetBuiltInTypeInfo<T>());
@@ -114,7 +117,9 @@ public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
 
         try
         {
-            _values = store.Read(FileName, SdkJsonContext.Readable.DictionaryStringJsonElement) ?? [];
+            var result = store.Read(FileName, SdkJsonContext.Readable.DictionaryStringJsonElement);
+            _values = result.Value ?? [];
+            RecoveryMessage = result.RecoveryMessage;
         }
         catch (DataFileException ex)
         {

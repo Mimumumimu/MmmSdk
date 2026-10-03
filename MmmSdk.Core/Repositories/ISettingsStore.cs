@@ -10,11 +10,16 @@ namespace MmmSdk.Core.Repositories;
 /// 値は JSON で持つので、string / bool / int / long / double はそのまま使える。それ以外の型は、
 /// 使う側が <c>JsonSerializable</c> で登録した <see cref="JsonTypeInfo{T}"/> を渡す。
 /// 読み書きはスレッドセーフ。ファイルが無い・空・壊れているときは空の設定として扱い、例外は投げない。
+/// 壊れていたファイルは退避してから作り直す（<see cref="RecoveryMessage"/>）。
 /// </remarks>
 public interface ISettingsStore
 {
-    /// <summary>ファイルが壊れていて読めなかったときのメッセージ。正常なら null。</summary>
+    /// <summary>ファイルを読めなかったときのメッセージ。正常なら null。</summary>
+    /// <remarks>ロック・権限などで読めなかったとき。このときも空の設定として扱い、保存は試みる。</remarks>
     string? LoadError { get; }
+
+    /// <summary>壊れていたファイルを退避して作り直したときのメッセージ。通常は null。</summary>
+    string? RecoveryMessage { get; }
 
     /// <summary>値を取得する。無い・型が合わないときは既定値を返す（基本型用）。</summary>
     T Get<T>(string key, T defaultValue);

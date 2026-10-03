@@ -6,17 +6,17 @@ namespace MmmSdk.Core.Services;
 /// <summary>
 /// リンクのパス（URL・ファイル・フォルダ・実行ファイル）を既定のアプリで開く。
 /// </summary>
-public sealed class LinkOpener
+public sealed class PathOpener
 {
     /// <summary>開く。</summary>
     /// <remarks>シェル実行は呼び出し元をしばらく止めることがあるため、バックグラウンドで実行する。</remarks>
-    /// <exception cref="LinkOpenException">開けなかった。</exception>
+    /// <exception cref="PathOpenException">開けなかった。</exception>
     public Task OpenAsync(string path) => Task.Run(() =>
     {
-        var target = LinkTarget.Expand(path);
+        var target = PathTarget.Expand(path);
         if (target.Length == 0)
         {
-            throw new LinkOpenException("パスが空です。");
+            throw new PathOpenException("パスが空です。");
         }
 
         var startInfo = new ProcessStartInfo(target) { UseShellExecute = true };
@@ -33,10 +33,10 @@ public sealed class LinkOpener
         }
         catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or FileNotFoundException)
         {
-            throw new LinkOpenException($"「{path}」を開けませんでした。{ex.Message}", ex);
+            throw new PathOpenException($"「{path}」を開けませんでした。{ex.Message}", ex);
         }
     });
 }
 
 /// <summary>リンクを開けなかったことを表す例外</summary>
-public sealed class LinkOpenException(string message, Exception? innerException = null) : Exception(message, innerException);
+public sealed class PathOpenException(string message, Exception? innerException = null) : Exception(message, innerException);

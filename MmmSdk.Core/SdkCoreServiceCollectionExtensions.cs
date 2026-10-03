@@ -20,7 +20,7 @@ public static class SdkCoreServiceCollectionExtensions
         services.AddSingleton(new JsonFileStore(dataDirectory));
         services.AddSingleton<ISettingsStore, JsonSettingsStore>();
         services.AddSingleton<WindowPositionService>();
-        services.AddSingleton<LinkOpener>();
+        services.AddSingleton<PathOpener>();
         return services;
     }
 }

@@ -1,7 +1,7 @@
 namespace MmmSdk.Core.Services;
 
 /// <summary>リンクのパスが指す先の種類。</summary>
-public enum LinkTargetKind
+public enum PathTargetKind
 {
     /// <summary>パスが空。</summary>
     Empty,
@@ -25,7 +25,7 @@ public enum LinkTargetKind
 /// <summary>
 /// リンクのパスの解釈（環境変数の展開・種類の判定）。
 /// </summary>
-public static class LinkTarget
+public static class PathTarget
 {
     /// <summary>実行ファイルとみなす拡張子</summary>
     private static readonly HashSet<string> ExecutableExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -40,30 +40,30 @@ public static class LinkTarget
 
     /// <summary>パスの種類を判定する。</summary>
     /// <remarks>ファイルの有無を調べるため、ネットワーク上のパスでは時間がかかることがある。UI スレッドからは呼ばない。</remarks>
-    public static LinkTargetKind Classify(string path)
+    public static PathTargetKind Classify(string path)
     {
         var expanded = Expand(path);
         if (expanded.Length == 0)
         {
-            return LinkTargetKind.Empty;
+            return PathTargetKind.Empty;
         }
 
         // https: や mailto: 等のスキーム付き。C:\ のようなドライブ文字や \\server\ は file として扱われるので除く
         if (Uri.TryCreate(expanded, UriKind.Absolute, out var uri) && !uri.IsFile)
         {
-            return LinkTargetKind.Url;
+            return PathTargetKind.Url;
         }
 
         if (Directory.Exists(expanded))
         {
-            return LinkTargetKind.Folder;
+            return PathTargetKind.Folder;
         }
 
         if (File.Exists(expanded))
         {
-            return ExecutableExtensions.Contains(Path.GetExtension(expanded)) ? LinkTargetKind.Executable : LinkTargetKind.File;
+            return ExecutableExtensions.Contains(Path.GetExtension(expanded)) ? PathTargetKind.Executable : PathTargetKind.File;
         }
 
-        return LinkTargetKind.NotFound;
+        return PathTargetKind.NotFound;
     }
 }
