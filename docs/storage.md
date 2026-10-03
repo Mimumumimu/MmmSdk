@@ -1,6 +1,6 @@
 # 保存（JSON・設定ストア・壊れたファイルの扱い）
 
-`MmmSdk.Core.Storage` / `MmmSdk.Core.Settings` の設計。
+`MmmSdk.Core.Components.Storage` / `MmmSdk.Core.Components.Settings` の設計。
 
 ## JSON ファイルの読み書き（`IJsonFileStore` / `JsonFileStore`）
 - 保存先のフォルダは `AddMmmSdkCore(dataDirectory)` で渡す。アプリは `AppContext.BaseDirectory/Data` を渡している

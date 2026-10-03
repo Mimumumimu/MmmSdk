@@ -1,0 +1,10 @@
+namespace MmmSdk.Core.Components.Shells;
+
+/// <summary>シェルの種類</summary>
+public enum ShellKind
+{
+    /// <summary>PowerShell</summary>
+    PowerShell,
+    /// <summary>コマンドプロンプト（cmd）</summary>
+    Cmd,
+}

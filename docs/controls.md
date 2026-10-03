@@ -20,10 +20,10 @@
 - 文字の無い所でもマウス・タップを受けるため、背景は透明で塗る
 - マウスを乗せたときの背景は、`SubtleFillColorSecondaryBrush` をコードで引く（`Grid` 派生でコードだけの部品のため、ビジュアルステートを持てない）。テーマが切り替わったら（`ActualThemeChanged`）引き直す。制約: アプリの `Application.RequestedTheme` が起動時のままだと、引き直しても前のテーマの色になる可能性があり、実機（Windows のテーマを実行中に切り替える）で確かめていない。確かめて、ずれるなら、`UserControl`（XAML）にして `ThemeResource` を使う形に直す
 
-## ImeControl（`MmmSdk.WinUI.Input`）
+## ImeControl（`MmmSdk.WinUI.Utilities`）
 フォーカスのあるウィンドウの IME（日本語入力）をオン・オフする。`TurnOn` は日本語を打つ欄（日本語入力・漢字変換の状態）、`TurnOff` は英数字を打つ欄（直接入力の状態）にフォーカスが来たときに呼ぶ。Win32 の `ImmSetOpenStatus` を使う。
 
-## AttachmentStore（`MmmSdk.Core.Attachments`）
+## AttachmentStore（`MmmSdk.Core.Components.Attachments`）
 添付ファイルの一時保存先（`%TEMP%\<appName>\session_日時\`）の管理。アプリ全体で 1 つ。`appName` はアプリごとに別の名前にする。
 
 - 最初の添付でセッションフォルダを作り、以降は連番（`001_名前`）を付けて保存する（同名でも衝突しない）
@@ -38,6 +38,6 @@
 services.AddSingleton(provider => new AttachmentStore("MyApp", provider.GetRequiredService<TimeProvider>()));
 ```
 
-## 添付の画像（`MmmSdk.WinUI.Attachments`）
+## 添付の画像（`MmmSdk.WinUI.Components.Attachments`）
 - `IImageConverter.ToJpegAsync(stream)`: 画像（PNG・BMP など）を JPEG に変換する（実装は `ImageConverter`。`AddMmmSdkWinUI` が Singleton で登録する）。JPEG は透過を持てないので、アルファは無視する。貼り付けたスクリーンショットなどを、添付のファイルにするときに使う
 - `ThumbnailImage.FromFile(path)`: サムネイルを作る（XAML の `x:Bind` から関数として呼ぶ。パスが空なら null）。ファイルを開いたままにしない（削除できなくなるため）よう、中身をメモリに読み込んでから表示する。表示サイズに合わせて高さ 144 でデコードする。読み込みの失敗（`IOException`・`UnauthorizedAccessException`・`COMException`）は、空のまま表示する

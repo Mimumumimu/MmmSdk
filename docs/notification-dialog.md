@@ -1,6 +1,6 @@
 # 通知ダイアログとウィンドウ位置の保存
 
-`MmmSdk.WinUI.Notifications`（`INotificationDialogService` / `NotificationWindow`）と `MmmSdk.Core.WindowPositions`（`WindowPositionService`）の設計。
+`MmmSdk.WinUI.Components.Notifications`（`INotificationDialogService` / `NotificationWindow`）と `MmmSdk.Core.Components.WindowPositions`（`WindowPositionService`）の設計。
 
 ## 概要
 - `INotificationDialogService.Show(title, items, onClicked?, positionKey)` / `Show(title, message)`。UI スレッドから呼ぶ

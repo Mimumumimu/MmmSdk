@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using MmmSdk.WinUI.Attachments;
-using MmmSdk.WinUI.Dialogs;
-using MmmSdk.WinUI.Notifications;
-using MmmSdk.WinUI.Tray;
+using MmmSdk.WinUI.Components.Attachments;
+using MmmSdk.WinUI.Components.Dialogs;
+using MmmSdk.WinUI.Components.Notifications;
+using MmmSdk.WinUI.Components.Tray;
 
 namespace MmmSdk.WinUI;
 

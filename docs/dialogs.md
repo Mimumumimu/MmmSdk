@@ -1,6 +1,6 @@
 # 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止
 
-アプリから移した汎用部品。アプリ固有の画面・文言は持たない（`MmmSdk.WinUI.Dialogs` / `MmmSdk.Core.SingleInstance`）。
+アプリから移した汎用部品。アプリ固有の画面・文言は持たない（`MmmSdk.WinUI.Components.Dialogs` / `MmmSdk.Core.Components.SingleInstance`）。
 
 ## DialogService（ダイアログの親の決定）
 
@@ -18,14 +18,14 @@
 - `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null
 - Windows App SDK のピッカー。アンパッケージでも、親のウィンドウ ID（`IDialogHost.Owner`）を渡すだけで使える
 
-## NativeMessageBox（標準のメッセージボックス）
+## NativeMessageBox（標準のメッセージボックス。`MmmSdk.WinUI.Utilities`）
 
 - `ShowInformation(text, caption)`: Windows 標準の情報メッセージボックス。閉じられるまで待つ
 - `ShowError(text, caption)`: 同じく標準のエラー（赤い×のアイコン）。`FatalErrorHandler` が、復旧できないエラーを知らせるのに使う
 - WinUI のウィンドウ・アプリの初期化（XAML の読み込み）より前でも出せる。多重起動の案内のように、画面を作る前に知らせたいときに使う（`ContentDialog` は画面が無いと出せない）
 - 親ウィンドウは持たない（デスクトップが親）
 
-## PseudoModal（擬似モーダル）
+## PseudoModal（擬似モーダル。`MmmSdk.WinUI.Components.Windowing`）
 
 - ウィンドウを親の上に出し、閉じるまで親を操作できなくする。`OverlappedPresenter.IsModal` では親を操作できてしまったため、Win32 のモーダルと同じく `EnableWindow` で親を無効にしている
 - `SetOwner`（表示の前）で親と表示倍率を取り、オーナー設定（親より常に手前・一緒に最小化）をする。`Show` で親を無効にして表示、`CenterOnOwner` で親の中央へ（作業領域からはみ出す分は内側へ寄せる）
@@ -37,12 +37,12 @@
 - EXE のパスで区別するので、Debug / Release など別パスの EXE は同時に起動できる
 - Mutex はプロセス終了まで保持する（GC で解放されないようフィールドで持つ）。呼び出し側も、Guard をアプリのフィールドで持ち続けること
 
-## VisualTreeSearch
+## VisualTreeSearch（`MmmSdk.WinUI.Utilities`）
 
 - ビジュアルツリーの子孫から、型（と名前）で要素を探す。コントロールのテンプレート内の要素（TreeView 内の ScrollViewer、NumberBox の消去ボタンなど）に触るために使う
 - テンプレートが適用される前（`Loaded` より前）は見つからない
 
-## WindowExtensions（`MmmSdk.WinUI.Windowing`）
+## WindowExtensions（`MmmSdk.WinUI.Utilities`）
 - `SetForeground`: ウィンドウを前面に出す（`Activate` のあとに呼ぶ）。別のアプリが前面にあると、Windows の制限で前面にならないことがある
 - `GetDpiScale`: ウィンドウがあるモニターの DPI 倍率（100% で 1.0）。`XamlRoot` は表示するまで無いので、表示前に大きさを決めるときに使う
 - アプリ側にも同じ P/Invoke を持たなくて済むようにするための公開口（SDK の `NativeMethods` は internal）

@@ -1,6 +1,6 @@
 # タスクトレイ
 
-アプリから移した汎用部品（`MmmSdk.WinUI.Tray`）。アプリ名・文言・アイコンは `TrayIconOptions` で受け取り、アプリ固有の知識は持たない。
+アプリから移した汎用部品（`MmmSdk.WinUI.Components.Tray`）。アプリ名・文言・アイコンは `TrayIconOptions` で受け取り、アプリ固有の知識は持たない。
 
 ## TrayIcon
 - `Shell_NotifyIcon` を直接呼ぶ（`NOTIFYICON_VERSION_4`。P/Invoke は CsWin32 が生成する）。WinForms には依存しない

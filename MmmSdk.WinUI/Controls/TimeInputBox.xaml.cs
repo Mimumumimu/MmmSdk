@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using MmmSdk.WinUI.Input;
+using MmmSdk.WinUI.Utilities;
 using Windows.System;
 
 namespace MmmSdk.WinUI.Controls;
