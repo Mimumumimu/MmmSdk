@@ -1,22 +1,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MmmSdk.Core.Notifications;
 using MmmSdk.Core.Paths;
 
 namespace MmmSdk.WinUI.Notifications;
 
 /// <summary>通知ウィンドウの ViewModel</summary>
 /// <param name="opener">リンク先を開く処理</param>
-/// <remarks>本文の Inlines の組み立ては View 側で行う（リンクのクリックを含むため）。</remarks>
+/// <remarks>本文（項目の一覧）は、リンクのクリックを含む Inlines として View 側で組み立てるので、ここには持たない（バインドされず、使われないため）。</remarks>
 public sealed partial class NotificationDialogViewModel(IPathOpener opener) : ObservableObject
 {
     /// <summary>タイトル</summary>
     [ObservableProperty]
     public partial string Title { get; set; } = "";
-
-    /// <summary>本文の項目</summary>
-    [ObservableProperty]
-    public partial IReadOnlyList<NotificationItem> Items { get; set; } = [];
 
     /// <summary>リンク先を開く</summary>
     /// <param name="path">開くリンク先のパス</param>

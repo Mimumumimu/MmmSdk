@@ -39,7 +39,7 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
         var destination = NextPath(Path.GetFileName(sourcePath));
         await using var source = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous);
         await using var target = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous);
-        await source.CopyToAsync(target, cancellationToken);
+        await source.CopyToAsync(target, cancellationToken).ConfigureAwait(false);
         return destination;
     }
 
@@ -51,7 +51,7 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     public async Task<string> AddAsync(byte[] content, string fileName, CancellationToken cancellationToken = default)
     {
         var destination = NextPath(fileName);
-        await File.WriteAllBytesAsync(destination, content, cancellationToken);
+        await File.WriteAllBytesAsync(destination, content, cancellationToken).ConfigureAwait(false);
         return destination;
     }
 

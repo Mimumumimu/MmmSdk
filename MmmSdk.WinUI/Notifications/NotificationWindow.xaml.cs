@@ -111,7 +111,6 @@ public sealed partial class NotificationWindow : Window
     {
         _onClicked = onClicked;
         ViewModel.Title = title;
-        ViewModel.Items = items;
         Bindings.Update();
         BuildBody(items);
 
@@ -191,16 +190,7 @@ public sealed partial class NotificationWindow : Window
 
         if (_positions.Load(key) is { } saved)
         {
-            // FindAll の返り値は foreach で列挙すると InvalidCastException になることがあるので、Count とインデクサで回す
-            var displays = DisplayArea.FindAll();
-            var workAreas = new List<Rectangle>(displays.Count);
-            for (var i = 0; i < displays.Count; i++)
-            {
-                var work = displays[i].WorkArea;
-                workAreas.Add(new Rectangle(work.X, work.Y, work.Width, work.Height));
-            }
-
-            if (ScreenGeometry.IsVisibleEnough(new Rectangle(saved.X, saved.Y, size.Width, size.Height), workAreas, VisibleRatio))
+            if (WindowPlacement.IsVisibleEnough(new RectInt32(saved.X, saved.Y, size.Width, size.Height), VisibleRatio))
             {
                 return new PointInt32(saved.X, saved.Y);
             }

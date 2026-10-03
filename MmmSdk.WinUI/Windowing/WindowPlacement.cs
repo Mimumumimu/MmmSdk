@@ -1,3 +1,6 @@
+using System.Drawing;
+using Microsoft.UI.Windowing;
+using MmmSdk.Core.WindowPositions;
 using Windows.Graphics;
 
 namespace MmmSdk.WinUI.Windowing;
@@ -16,5 +19,23 @@ public static class WindowPlacement
         var x = Math.Min(position.X, workArea.X + workArea.Width - size.Width);
         var y = Math.Min(position.Y, workArea.Y + workArea.Height - size.Height);
         return new PointInt32(Math.Max(x, workArea.X), Math.Max(y, workArea.Y));
+    }
+
+    /// <summary>ウィンドウの矩形が、全モニターの作業領域に対して、十分に見えているか</summary>
+    /// <param name="window">ウィンドウの矩形（物理ピクセル）</param>
+    /// <param name="minRatio">見えている割合の下限（0〜1。面積に対する割合）</param>
+    /// <returns>十分に見えていれば true（保存した位置が、今のモニター構成で画面外にならないかの判定に使う）</returns>
+    public static bool IsVisibleEnough(RectInt32 window, double minRatio)
+    {
+        // FindAll の返り値は foreach で列挙すると InvalidCastException になることがあるので、Count とインデクサで回す
+        var displays = DisplayArea.FindAll();
+        var workAreas = new List<Rectangle>(displays.Count);
+        for (var i = 0; i < displays.Count; i++)
+        {
+            var work = displays[i].WorkArea;
+            workAreas.Add(new Rectangle(work.X, work.Y, work.Width, work.Height));
+        }
+
+        return ScreenGeometry.IsVisibleEnough(new Rectangle(window.X, window.Y, window.Width, window.Height), workAreas, minRatio);
     }
 }

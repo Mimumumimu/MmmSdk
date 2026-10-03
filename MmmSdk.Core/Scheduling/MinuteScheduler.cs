@@ -74,7 +74,7 @@ public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
     {
         try
         {
-            await CallAsync();
+            await CallAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -102,7 +102,7 @@ public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
 
         if (onMinute is not null)
         {
-            await onMinute(now);
+            await onMinute(now).ConfigureAwait(false);
         }
     }
 

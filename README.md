@@ -149,6 +149,8 @@ var options = settings.Get("Foo.Options", new FooOptions(), MyJsonContext.Defaul
 
 - `Get` は同期です。最初のアクセスで 1 度だけファイルを読み、以後はメモリから返します
 - ファイルが無い・空・壊れているときは空の設定として扱い、例外は出しません。壊れていたときは退避して `RecoveryMessage` に、読めなかったときは `LoadError` に理由が残ります
+- 例外を出さずに「ある・型が合う」を確かめたいときは `TryGet(key, out value)` を使います（`int.TryParse` と同じ形）。`Get` は既定値を返す版です
+- 読めなかった（`LoadError`）ときは `IsReadOnly` が true になり、元のデータを上書きで消さないよう、`SetAsync` / `RemoveAsync` は何も保存せず `false` を返します。保存できたときだけ `true` です（例外にはしません）
 - ほかに `Contains(key)` / `RemoveAsync(key)` があります
 
 ### ウィンドウ位置の保存（`IWindowPositionService`）
@@ -162,6 +164,15 @@ var visible = ScreenGeometry.IsVisibleEnough(windowRect, workAreas, 0.5);
 ```
 
 位置は設定ストアに `WindowPosition.<キー>` として保存されます。
+
+位置と大きさ（`WindowBounds`）は `LoadBounds(key)` / `SaveBoundsAsync(key, bounds)` で、`WindowBounds.<キー>` として保存されます。WinUI のウィンドウには、これを使って復元・保存を自動で行う `WindowBoundsKeeper`（`MmmSdk.WinUI.Windowing`）があります。
+
+```csharp
+// コンストラクターで 1 回作るだけ（ウィンドウが閉じたら自分で後始末する）
+_ = new WindowBoundsKeeper(this, positions, "MainWindow", defaultWidthDip: 1280, defaultHeightDip: 720);
+```
+
+保存が無い・画面外のときは既定の大きさ（DIP を DPI に合わせる）で出します。変更は 1 秒まとめて保存し、最小化・最大化・非表示の間は保存しません。
 
 ### パスを開く（`IPathOpener` / `PathTarget`）
 
