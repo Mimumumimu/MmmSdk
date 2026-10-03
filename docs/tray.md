@@ -21,3 +21,7 @@
   - 行は詰め気味（上下 4px・区切り線の行 7px）
   - サブメニューの矢印は Segoe Fluent Icons（無ければ MDL2）で自分で描き、`ExcludeClipRect` で標準の矢印を止める
   - 枠（外周・影）は Windows が描くので、uxtheme の非公開序数 135 / 136 でシステムのダーク設定に従わせている（無い環境ではライトのまま）
+
+## 例外
+- `WndProc` は `[UnmanagedCallersOnly]` なので、例外が抜けるとログも残らず落ちる。中で `try/catch` して、`FatalErrorHandler.Report`（ログ → ダイアログ → 終了）に渡す。`TrayIcon` はコンストラクターで `FatalErrorHandler` を受け取り、異常終了の直前（`BeforeExit`）に、トレイからアイコンを外す（UI スレッドとは限らないので、ウィンドウは壊さずアイコンの登録だけ外す。このスレッドでの外し方は、まだ実機で確かめていない）
+- メニューのコマンドの失敗は、`ShowNotification`（トレイの通知）で知らせる

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.UI.Xaml;
 using MmmSdk.Core.Logging;
 using MmmSdk.WinUI.Dialogs;
 
@@ -20,8 +21,35 @@ public sealed class FatalErrorHandler(ErrorLog log, string appName)
     private int _handling;
 
     /// <summary>終了の直前に行う後始末（トレイアイコンを消すなど）</summary>
-    /// <remarks>失敗してもログに残すだけで、終了は止めない。</remarks>
-    public Action? BeforeExit { get; set; }
+    /// <remarks>呼ばれるスレッドは決まっていない。失敗してもログに残すだけで、終了は止めない。</remarks>
+    public event Action? BeforeExit;
+
+    /// <summary>どこにも受け皿が無い未処理の例外を、すべてここへ集める</summary>
+    /// <param name="application">アプリケーション（UI スレッドの未処理例外を受ける）</param>
+    /// <remarks>
+    /// アプリの最初（Host を作る前）に呼ぶ。<c>try/catch</c> を書ける場所では、書いてそこで受けること。
+    /// これは、書けない場所（<c>async void</c>・タイマー・待たれないタスク）の最後の安全網。
+    /// </remarks>
+    public void AttachTo(Application application)
+    {
+        application.UnhandledException += (_, e) =>
+        {
+            e.Handled = true;
+            Report("UI スレッドの未処理例外", e.Exception);
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            Report("未処理例外", e.ExceptionObject as Exception ?? new InvalidOperationException(e.ExceptionObject.ToString()));
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            e.SetObserved();
+            // 取り消し（アプリの終了中のタスクなど）はエラーではないので、報告しない
+            if (e.Exception.Flatten().InnerExceptions.All(inner => inner is OperationCanceledException))
+            {
+                return;
+            }
+            Report("待たれなかったタスクの例外", e.Exception);
+        };
+    }
 
     /// <summary>エラーを報告して、アプリを終了する（戻らない）</summary>
     /// <param name="context">どこで起きたか（ログに書く短い説明）</param>
