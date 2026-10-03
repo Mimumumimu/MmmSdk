@@ -19,6 +19,7 @@
 ## NativeMessageBox（標準のメッセージボックス）
 
 - `ShowInformation(text, caption)`: Windows 標準の情報メッセージボックス。閉じられるまで待つ
+- `ShowError(text, caption)`: 同じく標準のエラー（赤い×のアイコン）。`FatalErrorHandler` が、復旧できないエラーを知らせるのに使う
 - WinUI のウィンドウ・アプリの初期化（XAML の読み込み）より前でも出せる。多重起動の案内のように、画面を作る前に知らせたいときに使う（`ContentDialog` は画面が無いと出せない）
 - 親ウィンドウは持たない（デスクトップが親）
 

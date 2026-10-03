@@ -4,7 +4,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Interop;
 
-/// <summary>Win32 API の宣言と、それを使う小さな補助。通知ウィンドウ（フォーカスを奪わない表示・ドラッグ）と、擬似モーダル（親の無効化）用</summary>
+/// <summary>CsWin32 の API を組み合わせる小さな補助（オーナー設定・フォーカスを奪わない表示・ドラッグなど）。ほかの用途は <c>NativeMethods.*.cs</c>（IME・メニュー）</summary>
 /// <remarks>
 /// 宣言は CsWin32 が生成する（<c>NativeMethods.txt</c>）。手書きで残るのは、CsWin32 のメタデータに無い uxtheme の非公開 API（序数指定。<c>NativeMethods.Menu.cs</c>）と、
 /// 生成された API を組み合わせる小さな補助（<c>NativeMethods.Ime.cs</c> など）だけ。
