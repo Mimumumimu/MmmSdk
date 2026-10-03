@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace MmmSdk.WinUI.Interop;
 
-/// <summary>Win32 API の宣言（P/Invoke）。通知ウィンドウ（フォーカスを奪わない表示・ドラッグ）用</summary>
+/// <summary>Win32 API の宣言（P/Invoke）。通知ウィンドウ（フォーカスを奪わない表示・ドラッグ）と、擬似モーダル（親の無効化）用</summary>
 internal static partial class NativeMethods
 {
     /// <summary>拡張ウィンドウスタイルのインデックス（GetWindowLongPtr / SetWindowLongPtr 用）</summary>
@@ -88,6 +88,31 @@ internal static partial class NativeMethods
     /// <returns>取得した値</returns>
     [LibraryImport("user32.dll")]
     public static partial int GetSystemMetrics(int nIndex);
+
+    /// <summary>オーナーウィンドウを表す <see cref="SetWindowLongPtr"/> の番号</summary>
+    private const int GWLP_HWNDPARENT = -8;
+
+    /// <summary>ウィンドウのオーナー（親）を設定する</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
+    /// <param name="owner">オーナーにするウィンドウのハンドル</param>
+    /// <remarks>オーナーより常に手前に表示され、オーナーと一緒に最小化される。</remarks>
+    public static void SetOwner(nint hWnd, nint owner) => SetWindowLongPtr(hWnd, GWLP_HWNDPARENT, owner);
+
+    /// <summary>ウィンドウのマウス・キーボード入力を有効・無効にする</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
+    /// <param name="bEnable">有効にするなら true、無効にするなら false</param>
+    /// <returns>直前に無効だったなら true</returns>
+    /// <remarks>モーダル表示の間、親ウィンドウを操作できないようにするために使う。</remarks>
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool EnableWindow(nint hWnd, [MarshalAs(UnmanagedType.Bool)] bool bEnable);
+
+    /// <summary>ウィンドウを前面に出す</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
+    /// <returns>前面に出せれば true</returns>
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetForegroundWindow(nint hWnd);
 
     /// <summary>ウィンドウを、フォーカスを奪わない（クリックでアクティブにならない）ウィンドウにする</summary>
     /// <param name="hWnd">ウィンドウのハンドル</param>
