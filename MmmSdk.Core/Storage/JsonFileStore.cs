@@ -10,8 +10,12 @@ namespace MmmSdk.Core.Storage;
 public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
 {
     /// <summary>ファイル操作の同時実行を防ぐロック</summary>
-    /// <remarks>読み込みも取る（読み込みと壊れたファイルの退避の間に、書き込みが割り込まないように）。</remarks>
-    private readonly SemaphoreSlim _writeLock = new(1, 1);
+    /// <remarks>
+    /// 読み込みも書き込みも取る（読み込みと壊れたファイルの退避の間に、書き込みが割り込まないように）。
+    /// 待つ処理（await）をまたいで持つので、継続を元のスレッド（UI スレッド）に戻さない（<c>ConfigureAwait(false)</c>）。
+    /// 戻すと、UI スレッドが別ファイルの同期の <see cref="Read{T}"/> でこのロックを待っている間に、継続が UI スレッドを待って、デッドロックする。
+    /// </remarks>
+    private readonly SemaphoreSlim _fileLock = new(1, 1);
 
     /// <inheritdoc />
     public bool Exists(string fileName) => File.Exists(GetPath(fileName));
@@ -19,11 +23,10 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <inheritdoc />
     public DataLoadResult<T?> Read<T>(string fileName, JsonTypeInfo<T> typeInfo)
     {
-        _writeLock.Wait();
+        _fileLock.Wait();
         try
         {
-            var path = GetPath(fileName);
-            if (!File.Exists(path))
+            if (!TryGetExistingPath(fileName, out var path))
             {
                 return new(default);
             }
@@ -33,26 +36,25 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
             {
                 bytes = File.ReadAllBytes(path);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (IsFileAccessError(ex))
             {
-                throw new DataFileException($"{fileName} を読み込めませんでした。{ex.Message}", ex);
+                throw ReadFailed(fileName, ex);
             }
             return ParseOrRecover(fileName, bytes, typeInfo);
         }
         finally
         {
-            _writeLock.Release();
+            _fileLock.Release();
         }
     }
 
     /// <inheritdoc />
     public async Task<DataLoadResult<T?>> ReadAsync<T>(string fileName, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
     {
-        await _writeLock.WaitAsync(cancellationToken);
+        await _fileLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var path = GetPath(fileName);
-            if (!File.Exists(path))
+            if (!TryGetExistingPath(fileName, out var path))
             {
                 return new(default);
             }
@@ -60,17 +62,17 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
             byte[] bytes;
             try
             {
-                bytes = await File.ReadAllBytesAsync(path, cancellationToken);
+                bytes = await File.ReadAllBytesAsync(path, cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (IsFileAccessError(ex))
             {
-                throw new DataFileException($"{fileName} を読み込めませんでした。{ex.Message}", ex);
+                throw ReadFailed(fileName, ex);
             }
             return ParseOrRecover(fileName, bytes, typeInfo);
         }
         finally
         {
-            _writeLock.Release();
+            _fileLock.Release();
         }
     }
 
@@ -80,27 +82,54 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         var path = GetPath(fileName);
         var tempPath = path + ".tmp";
 
-        await _writeLock.WaitAsync(cancellationToken);
+        await _fileLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             Directory.CreateDirectory(dataDirectory);
-            await using (var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
+            var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
+            try
             {
-                await JsonSerializer.SerializeAsync(stream, value, typeInfo, cancellationToken);
+                await JsonSerializer.SerializeAsync(stream, value, typeInfo, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                await stream.DisposeAsync().ConfigureAwait(false);
             }
             File.Move(tempPath, path, overwrite: true);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (IsFileAccessError(ex))
         {
             throw new DataFileException($"{fileName} を保存できませんでした。{ex.Message}", ex);
         }
         finally
         {
-            _writeLock.Release();
+            _fileLock.Release();
         }
     }
 
-    /// <summary>JSON を値に変換する。読めなければファイルを退避する。呼ぶ側は <c>_writeLock</c> を取っておくこと</summary>
+    /// <summary>ファイルがあれば、そのパスを返す</summary>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <param name="path">ファイルのフルパス</param>
+    /// <returns>ファイルがあれば true</returns>
+    private bool TryGetExistingPath(string fileName, out string path)
+    {
+        path = GetPath(fileName);
+        return File.Exists(path);
+    }
+
+    /// <summary>ファイルの読み書きの失敗（ロック・権限など）か</summary>
+    /// <param name="exception">起きた例外</param>
+    /// <returns>ロック・権限などの失敗なら true</returns>
+    private static bool IsFileAccessError(Exception exception) => exception is IOException or UnauthorizedAccessException;
+
+    /// <summary>読み込みの失敗を、画面に出せるメッセージ付きの例外にする</summary>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <param name="cause">原因の例外</param>
+    /// <returns>読み込みに失敗したことを表す例外</returns>
+    private static DataFileException ReadFailed(string fileName, Exception cause)
+        => new($"{fileName} を読み込めませんでした。{cause.Message}", cause);
+
+    /// <summary>JSON を値に変換する。読めなければファイルを退避する。呼ぶ側は <c>_fileLock</c> を取っておくこと</summary>
     /// <typeparam name="T">読み込む値の型</typeparam>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <param name="bytes">ファイルの中身</param>
@@ -139,7 +168,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         return span.Trim((ReadOnlySpan<byte>)[(byte)' ', (byte)'\t', (byte)'\r', (byte)'\n']).IsEmpty;
     }
 
-    /// <summary>壊れたファイルを退避する。呼ぶ側は <c>_writeLock</c> を取っておくこと</summary>
+    /// <summary>壊れたファイルを退避する。呼ぶ側は <c>_fileLock</c> を取っておくこと</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <param name="error">JSON として読めなかった原因の例外</param>
     /// <returns>ユーザーへ表示するメッセージ</returns>
@@ -165,7 +194,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         {
             File.Move(path, GetPath(backupName));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (IsFileAccessError(ex))
         {
             throw new DataFileException($"{fileName} を読み込めませんでした。{error.Message}\n壊れたファイルの退避にも失敗しました。{ex.Message}", ex);
         }
