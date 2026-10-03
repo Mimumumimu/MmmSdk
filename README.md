@@ -15,6 +15,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - デスクトップ通知のダイアログ（フォーカスを奪わない常に最前面のウィンドウ。ドラッグ移動・位置保存・クリックで閉じる・本文のリンク）
 - 確認ダイアログ・ファイル/フォルダー選択（親ウィンドウを自動で決める）と、ウィンドウを親の上に擬似モーダルで出す部品
 - 同一 EXE の多重起動の防止
+- アプリの初期化（XAML の読み込み）より前でも出せる標準のメッセージボックス
+- ConPTY（Windows 擬似コンソール）にプロセスをつないで起動する部品（ターミナル画面を作るときの土台）
 - タスクトレイのアイコンと右クリックメニュー（Win32 を直接使う。メニューは自前描画でダーク/ライト対応）
 - 時刻の入力欄（`TimeInputBox`）・押せる領域（`LinkArea`）・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理（コントロールのテンプレート内の要素に触るため）
@@ -39,10 +41,11 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
-| `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`） |
+| `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`）・標準のメッセージボックス（`NativeMessageBox`） |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
 | `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
 | `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray` |
+| `MmmSdk.WinUI.ConPty` | ConPTY にプロセスをつないで起動する（`PseudoConsole`） |
 | `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`） |
 | `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける） |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
@@ -239,6 +242,14 @@ window.ResizeClientDip(360, 440, scale);                                 // 論�
 window.MoveCentered(new RectInt32(x, y, width, height));                 // 範囲の中央に置く（作業領域に収める）
 ```
 
+### 標準のメッセージボックス（`NativeMessageBox`）
+
+WinUI のウィンドウやアプリの初期化より前でも出せます。多重起動の案内など、画面を作る前に知らせたいときに使います（閉じられるまで待ちます）。
+
+```csharp
+NativeMessageBox.ShowInformation("MyApp はすでに起動しています。", "MyApp");
+```
+
 ### 画面に出すエラー（`ErrorState`）
 
 ViewModel が `ErrorState` を 1 つ持ち、`InfoBar` に結び付けます。閉じるボタンは TwoWay の結び付けで `IsOpen` を false にするので、閉じる処理は書かなくてよい。
@@ -275,6 +286,21 @@ scheduler.Start(async now => { /* 毎分 00 秒の処理。now は現在の日�
 var minute = MinuteScheduler.TruncateToMinute(now);                           // 秒以下を切り捨てる
 scheduler.Dispose();                                                          // 止める
 ```
+
+### ConPTY（`MmmSdk.WinUI.ConPty`）
+
+`PseudoConsole.Start` で、擬似コンソールにつないだプロセス（シェルなど）を起動します。端末の描画やキー入力の解釈は持ちません（出力は端末のエスケープシーケンスを含んだ UTF-8 のバイト列のままです）。
+
+```csharp
+using var console = PseudoConsole.Start("pwsh.exe", workingDirectory, columns: 120, rows: 30);
+
+console.Input.Write(Encoding.UTF8.GetBytes("dir\r"));      // プロセスへの入力
+var read = console.Output.Read(buffer);                    // プロセスからの出力（別のタスクで読み続ける）
+console.Resize(160, 40);                                   // 端末の大きさを変える
+ThreadPool.RegisterWaitForSingleObject(console.ExitHandle, (_, _) => { /* プロセスが終了した */ }, null, Timeout.Infinite, true);
+```
+
+使い終わるときは、出力を読み続けたまま `Close()`（プロセスがまだ動いていれば終了する）→ 読み取りが終わるのを待つ → `Dispose()` の順です。起動に失敗したときは、作った分を片付けてから `Win32Exception`（または `COMException`）を投げます。
 
 ### タスクトレイ（`MmmSdk.WinUI.Tray`）
 
@@ -359,6 +385,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
+| [docs/conpty.md](docs/conpty.md) | ConPTY（`PseudoConsole`）の仕組みと後始末の順序 |
 | [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存 |
 
 ## バージョン

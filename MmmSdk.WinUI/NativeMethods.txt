@@ -74,6 +74,22 @@ SetBkMode
 SetMenuInfo
 SetTextColor
 
+// ConPTY とプロセスの起動
+CloseHandle
+ClosePseudoConsole
+CreatePipe
+CreateProcess
+CreatePseudoConsole
+DeleteProcThreadAttributeList
+InitializeProcThreadAttributeList
+PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE
+ResizePseudoConsole
+STARTUPINFOEXW
+UpdateProcThreadAttribute
+
+// メッセージボックス
+MessageBox
+
 // uxtheme の非公開 API（序数指定）を呼ぶための読み込み
 GetProcAddress
 LoadLibrary

@@ -16,6 +16,12 @@
 - `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null
 - Windows App SDK のピッカー。アンパッケージでも、親のウィンドウ ID（`IDialogHost.Owner`）を渡すだけで使える
 
+## NativeMessageBox（標準のメッセージボックス）
+
+- `ShowInformation(text, caption)`: Windows 標準の情報メッセージボックス。閉じられるまで待つ
+- WinUI のウィンドウ・アプリの初期化（XAML の読み込み）より前でも出せる。多重起動の案内のように、画面を作る前に知らせたいときに使う（`ContentDialog` は画面が無いと出せない）
+- 親ウィンドウは持たない（デスクトップが親）
+
 ## PseudoModal（擬似モーダル）
 
 - ウィンドウを親の上に出し、閉じるまで親を操作できなくする。`OverlappedPresenter.IsModal` では親を操作できてしまったため、Win32 のモーダルと同じく `EnableWindow` で親を無効にしている
