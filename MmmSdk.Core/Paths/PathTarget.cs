@@ -1,27 +1,5 @@
 namespace MmmSdk.Core.Paths;
 
-/// <summary>リンクのパスが指す先の種類。</summary>
-public enum PathTargetKind
-{
-    /// <summary>パスが空。</summary>
-    Empty,
-
-    /// <summary>URL</summary>
-    Url,
-
-    /// <summary>フォルダ</summary>
-    Folder,
-
-    /// <summary>実行ファイル（.exe・.bat 等）。</summary>
-    Executable,
-
-    /// <summary>ファイル</summary>
-    File,
-
-    /// <summary>ファイルにもフォルダにも見つからない。</summary>
-    NotFound,
-}
-
 /// <summary>
 /// リンクのパスの解釈（環境変数の展開・種類の判定）。
 /// </summary>
