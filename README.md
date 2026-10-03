@@ -15,6 +15,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - デスクトップ通知のダイアログ（フォーカスを奪わない常に最前面のウィンドウ。ドラッグ移動・位置保存・クリックで閉じる・本文のリンク）
 - 確認ダイアログ・ファイル/フォルダー選択（親ウィンドウを自動で決める）と、ウィンドウを親の上に擬似モーダルで出す部品
 - 同一 EXE の多重起動の防止
+- タスクトレイのアイコンと右クリックメニュー（Win32 を直接使う。メニューは自前描画でダーク/ライト対応）
 - ビジュアルツリーから要素を探す処理（コントロールのテンプレート内の要素に触るため）
 
 ## 構成
@@ -36,6 +37,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
 | `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService` / `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`） |
+| `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray` |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
 | `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
 
@@ -87,6 +89,7 @@ services.AddMmmSdkWinUI();
 | メソッド | 登録するもの |
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `JsonFileStore`・`ISettingsStore`・`WindowPositionService`・`PathOpener`（すべて Singleton） |
+| `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ |
 | `AddMmmSdkWinUI()` | `INotificationDialogService`・`DialogService`（`IDialogService` と同じインスタンス）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
 
 ## 使い方
@@ -225,6 +228,45 @@ var guard = new SingleInstanceGuard("MyApp");   // アプリ起動の最初に�
 if (!guard.IsFirstInstance) { /* すでに起動している。メッセージを出して終了する */ }
 ```
 
+### タスクトレイ（`MmmSdk.WinUI.Tray`）
+
+トレイを使うアプリだけが登録します（`AddMmmSdkWinUI` には含まれません）。`TrayIcon` は UI スレッドで解決します。
+
+```csharp
+services.AddMmmSdkTray(new TrayIconOptions(
+    ToolTip: "MyApp",                  // ツールチップ。エラー通知のタイトルにも使う
+    WindowClassName: "MyApp_Tray",     // 通知を受ける非表示ウィンドウのクラス名（アプリごとに別の名前）
+    IconPath: Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico"),   // 省略すると標準のアイコン
+    ExitText: "終了"));                // メニュー末尾の終了項目（既定は「終了」）
+
+// 機能ごとにメニューの項目を足す（Singleton で登録した順に並ぶ）
+services.AddSingleton<ITrayMenuSource, MyTrayMenuSource>();
+```
+
+```csharp
+public sealed class MyTrayMenuSource : ITrayMenuSource
+{
+    // メニューを開くたびに呼ばれる
+    public IReadOnlyList<TrayMenuItem> GetItems() =>
+    [
+        TrayMenuItem.Command("開く", () => OpenAsync()),
+        TrayMenuItem.Submenu("リンク", [TrayMenuItem.Command("例", () => OpenAsync()), TrayMenuItem.Separator]),
+        TrayMenuItem.Disabled("説明（押せない）"),
+    ];
+}
+```
+
+```csharp
+var tray = provider.GetRequiredService<TrayIcon>();
+tray.OpenRequested += (_, _) => ShowMainWindow();    // アイコンの左クリック
+tray.ExitRequested += (_, _) => ExitApp();           // メニューの終了
+tray.Show();                                         // アイコンを出す
+tray.ShowNotification("タイトル", "本文", isError: false);   // バルーン通知
+```
+
+- 項目の処理が例外を投げたら、トレイの通知（エラー）でメッセージを知らせます
+- 終了時は `TrayIcon` を `Dispose` する（DI の破棄で行われる）。各機能の後始末のあとに消したいときは、機能より先に解決しておく（DI は作った順の逆に破棄する）
+
 ### ビジュアルツリーの検索（`VisualTreeSearch`）
 
 ```csharp
@@ -239,6 +281,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア |
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止 |
+| [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 
 ## バージョン
 
