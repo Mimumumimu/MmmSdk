@@ -36,13 +36,14 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.Core.Storage` | JSON ファイルの読み書き（`IJsonFileStore` / `JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
 | `MmmSdk.Core.Settings` | 汎用設定ストア（`ISettingsStore`）。JSON での実装は `MmmSdk.Core.Settings.Json`（`JsonSettingsStore`） |
-| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
+| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`。見えているか・作業領域に収める） |
 | `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
 | `MmmSdk.Core.Shells` | シェルの決定（`ShellInfo` / `ShellKind` / `ShellLocator`）と、シェル別のコマンド作り（`ShellCommands`） |
 | `MmmSdk.Core.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
 | `MmmSdk.Core.Logging` | エラーログの追記（`ErrorLog`。`yyyy-MM-dd.log`） |
-| `MmmSdk.Core.Tasks` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`） |
+| `MmmSdk.Core.Tasks` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`）・入力が止まるのを待ってから処理を 1 回だけ行う（`Debouncer`） |
+| `MmmSdk.Core.Collections` | 「最近使った順」のリストの操作（`AddRecent`） |
 | `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
@@ -52,7 +53,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray`（`SdkWinUIServiceCollectionExtensions` の中） |
 | `MmmSdk.WinUI.Terminal` | ターミナル（`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く） |
 | `MmmSdk.WinUI.ConPty` | ConPTY にプロセスをつないで起動する（`PseudoConsole`） |
-| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
+| `MmmSdk.WinUI.Attachments` | 添付の画像を JPEG に変換する（`IImageConverter` / `ImageConverter`）・サムネイル（`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ） |
+| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
 | `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける）・復旧できないエラーの最後の受け皿（`FatalErrorHandler`） |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
 | `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
@@ -107,7 +109,7 @@ services.AddMmmSdkWinUI();
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`（すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる） |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
 
 ## 使い方
 

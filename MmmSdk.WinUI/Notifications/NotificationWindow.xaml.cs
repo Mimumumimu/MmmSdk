@@ -14,7 +14,6 @@ using MmmSdk.WinUI.Interop;
 using MmmSdk.WinUI.Windowing;
 using Windows.Graphics;
 using Windows.Win32;
-using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Notifications;
@@ -166,14 +165,11 @@ public sealed partial class NotificationWindow : Window
         }
     }
 
-    /// <summary>ウィンドウの DPI 倍率（論理サイズ→物理ピクセル）</summary>
-    private double Scale => PInvoke.GetDpiForWindow((HWND)_hwnd) / 96.0;
-
     /// <summary>本文に合わせて高さを決める（表示前に確定する）</summary>
     /// <remarks>幅は固定。タイトル帯 + 本文の必要高さを実測し、最低・最大の高さの範囲で合わせる。</remarks>
     private void FitHeight()
     {
-        var scale = Scale;
+        var scale = this.GetDpiScale();
 
         RootGrid.Measure(new Windows.Foundation.Size(WindowWidth, double.PositiveInfinity));
         var height = Math.Clamp(RootGrid.DesiredSize.Height, MinWindowHeight, MaxWindowHeight);
@@ -338,7 +334,7 @@ public sealed partial class NotificationWindow : Window
     /// <returns>キャプションボタンの領域なら true</returns>
     private bool IsOnCaptionButtons(Windows.Foundation.Point position)
     {
-        var scale = Scale;
+        var scale = this.GetDpiScale();
         var titleBar = AppWindow.TitleBar;
         return position.Y * scale < titleBar.Height
             && position.X * scale >= WindowWidth * scale - titleBar.RightInset;
