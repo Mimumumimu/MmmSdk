@@ -90,6 +90,8 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
             try
             {
                 await JsonSerializer.SerializeAsync(stream, value, typeInfo, cancellationToken).ConfigureAwait(false);
+                // 置き換える前に、中身をディスクまで書き出す（電源断で、空や途中までのファイルに置き換わらないように）
+                stream.Flush(flushToDisk: true);
             }
             finally
             {
@@ -205,5 +207,14 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <summary>ファイルのフルパスを返す</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <returns>データフォルダと結合したパス</returns>
-    private string GetPath(string fileName) => Path.Combine(dataDirectory, fileName);
+    /// <remarks>ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入ると、データフォルダの外を読み書きできてしまうので、ファイル名だけを受け付ける。</remarks>
+    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダを含んでいる（呼ぶ側のバグ）。</exception>
+    private string GetPath(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName || fileName is "." or "..")
+        {
+            throw new ArgumentException($"ファイル名には、フォルダを含まない名前を指定してください: {fileName}", nameof(fileName));
+        }
+        return Path.Combine(dataDirectory, fileName);
+    }
 }

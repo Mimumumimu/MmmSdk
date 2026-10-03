@@ -45,7 +45,7 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
 
     /// <summary>データをファイルとして添付する</summary>
     /// <param name="content">ファイルの内容</param>
-    /// <param name="fileName">保存するファイル名</param>
+    /// <param name="fileName">保存するファイル名（フォルダの部分や使えない文字は取り除く）</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>保存先のパス</returns>
     public async Task<string> AddAsync(byte[] content, string fileName, CancellationToken cancellationToken = default)
@@ -56,11 +56,21 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     }
 
     /// <summary>添付を取り除く</summary>
-    /// <param name="filePath">取り除く添付ファイルのパス</param>
-    /// <remarks>セッションに何も残らなければフォルダごと削除する。</remarks>
+    /// <param name="filePath">取り除く添付ファイルのパス（今のセッションフォルダの中のもの）</param>
+    /// <remarks>
+    /// セッションに何も残らなければフォルダごと削除する。
+    /// 送信前の添付を取り除くためのものなので、今のセッションフォルダの外のファイル（送信済みのファイルを含む）は消さない。
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> が今のセッションフォルダの中ではない（呼ぶ側のバグ）。</exception>
     public void Remove(string filePath)
     {
-        File.Delete(filePath);
+        var fullPath = Path.GetFullPath(filePath);
+        if (_session is null || !string.Equals(Path.GetDirectoryName(fullPath), Path.GetFullPath(_session), StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException($"今の添付フォルダの外のファイルは取り除けません: {filePath}", nameof(filePath));
+        }
+
+        File.Delete(fullPath);
 
         if (_session is not null && !Directory.EnumerateFileSystemEntries(_session).Any())
         {
@@ -87,6 +97,7 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     /// <summary>次に保存するファイルのパスを決める</summary>
     /// <param name="fileName">元のファイル名</param>
     /// <returns>連番を付けた保存先のパス</returns>
+    /// <remarks>ファイル名は、フォルダの部分と使えない文字を取り除いてから使う（セッションフォルダの外に保存されないように）。</remarks>
     private string NextPath(string fileName)
     {
         if (_session is null)
@@ -94,7 +105,20 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
             StartSession();
         }
         _sequence++;
-        return Path.Combine(_session!, $"{_sequence:D3}_{fileName}");
+        return Path.Combine(_session!, $"{_sequence:D3}_{ToSafeFileName(fileName)}");
+    }
+
+    /// <summary>ファイル名だけにして、使えない文字を置き換える</summary>
+    /// <param name="fileName">元のファイル名（フォルダを含んでいてもよい）</param>
+    /// <returns>フォルダを含まない安全なファイル名。空になるときは <c>file</c></returns>
+    private static string ToSafeFileName(string fileName)
+    {
+        var name = Path.GetFileName(fileName);
+        foreach (var invalid in Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(invalid, '_');
+        }
+        return string.IsNullOrWhiteSpace(name) || name is "." or ".." ? "file" : name;
     }
 
     /// <summary>セッションフォルダを作る</summary>
