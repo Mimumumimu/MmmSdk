@@ -1,0 +1,29 @@
+using Microsoft.UI.Xaml;
+
+namespace MmmSdk.WinUI.Dialogs;
+
+/// <summary>
+/// ダイアログ・モーダルウィンドウの親を決める口（アプリ固有の画面を開くサービスが使う）。
+/// </summary>
+/// <remarks>確認ダイアログを開く口は <see cref="IDialogService"/>。どちらも同じ <see cref="DialogService"/> が実装する。</remarks>
+public interface IDialogHost
+{
+    /// <summary>ダイアログの親</summary>
+    /// <remarks>
+    /// いちばん手前のモーダルウィンドウ、無ければ最後に操作した普通のウィンドウ、それも無ければ最初に登録したウィンドウ。
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">親にできるウィンドウが 1 つも登録されていない。</exception>
+    Window Owner { get; }
+
+    /// <summary>普通のウィンドウを、ダイアログの親の候補にする</summary>
+    /// <param name="window">親の候補にするウィンドウ</param>
+    /// <remarks>そのウィンドウを操作した（アクティブになった）ら、以後のダイアログをその上に出す。閉じられたら候補から外す。</remarks>
+    void TrackWindow(Window window);
+
+    /// <summary>モーダルウィンドウを今の親の上に開き、閉じるまで覚えておく</summary>
+    /// <typeparam name="T">ウィンドウが返す結果の型</typeparam>
+    /// <param name="window">開くウィンドウ</param>
+    /// <param name="show">親を受け取って表示し、閉じるまで待つ処理</param>
+    /// <returns>ウィンドウが返した結果</returns>
+    Task<T> ShowModalAsync<T>(Window window, Func<Window, Task<T>> show);
+}

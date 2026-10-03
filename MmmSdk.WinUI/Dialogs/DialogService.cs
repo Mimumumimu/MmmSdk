@@ -7,9 +7,9 @@ namespace MmmSdk.WinUI.Dialogs;
 /// <remarks>
 /// いちばん手前のモーダルウィンドウの上に表示する。無ければ、最後に操作した普通のウィンドウ（<see cref="TrackWindow"/> で登録したもの）の上に表示する。
 /// モーダルウィンドウは開いている間だけ覚えておき、その上で開くダイアログの親にする（一覧の上に入力画面・確認を重ねるため）。
-/// アプリ固有の画面は、アプリ側のサービスが <see cref="Owner"/> と <see cref="ShowModalAsync"/> を使って開く。UI スレッドから呼ぶ。
+/// アプリ固有の画面は、アプリ側のサービスが <see cref="IDialogHost"/> の <see cref="Owner"/> と <see cref="ShowModalAsync"/> を使って開く（具象型ではなく、<see cref="IDialogHost"/> / <see cref="IDialogService"/> に依存する）。UI スレッドから呼ぶ。
 /// </remarks>
-public sealed class DialogService : IDialogService
+public sealed class DialogService : IDialogService, IDialogHost
 {
     /// <summary>開いているモーダルウィンドウ（開いた順）</summary>
     private readonly List<Window> _modals = [];
@@ -20,18 +20,12 @@ public sealed class DialogService : IDialogService
     /// <summary>最後に操作した普通のウィンドウ。無い・閉じられたら null</summary>
     private Window? _lastActive;
 
-    /// <summary>ダイアログの親</summary>
-    /// <remarks>
-    /// いちばん手前のモーダルウィンドウ、無ければ最後に操作した普通のウィンドウ、それも無ければ最初に登録したウィンドウ（最初に登録するメインウィンドウ）。
-    /// </remarks>
-    /// <exception cref="InvalidOperationException">親にできるウィンドウが 1 つも登録されていない。</exception>
+    /// <inheritdoc />
     public Window Owner => _modals.Count > 0
         ? _modals[^1]
         : _lastActive ?? _tracked.FirstOrDefault() ?? throw new InvalidOperationException("ダイアログの親にできるウィンドウがありません。");
 
-    /// <summary>普通のウィンドウを、ダイアログの親の候補にする</summary>
-    /// <param name="window">親の候補にするウィンドウ</param>
-    /// <remarks>そのウィンドウを操作した（アクティブになった）ら、以後のダイアログをその上に出す。閉じられたら候補から外す。</remarks>
+    /// <inheritdoc />
     public void TrackWindow(Window window)
     {
         _tracked.Add(window);
@@ -70,11 +64,7 @@ public sealed class DialogService : IDialogService
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
-    /// <summary>モーダルウィンドウを今の親の上に開き、閉じるまで覚えておく</summary>
-    /// <typeparam name="T">ウィンドウが返す結果の型</typeparam>
-    /// <param name="window">開くウィンドウ</param>
-    /// <param name="show">親を受け取って表示し、閉じるまで待つ処理</param>
-    /// <returns>ウィンドウが返した結果</returns>
+    /// <inheritdoc />
     public async Task<T> ShowModalAsync<T>(Window window, Func<Window, Task<T>> show)
     {
         var owner = Owner;

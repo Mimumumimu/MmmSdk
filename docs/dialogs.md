@@ -8,13 +8,13 @@
 - 普通のウィンドウは `TrackWindow` で登録する。アクティブになるたびに「最後に操作したウィンドウ」を更新し、閉じたら候補から外す
 - モーダルウィンドウは `ShowModalAsync` で開く間だけ覚える（その上に開くダイアログの親にするため。一覧の上に入力画面・確認を重ねられる）
 - `ConfirmAsync`: 確認ダイアログ。取り消しにくい操作の確認用に、既定のボタンはキャンセル（Enter で誤って実行しない）。コードで作る `ContentDialog` には既定のスタイルが当たらないので、`DefaultContentDialogStyle` を明示している
-- DI では `DialogService`（具象型）と `IDialogService` が同じインスタンス。ViewModel は `IDialogService`、ウィンドウを開くアプリ側のサービスは `DialogService` を受け取る
+- 口は 2 つ。確認ダイアログは `IDialogService`、親の決定（`Owner` / `TrackWindow` / `ShowModalAsync`）は `IDialogHost`。どちらも同じ `DialogService` が実装し、DI では同じインスタンスを返す。ViewModel は `IDialogService`、ウィンドウを開くアプリ側のサービスは `IDialogHost` を受け取る（具象型には依存しない）
 - UI スレッドから呼ぶ
 
 ## ファイル/フォルダー選択
 
 - `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null
-- Windows App SDK のピッカー。アンパッケージでも、親のウィンドウ ID（`DialogService.Owner`）を渡すだけで使える
+- Windows App SDK のピッカー。アンパッケージでも、親のウィンドウ ID（`IDialogHost.Owner`）を渡すだけで使える
 
 ## PseudoModal（擬似モーダル）
 
@@ -32,3 +32,8 @@
 
 - ビジュアルツリーの子孫から、型（と名前）で要素を探す。コントロールのテンプレート内の要素（TreeView 内の ScrollViewer、NumberBox の消去ボタンなど）に触るために使う
 - テンプレートが適用される前（`Loaded` より前）は見つからない
+
+## WindowExtensions（`MmmSdk.WinUI.Windowing`）
+- `SetForeground`: ウィンドウを前面に出す（`Activate` のあとに呼ぶ）。別のアプリが前面にあると、Windows の制限で前面にならないことがある
+- `GetDpiScale`: ウィンドウがあるモニターの DPI 倍率（100% で 1.0）。`XamlRoot` は表示するまで無いので、表示前に大きさを決めるときに使う
+- アプリ側にも同じ P/Invoke を持たなくて済むようにするための公開口（SDK の `NativeMethods` は internal）

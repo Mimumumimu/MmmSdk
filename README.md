@@ -36,8 +36,9 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
-| `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService` / `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`） |
+| `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`） |
 | `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray` |
+| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`） |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
 | `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
 
@@ -90,7 +91,7 @@ services.AddMmmSdkWinUI();
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `JsonFileStore`・`ISettingsStore`・`WindowPositionService`・`PathOpener`（すべて Singleton） |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`DialogService`（`IDialogService` と同じインスタンス）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
 
 ## 使い方
 
@@ -194,7 +195,7 @@ notifications.Show("お知らせ", "メッセージだけの簡易通知");
 
 ### 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル（`MmmSdk.WinUI.Dialogs`）
 
-UI スレッドから呼びます。ダイアログの親は `DialogService` が決めます（いちばん手前のモーダルウィンドウ → 最後に操作したウィンドウ → 最初に登録したウィンドウ）。
+UI スレッドから呼びます。ダイアログの親は `IDialogHost`（実装は `DialogService`）が決めます。アプリは具象型ではなく、確認ダイアログは `IDialogService`、親の決定は `IDialogHost` に依存します（いちばん手前のモーダルウィンドウ → 最後に操作したウィンドウ → 最初に登録したウィンドウ）。
 
 ```csharp
 // 起動時に、親の候補にするウィンドウを登録する（最初に登録したウィンドウが、最後の手段の親になる）
@@ -206,7 +207,7 @@ var file = await filePicker.PickFileAsync();       // キャンセルなら null
 var folder = await folderPicker.PickFolderAsync(); // キャンセルなら null
 ```
 
-アプリ固有のウィンドウを擬似モーダルで開くときは、ウィンドウに `PseudoModal` を付け、`DialogService.ShowModalAsync` で開きます（親は `Owner`）。
+アプリ固有のウィンドウを擬似モーダルで開くときは、ウィンドウに `PseudoModal` を付け、`IDialogHost.ShowModalAsync` で開きます（親は `Owner`）。
 
 ```csharp
 var modal = new PseudoModal(window);                       // ウィンドウのコンストラクターで作る
@@ -217,6 +218,14 @@ await dialogs.ShowModalAsync(window, owner =>
     // …閉じるまで待つ。コードから閉じるときは modal.Close()…
     return Task.FromResult(true);
 });
+```
+
+ウィンドウを前面に出す・DPI 倍率を取る処理は、`Window` の拡張メソッド（`MmmSdk.WinUI.Windowing`）です。
+
+```csharp
+window.Activate();
+window.SetForeground();            // 前面に出す
+var scale = window.GetDpiScale();  // 100% で 1.0。表示の前でも取れる
 ```
 
 ### 多重起動の防止（`SingleInstanceGuard`）

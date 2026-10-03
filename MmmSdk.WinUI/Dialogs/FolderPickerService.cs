@@ -4,7 +4,7 @@ namespace MmmSdk.WinUI.Dialogs;
 
 /// <summary>フォルダ選択を開く</summary>
 /// <param name="dialogs">ダイアログの親を決めるサービス</param>
-public sealed class FolderPickerService(DialogService dialogs) : IFolderPickerService
+public sealed class FolderPickerService(IDialogHost dialogs) : IFolderPickerService
 {
     /// <inheritdoc />
     public async Task<string?> PickFolderAsync()
