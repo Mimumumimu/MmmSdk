@@ -196,7 +196,7 @@ public sealed partial class NotificationWindow : Window
                 workAreas.Add(new Rectangle(work.X, work.Y, work.Width, work.Height));
             }
 
-            if (WindowPositionService.IsVisibleEnough(new Rectangle(saved.X, saved.Y, size.Width, size.Height), workAreas, VisibleRatio))
+            if (ScreenGeometry.IsVisibleEnough(new Rectangle(saved.X, saved.Y, size.Width, size.Height), workAreas, VisibleRatio))
             {
                 return new PointInt32(saved.X, saved.Y);
             }
