@@ -1,4 +1,4 @@
-# コントロール・IME・添付の一時保存
+# コントロール・IME・添付の一時保存・添付の画像
 
 アプリから移した汎用部品。アプリ固有の知識は持たない。
 
@@ -35,3 +35,7 @@
 ```csharp
 services.AddSingleton(provider => new AttachmentStore("MyApp", provider.GetRequiredService<TimeProvider>()));
 ```
+
+## 添付の画像（`MmmSdk.WinUI.Attachments`）
+- `IImageConverter.ToJpegAsync(stream)`: 画像（PNG・BMP など）を JPEG に変換する（実装は `ImageConverter`。`AddMmmSdkWinUI` が Singleton で登録する）。JPEG は透過を持てないので、アルファは無視する。貼り付けたスクリーンショットなどを、添付のファイルにするときに使う
+- `ThumbnailImage.FromFile(path)`: サムネイルを作る（XAML の `x:Bind` から関数として呼ぶ。パスが空なら null）。ファイルを開いたままにしない（削除できなくなるため）よう、中身をメモリに読み込んでから表示する。表示サイズに合わせて高さ 144 でデコードする。読み込みの失敗（`IOException`・`UnauthorizedAccessException`・`COMException`）は、空のまま表示する

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MmmSdk.WinUI.Attachments;
 using MmmSdk.WinUI.Dialogs;
 using MmmSdk.WinUI.Notifications;
 using MmmSdk.WinUI.Tray;
@@ -8,7 +9,7 @@ namespace MmmSdk.WinUI;
 /// <summary>MmmSdk.WinUI の DI 登録</summary>
 public static class SdkWinUIServiceCollectionExtensions
 {
-    /// <summary>SDK の WinUI 依存のサービス（通知ダイアログ・確認ダイアログ・ファイル/フォルダー選択）を登録する</summary>
+    /// <summary>SDK の WinUI 依存のサービス（通知ダイアログ・確認ダイアログ・ファイル/フォルダー選択・画像の変換）を登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
     /// <remarks>
@@ -27,6 +28,7 @@ public static class SdkWinUIServiceCollectionExtensions
         services.AddSingleton<IDialogHost>(provider => provider.GetRequiredService<DialogService>());
         services.AddSingleton<IFilePickerService, FilePickerService>();
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
+        services.AddSingleton<IImageConverter, ImageConverter>();
         return services;
     }
 

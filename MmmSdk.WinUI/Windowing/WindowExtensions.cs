@@ -16,6 +16,20 @@ public static class WindowExtensions
     public static void SetForeground(this Window window)
         => PInvoke.SetForegroundWindow((HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id));
 
+    /// <summary>トレイ・最小化・非表示から確実に戻して、前面に出す</summary>
+    /// <param name="window">対象のウィンドウ</param>
+    /// <remarks>復元（最小化しているとき）→ 表示 → 前面化の順に行う。別のアプリが前面にあると、Windows の制限で前面にならないことがある（<see cref="SetForeground"/>）。</remarks>
+    public static void BringToFront(this Window window)
+    {
+        if (window.AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+        {
+            presenter.Restore();
+        }
+        window.AppWindow.Show(activateWindow: true);
+        window.Activate();
+        window.SetForeground();
+    }
+
     /// <summary>アプリのアイコンを付け、タイトルバーを自分で描く（コンテンツをタイトルバーまで広げる）</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="titleBar">ドラッグでウィンドウを動かせるタイトルバーの領域</param>

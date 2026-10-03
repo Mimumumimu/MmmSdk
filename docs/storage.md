@@ -33,9 +33,11 @@
 - `Data/AppSettings.json` の 1 ファイル（キー → JSON 要素の辞書）。ローカル専用。`AddMmmSdkCore` が Singleton で登録する
 - `Get(key, 既定値)` は同期。最初のアクセスで 1 度だけ読み込み、以後はメモリから返す
 - `SetAsync` / `RemoveAsync` は保存完了まで待つ。保存は専用のロックで順序を守る（古い内容が後から書かれないように）
-- `string` / `bool` / `int` / `long` / `double` は、型ごとの専用のメソッド（`Get` / `SetAsync` のオーバーロード）で、型情報なしで使える。それ以外の型を渡すと、実行時ではなく、ビルドで誤りになる。それ以外は呼ぶ側が `JsonSerializable` 登録した `JsonTypeInfo<T>` を渡す（ソース生成を維持するため）
+- インターフェース（`ISettingsStore`）は、型情報つき（`JsonTypeInfo<T>`）の `Get` / `TryGet` / `SetAsync` と、`Contains` / `RemoveAsync` と、状態（`LoadError` / `IsReadOnly` / `RecoveryMessage`）だけ。保存先を替えるときは、これだけを実装する
+- `string` / `bool` / `int` / `long` / `double` は、型ごとの専用のメソッド（`SettingsStoreExtensions` の拡張メソッド。型情報つきのメソッドを呼ぶだけ）で、型情報なしで使える。それ以外の型を渡すと、実行時ではなく、ビルドで誤りになる。それ以外は呼ぶ側が `JsonSerializable` 登録した `JsonTypeInfo<T>` を渡す（ソース生成を維持するため）
 - 型が合わない・無いキーは既定値を返す。例外を出さずに確かめたいときは `TryGet(key, out value)`（`bool` を返す）
 - 読めなかった（`LoadError`）ときは `IsReadOnly` が true。`SetAsync` / `RemoveAsync` は保存せず `false` を返す（保存できたときだけ `true`）。元のデータを空で上書きして消さないため
+  - 読み込みの結果は `LoadStatus` で持つ。最初の読み込みが一時的なロックなどで失敗しても、プロセスが終わるまで読み取り専用のままにならないよう、保存のたびに 1 度だけ読み直す。読めれば、読み取り専用を解いて、そのまま保存する（読めなければ、保存せずに `false`）。壊れたファイルを退避したときのメッセージは、読み直しても残す
 - 保存は、コピーした辞書を変更して書き出し、成功してからメモリの辞書を入れ替える（書き込みに失敗しても、メモリの内容がファイルとずれない）
 - `JsonFileStore` はロックを持ったまま await するため、SDK.Core の await には `ConfigureAwait(false)` を付ける（UI スレッドから呼ばれても、戻りを待つ UI スレッドとのデッドロックが起きない）
 - ファイルが無い・空・壊れているときは空として扱う（壊れていたときは上の手順で退避してから。`RecoveryMessage`）。ロック・権限で読めなかったときは `LoadError` に残し、空として扱って保存は試みる

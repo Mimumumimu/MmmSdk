@@ -17,7 +17,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - 同一 EXE の多重起動の防止
 - アプリの初期化（XAML の読み込み）より前でも出せる標準のメッセージボックス
 - エラーのログ（日付ごとのファイル）と、復旧できないエラーの処理（ログ → ダイアログ → 終了）。未処理の例外の最後の受け皿
-- ConPTY（Windows 擬似コンソール）にプロセスをつないで起動する部品（ターミナル画面を作るときの土台）
+- ターミナル（ConPTY でシェルを動かし、WebView2 上の xterm.js で描く画面）と、既定のシェルの決定（PowerShell 7 → Windows PowerShell）・シェル別のコマンド作り
+- ConPTY（Windows 擬似コンソール）にプロセスをつないで起動する部品（ターミナルの土台）
 - タスクトレイのアイコンと右クリックメニュー（Win32 を直接使う。メニューは自前描画でダーク/ライト対応）
 - 時刻の入力欄（`TimeInputBox`）・押せる領域（`LinkArea`）・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理（コントロールのテンプレート内の要素に触るため）
@@ -35,12 +36,14 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.Core.Storage` | JSON ファイルの読み書き（`IJsonFileStore` / `JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
 | `MmmSdk.Core.Settings` | 汎用設定ストア（`ISettingsStore`）。JSON での実装は `MmmSdk.Core.Settings.Json`（`JsonSettingsStore`） |
-| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
+| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`。見えているか・作業領域に収める） |
 | `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
+| `MmmSdk.Core.Shells` | シェルの決定（`ShellInfo` / `ShellKind` / `ShellLocator`）と、シェル別のコマンド作り（`ShellCommands`） |
 | `MmmSdk.Core.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
 | `MmmSdk.Core.Logging` | エラーログの追記（`ErrorLog`。`yyyy-MM-dd.log`） |
-| `MmmSdk.Core.Tasks` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`） |
+| `MmmSdk.Core.Tasks` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`）・入力が止まるのを待ってから処理を 1 回だけ行う（`Debouncer`） |
+| `MmmSdk.Core.Collections` | 「最近使った順」のリストの操作（`AddRecent`） |
 | `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
@@ -48,8 +51,10 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
 | `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
 | `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray`（`SdkWinUIServiceCollectionExtensions` の中） |
+| `MmmSdk.WinUI.Terminal` | ターミナル（`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く） |
 | `MmmSdk.WinUI.ConPty` | ConPTY にプロセスをつないで起動する（`PseudoConsole`） |
-| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
+| `MmmSdk.WinUI.Attachments` | 添付の画像を JPEG に変換する（`IImageConverter` / `ImageConverter`）・サムネイル（`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ） |
+| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
 | `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける）・復旧できないエラーの最後の受け皿（`FatalErrorHandler`） |
 | `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
 | `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
@@ -59,6 +64,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - .NET 10
 - WinUI 3（Windows App SDK 2.5）… `MmmSdk.WinUI` のみ
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
+- WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0（ターミナル描画。MIT。`MmmSdk.WinUI/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所）
 - Microsoft.Extensions.DependencyInjection.Abstractions（DI 登録用の拡張メソッド）
 - System.Text.Json（ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する）
 
@@ -103,7 +109,7 @@ services.AddMmmSdkWinUI();
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`（すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる） |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
 
 ## 使い方
 
@@ -146,14 +152,14 @@ await store.WriteAsync("Links.json", menu, MyJsonContext.Readable.LinkMenu);
 var minutes = settings.Get("Reminder.SnoozeIntervalMinutes", 15);         // 無い・型が合わないときは既定値
 await settings.SetAsync("Reminder.SnoozeIntervalMinutes", 30);            // 保存し終えるまで待つ
 
-// string / bool / int / long / double は型ごとの専用メソッド（それ以外の型は、ビルドで誤りになる）。それ以外の型は JsonTypeInfo を渡す
+// string / bool / int / long / double は型ごとの専用メソッド（`SettingsStoreExtensions` の拡張メソッド。それ以外の型は、ビルドで誤りになる）。それ以外の型は JsonTypeInfo を渡す
 var options = settings.Get("Foo.Options", new FooOptions(), MyJsonContext.Default.FooOptions);
 ```
 
 - `Get` は同期です。最初のアクセスで 1 度だけファイルを読み、以後はメモリから返します
 - ファイルが無い・空・壊れているときは空の設定として扱い、例外は出しません。壊れていたときは退避して `RecoveryMessage` に、読めなかったときは `LoadError` に理由が残ります
 - 例外を出さずに「ある・型が合う」を確かめたいときは `TryGet(key, out value)` を使います（`int.TryParse` と同じ形）。`Get` は既定値を返す版です
-- 読めなかった（`LoadError`）ときは `IsReadOnly` が true になり、元のデータを上書きで消さないよう、`SetAsync` / `RemoveAsync` は何も保存せず `false` を返します。保存できたときだけ `true` です（例外にはしません）
+- 読めなかった（`LoadError`）ときは `IsReadOnly` が true になり（一時的なロックだったときのために、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存します）、元のデータを上書きで消さないよう、`SetAsync` / `RemoveAsync` は何も保存せず `false` を返します。保存できたときだけ `true` です（例外にはしません）
 - ほかに `Contains(key)` / `RemoveAsync(key)` があります
 
 ### ウィンドウ位置の保存（`IWindowPositionService`）
@@ -331,6 +337,32 @@ var minute = MinuteScheduler.TruncateToMinute(now);                           //
 scheduler.Dispose();                                                          // 止める
 ```
 
+### ターミナル・シェル（`MmmSdk.WinUI.Terminal` / `MmmSdk.Core.Shells`）
+
+シェルを動かして画面に出す部品です。起動するシェルは `ShellInfo(Path, Kind)` で表し、既定は `ShellLocator.Default`（PATH 上の `pwsh.exe`、無ければ Windows PowerShell）です。
+
+```csharp
+services.AddTransient<ITerminalSession, PseudoConsoleSession>();   // 利用側ごとに 1 つ。Host の破棄時にシェルも終了する
+```
+
+```xml
+<!-- xmlns:terminal="using:MmmSdk.WinUI.Terminal" -->
+<terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" />
+```
+
+```csharp
+session.WorkingDirectory = directory;                       // Start の前に設定する
+session.Shell = new ShellInfo(path, ShellKind.PowerShell);  // 既定以外のシェルを使うとき
+if (ShellCommands.TryChangeDirectory(session.Shell, directory, out var command))
+{
+    session.Submit(command);                                // 貼り付けとして入力し、Enter で確定する
+}
+```
+
+- xterm.js のファイルは、参照するアプリの出力フォルダー（`Assets/Terminal/`）へ自動でコピーされます
+- 画面側の WebView2 ランタイムが無いときは、ターミナルの場所に理由が文字で出ます（ほかの機能は使えます）
+- 既定のシェルの探索は、最初に読むときにディスクへ触れます。UI スレッドで初めて読まないよう、起動時の準備で `_ = ShellLocator.Default` をバックグラウンドから読んでください
+
 ### ConPTY（`MmmSdk.WinUI.ConPty`）
 
 `PseudoConsole.Start` で、擬似コンソールにつないだプロセス（シェルなど）を起動します。端末の描画やキー入力の解釈は持ちません（出力は端末のエスケープシーケンスを含んだ UTF-8 のバイト列のままです）。
@@ -430,7 +462,8 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY（`PseudoConsole`）の仕組みと後始末の順序 |
-| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存 |
+| [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面（xterm.js） |
+| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存・添付の画像 |
 
 ## バージョン
 
@@ -472,3 +505,8 @@ git commit
 ## ライセンス
 
 このプロジェクトは [MIT License](./LICENSE.txt) のもとで公開されています。
+
+同梱しているサードパーティのライセンス:
+
+- xterm.js（MIT License）… [`MmmSdk.WinUI/Terminal/Assets/xterm.LICENSE.txt`](./MmmSdk.WinUI/Terminal/Assets/xterm.LICENSE.txt)
+- @xterm/addon-fit（MIT License）… [`MmmSdk.WinUI/Terminal/Assets/addon-fit.LICENSE.txt`](./MmmSdk.WinUI/Terminal/Assets/addon-fit.LICENSE.txt)
