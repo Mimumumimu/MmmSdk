@@ -30,41 +30,54 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core` | `net10.0`（WinUI に依存しない。トリミング・AOT 互換の分析を有効にしている。`Paths`（`PathOpener` / `PathTarget`）だけは Windows 前提） |
 | `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`（WinUI 3） |
 
-プロジェクトの中は、部品ごとのフォルダーに分けています。名前空間はフォルダーと同じです。
+プロジェクトの直下は、「Components / Controls / Utilities」の 3 つの層に分けています。名前空間はフォルダーと同じです。
+
+| 層 | 入れるもの | 探し方 |
+| --- | --- | --- |
+| `Components/<部品>/` | 何をするための部品かを名前で言えるもの（保存・設定・通知・トレイ・ターミナル など）。その部品の型（サービス・画面・データ・その部品専用の static や拡張メソッド・その部品の中で使うコントロール）を一式まとめて置く | やりたいことの名前（「通知」「トレイ」「保存」）で探す |
+| `Controls/` | どの部品にも属さない、XAML に置いて使う汎用のコントロール（`MmmSdk.WinUI` のみ） | XAML に置く部品はここ（部品の一部のものは、その部品のフォルダーにある） |
+| `Utilities/` | どの部品にも属さない、汎用の小さな道具（拡張メソッド・小さなヘルパー）。サブフォルダーは作らず平置き | 「`Window` の拡張メソッド」「`Task` の扱い」などの道具はここ |
+
+迷ったら「その型は、ある部品の一部か」で決めています。一部なら、その部品のフォルダーにあります（例: `ReadableJsonOptions` は `Storage`、`ScreenGeometry` は `WindowPositions`、`SettingsStoreExtensions` は `Settings`、`TerminalControl` は `Terminal`、`ThumbnailImage` は `Attachments`）。`Core` と `WinUI` で同じテーマの部品は、同じフォルダー名です（`Attachments`・`Notifications`）。Win32 の宣言（`Interop/`。`MmmSdk.WinUI` のみ）は土台なので、層の外にあります。DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`）はプロジェクトの直下です。
+
+#### MmmSdk.Core
 
 | 名前空間 | 内容 |
 | --- | --- |
-| `MmmSdk.Core.Storage` | JSON ファイルの読み書き（`IJsonFileStore` / `JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
-| `MmmSdk.Core.Settings` | 汎用設定ストア（`ISettingsStore`）。JSON での実装は `MmmSdk.Core.Settings.Json`（`JsonSettingsStore`） |
-| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`。見えているか・作業領域に収める） |
-| `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
-| `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
-| `MmmSdk.Core.Shells` | シェルの決定（`ShellInfo` / `ShellKind` / `ShellLocator`）と、シェル別のコマンド作り（`ShellCommands`） |
-| `MmmSdk.Core.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
-| `MmmSdk.Core.Logging` | エラーログの追記（`ErrorLog`。`yyyy-MM-dd.log`） |
-| `MmmSdk.Core.Tasks` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`）・入力が止まるのを待ってから処理を 1 回だけ行う（`Debouncer`） |
-| `MmmSdk.Core.Collections` | 「最近使った順」のリストの操作（`AddRecent`） |
-| `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
-| `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
-| `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`） |
-| `MmmSdk.WinUI.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`）・擬似モーダル（`PseudoModal`）・標準のメッセージボックス（`NativeMessageBox`） |
+| `MmmSdk.Core.Components.Storage` | JSON ファイルの読み書き（`IJsonFileStore` / `JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
+| `MmmSdk.Core.Components.Settings` | 汎用設定ストア（`ISettingsStore`・拡張メソッド `SettingsStoreExtensions`）。JSON での実装は `MmmSdk.Core.Components.Settings.Json`（`JsonSettingsStore`） |
+| `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`。見えているか・作業領域に収める） |
+| `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
+| `MmmSdk.Core.Components.Notifications` | 通知の項目（`NotificationItem`） |
+| `MmmSdk.Core.Components.Shells` | シェルの決定（`ShellInfo` / `ShellKind` / `ShellLocator`）と、シェル別のコマンド作り（`ShellCommands`） |
+| `MmmSdk.Core.Components.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
+| `MmmSdk.Core.Components.Logging` | エラーログの追記（`ErrorLog`。`yyyy-MM-dd.log`） |
+| `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
+| `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
+| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`）・入力が止まるのを待ってから処理を 1 回だけ行う（`Debouncer`）・「最近使った順」のリストの操作（`AddRecent`） |
+| `MmmSdk.Core` | DI への登録（`AddMmmSdkCore`） |
+
+#### MmmSdk.WinUI
+
+| 名前空間 | 内容 |
+| --- | --- |
+| `MmmSdk.WinUI.Components.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`） |
+| `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ（`IDialogService`）・親の決定（`IDialogHost`。実装は `DialogService`）・ファイル/フォルダー選択（`IFilePickerService` / `IFolderPickerService`） |
+| `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す（`PseudoModal`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
+| `MmmSdk.WinUI.Components.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray`（`SdkWinUIServiceCollectionExtensions` の中） |
+| `MmmSdk.WinUI.Components.Terminal` | ターミナル（`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く）と、ConPTY にプロセスをつないで起動する部分（`PseudoConsole`） |
+| `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する（`IImageConverter` / `ImageConverter`）・サムネイル（`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ） |
+| `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける）・復旧できないエラーの最後の受け皿（`FatalErrorHandler`） |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
-| `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
-| `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray`（`SdkWinUIServiceCollectionExtensions` の中） |
-| `MmmSdk.WinUI.Terminal` | ターミナル（`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く） |
-| `MmmSdk.WinUI.ConPty` | ConPTY にプロセスをつないで起動する（`PseudoConsole`） |
-| `MmmSdk.WinUI.Attachments` | 添付の画像を JPEG に変換する（`IImageConverter` / `ImageConverter`）・サムネイル（`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ） |
-| `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
-| `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける）・復旧できないエラーの最後の受け皿（`FatalErrorHandler`） |
-| `MmmSdk.WinUI.VisualTree` | ビジュアルツリーの検索（`VisualTreeSearch`） |
-| `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
+| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド（前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`）・作業領域に収める計算（`WindowPlacement`）・標準のメッセージボックス（`NativeMessageBox`）・IME のオン/オフ（`ImeControl`）・ビジュアルツリーの検索（`VisualTreeSearch`） |
+| `MmmSdk.WinUI` | DI への登録（`AddMmmSdkWinUI` / `AddMmmSdkTray`） |
 
 ## 技術スタック
 
 - .NET 10
 - WinUI 3（Windows App SDK 2.5）… `MmmSdk.WinUI` のみ
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
-- WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0（ターミナル描画。MIT。`MmmSdk.WinUI/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所）
+- WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0（ターミナル描画。MIT。`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所）
 - Microsoft.Extensions.DependencyInjection.Abstractions（DI 登録用の拡張メソッド）
 - System.Text.Json（ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する）
 
@@ -174,7 +187,7 @@ var visible = ScreenGeometry.IsVisibleEnough(windowRect, workAreas, 0.5);
 
 位置は設定ストアに `WindowPosition.<キー>` として保存されます。
 
-位置と大きさ（`WindowBounds`）は `LoadBounds(key)` / `SaveBoundsAsync(key, bounds)` で、`WindowBounds.<キー>` として保存されます。WinUI のウィンドウには、これを使って復元・保存を自動で行う `WindowBoundsKeeper`（`MmmSdk.WinUI.Windowing`）があります。
+位置と大きさ（`WindowBounds`）は `LoadBounds(key)` / `SaveBoundsAsync(key, bounds)` で、`WindowBounds.<キー>` として保存されます。WinUI のウィンドウには、これを使って復元・保存を自動で行う `WindowBoundsKeeper`（`MmmSdk.WinUI.Components.Windowing`）があります。
 
 ```csharp
 // コンストラクターで 1 回呼ぶだけ（ウィンドウが閉じたら自分で後始末する）
@@ -222,7 +235,7 @@ notifications.Show("お知らせ", "メッセージだけの簡易通知");
 - 表示位置は `positionKey`（既定は `"Notification"`）ごとに保存・復元します。保存位置が画面外になっていたら、プライマリモニターの作業領域の右下に出します
 - 表示されたときに、ウィンドウ全体を数回点滅させて知らせます
 
-### 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル（`MmmSdk.WinUI.Dialogs`）
+### 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル（`MmmSdk.WinUI.Components.Dialogs`）
 
 UI スレッドから呼びます。ダイアログの親は `IDialogHost`（実装は `DialogService`）が決めます。アプリは具象型ではなく、確認ダイアログは `IDialogService`、親の決定は `IDialogHost` に依存します（いちばん手前のモーダルウィンドウ → 最後に操作したウィンドウ → 最初に登録したウィンドウ）。
 
@@ -249,7 +262,7 @@ await dialogs.ShowModalAsync(window, owner =>
 });
 ```
 
-ウィンドウの前面表示・DPI 倍率・タイトルバー・大きさ・位置合わせは、`Window` の拡張メソッド（`MmmSdk.WinUI.Windowing`）です。
+ウィンドウの前面表示・DPI 倍率・タイトルバー・大きさ・位置合わせは、`Window` の拡張メソッド（`MmmSdk.WinUI.Utilities`）です。
 
 ```csharp
 window.Activate();
@@ -292,10 +305,10 @@ catch (Exception ex)
 }
 ```
 
-- `ErrorLog`（`MmmSdk.Core.Logging`）は `yyyy-MM-dd.log` に、時刻・場所・バージョン・OS・例外（内部例外とスタックトレース）を追記します。落ちる直前に呼ばれるので、同期で書いて閉じてから戻ります。書けなかったとき（権限・ディスク）は、例外にせず `null` を返します
+- `ErrorLog`（`MmmSdk.Core.Components.Logging`）は `yyyy-MM-dd.log` に、時刻・場所・バージョン・OS・例外（内部例外とスタックトレース）を追記します。落ちる直前に呼ばれるので、同期で書いて閉じてから戻ります。書けなかったとき（権限・ディスク）は、例外にせず `null` を返します
 - ダイアログは WinUI ではなく標準のメッセージボックス（`NativeMessageBox`）なので、XAML が壊れていても出ます
 - `AttachTo` は、UI スレッドの未処理例外（`Application.UnhandledException`）・どのスレッドの未処理例外（`AppDomain`）・待たれないタスクの例外（`TaskScheduler.UnobservedTaskException`）を集めます。取り消し（`OperationCanceledException`）だけのタスクは報告しません
-- 待たずに走らせるタスクは、`_ = SomeAsync();` で捨てずに `SomeAsync().Forget()`（`MmmSdk.Core.Tasks`）にします。捨てると、失敗が誰にも見えず、ガベージコレクションのときに初めて分かります。`Forget` は、失敗した時点で未処理例外にして、上の安全網が受けます。起きると分かっている失敗は、タスクの中で受けて画面に出してください
+- 待たずに走らせるタスクは、`_ = SomeAsync();` で捨てずに `SomeAsync().Forget()`（`MmmSdk.Core.Utilities`）にします。捨てると、失敗が誰にも見えず、ガベージコレクションのときに初めて分かります。`Forget` は、失敗した時点で未処理例外にして、上の安全網が受けます。起きると分かっている失敗は、タスクの中で受けて画面に出してください
 - `BeforeExit` イベントで、終了の直前の後始末ができます（`TrayIcon` はこれでトレイのアイコンを外します）。呼ばれるスレッドは決まっていません
 - 複数のスレッドから同時に報告されたときは、最初の 1 つだけが報告し、ほかは終了を待ちます
 - `ErrorLog` で書けないこと（スタックオーバーフロー・ネイティブ側の破損）は、.NET のハンドラー自体が動かないため、残せません
@@ -337,7 +350,7 @@ var minute = MinuteScheduler.TruncateToMinute(now);                           //
 scheduler.Dispose();                                                          // 止める
 ```
 
-### ターミナル・シェル（`MmmSdk.WinUI.Terminal` / `MmmSdk.Core.Shells`）
+### ターミナル・シェル（`MmmSdk.WinUI.Components.Terminal` / `MmmSdk.Core.Components.Shells`）
 
 シェルを動かして画面に出す部品です。起動するシェルは `ShellInfo(Path, Kind)` で表し、既定は `ShellLocator.Default`（PATH 上の `pwsh.exe`、無ければ Windows PowerShell）です。
 
@@ -346,7 +359,7 @@ services.AddTransient<ITerminalSession, PseudoConsoleSession>();   // 利用側�
 ```
 
 ```xml
-<!-- xmlns:terminal="using:MmmSdk.WinUI.Terminal" -->
+<!-- xmlns:terminal="using:MmmSdk.WinUI.Components.Terminal" -->
 <terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" />
 ```
 
@@ -363,7 +376,7 @@ if (ShellCommands.TryChangeDirectory(session.Shell, directory, out var command))
 - 画面側の WebView2 ランタイムが無いときは、ターミナルの場所に理由が文字で出ます（ほかの機能は使えます）
 - 既定のシェルの探索は、最初に読むときにディスクへ触れます。UI スレッドで初めて読まないよう、起動時の準備で `_ = ShellLocator.Default` をバックグラウンドから読んでください
 
-### ConPTY（`MmmSdk.WinUI.ConPty`）
+### ConPTY（`MmmSdk.WinUI.Components.Terminal`）
 
 `PseudoConsole.Start` で、擬似コンソールにつないだプロセス（シェルなど）を起動します。端末の描画やキー入力の解釈は持ちません（出力は端末のエスケープシーケンスを含んだ UTF-8 のバイト列のままです）。
 
@@ -378,7 +391,7 @@ ThreadPool.RegisterWaitForSingleObject(console.ExitHandle, (_, _) => { /* プロ
 
 使い終わるときは、出力を読み続けたまま `Close()`（プロセスがまだ動いていれば終了する）→ 読み取りが終わるのを待つ → `Dispose()` の順です。起動に失敗したときは、作った分を片付けてから `Win32Exception`（または `COMException`）を投げます。
 
-### タスクトレイ（`MmmSdk.WinUI.Tray`）
+### タスクトレイ（`MmmSdk.WinUI.Components.Tray`）
 
 トレイを使うアプリだけが登録します（`AddMmmSdkWinUI` には含まれません）。`TrayIcon` は UI スレッドで解決します。
 
@@ -417,7 +430,7 @@ tray.ShowNotification("タイトル", "本文", isError: false);   // バルー�
 - 項目の処理の予測できる失敗は、処理の中で受けて、その機能のやり方で知らせてください（受けなかった例外は、バグとして、上の安全網がログ → ダイアログ → 終了で受けます）
 - 終了時は `TrayIcon` を `Dispose` する（DI の破棄で行われる）。各機能の後始末のあとに消したいときは、機能より先に解決しておく（DI は作った順の逆に破棄する）
 
-### コントロール・IME（`MmmSdk.WinUI.Controls` / `Input`）
+### コントロール・IME（`MmmSdk.WinUI.Controls` / `Utilities`）
 
 ```xml
 <!-- xmlns:controls="using:MmmSdk.WinUI.Controls" -->
@@ -508,5 +521,5 @@ git commit
 
 同梱しているサードパーティのライセンス:
 
-- xterm.js（MIT License）… [`MmmSdk.WinUI/Terminal/Assets/xterm.LICENSE.txt`](./MmmSdk.WinUI/Terminal/Assets/xterm.LICENSE.txt)
-- @xterm/addon-fit（MIT License）… [`MmmSdk.WinUI/Terminal/Assets/addon-fit.LICENSE.txt`](./MmmSdk.WinUI/Terminal/Assets/addon-fit.LICENSE.txt)
+- xterm.js（MIT License）… [`MmmSdk.WinUI/Components/Terminal/Assets/xterm.LICENSE.txt`](./MmmSdk.WinUI/Components/Terminal/Assets/xterm.LICENSE.txt)
+- @xterm/addon-fit（MIT License）… [`MmmSdk.WinUI/Components/Terminal/Assets/addon-fit.LICENSE.txt`](./MmmSdk.WinUI/Components/Terminal/Assets/addon-fit.LICENSE.txt)
