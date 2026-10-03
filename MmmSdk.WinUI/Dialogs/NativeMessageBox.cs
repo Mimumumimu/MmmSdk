@@ -11,12 +11,25 @@ public static class NativeMessageBox
     /// <summary>情報のメッセージボックスを出して、閉じられるまで待つ</summary>
     /// <param name="text">本文</param>
     /// <param name="caption">タイトル</param>
-    public static unsafe void ShowInformation(string text, string caption)
+    public static void ShowInformation(string text, string caption)
+        => Show(text, caption, MESSAGEBOX_STYLE.MB_ICONINFORMATION);
+
+    /// <summary>エラーのメッセージボックスを出して、閉じられるまで待つ</summary>
+    /// <param name="text">本文</param>
+    /// <param name="caption">タイトル</param>
+    public static void ShowError(string text, string caption)
+        => Show(text, caption, MESSAGEBOX_STYLE.MB_ICONERROR);
+
+    /// <summary>OK ボタンだけのメッセージボックスを出して、閉じられるまで待つ</summary>
+    /// <param name="text">本文</param>
+    /// <param name="caption">タイトル</param>
+    /// <param name="icon">アイコンの種類</param>
+    private static unsafe void Show(string text, string caption, MESSAGEBOX_STYLE icon)
     {
         fixed (char* textPtr = text)
         fixed (char* captionPtr = caption)
         {
-            PInvoke.MessageBox(HWND.Null, textPtr, captionPtr, MESSAGEBOX_STYLE.MB_OK | MESSAGEBOX_STYLE.MB_ICONINFORMATION);
+            PInvoke.MessageBox(HWND.Null, textPtr, captionPtr, MESSAGEBOX_STYLE.MB_OK | icon);
         }
     }
 }

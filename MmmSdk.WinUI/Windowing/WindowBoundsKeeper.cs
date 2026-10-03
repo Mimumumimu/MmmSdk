@@ -1,6 +1,7 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using MmmSdk.Core.Storage;
 using MmmSdk.Core.WindowPositions;
 using Windows.Graphics;
 
@@ -105,7 +106,10 @@ public sealed class WindowBoundsKeeper : IDisposable
     /// <summary>動かし終わったら、位置と大きさを保存する</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="args">イベントの情報</param>
-    /// <remarks>保存に失敗（ロック・権限など）したら、握りつぶさずに、未処理例外として落とす。設定を読めず保存できない状態では、何もしない（例外にならない）。</remarks>
+    /// <remarks>
+    /// 保存に失敗（ロック・権限・ディスク）しても、位置と大きさが戻らないだけで、ウィンドウは使える。<c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける（次の変更でやり直す）。
+    /// 設定を読めず保存できない状態では、何もしない（例外にならない）。
+    /// </remarks>
     private async void OnTimerTick(DispatcherQueueTimer sender, object args)
     {
         _timer.Stop();
@@ -118,7 +122,14 @@ public sealed class WindowBoundsKeeper : IDisposable
 
         var position = appWindow.Position;
         var size = appWindow.Size;
-        await _positions.SaveBoundsAsync(_key, new WindowBounds(position.X, position.Y, size.Width, size.Height));
+        try
+        {
+            await _positions.SaveBoundsAsync(_key, new WindowBounds(position.X, position.Y, size.Width, size.Height));
+        }
+        catch (DataFileException)
+        {
+            // 位置と大きさが保存できないだけなので、続ける
+        }
     }
 
     /// <summary>ウィンドウが閉じたら、後始末をする</summary>

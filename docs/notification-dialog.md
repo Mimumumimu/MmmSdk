@@ -25,6 +25,7 @@
 - 差し替え時は、高さの変化で画面に収まらなくなるとき以外は位置を動かさない
 
 ## 位置の保存と復元（`IWindowPositionService` / `WindowPositionService`）
+- 位置の保存に失敗（`DataFileException`。ロック・権限・ディスク）しても、通知は使えるので、その失敗だけを受けて続ける（`async void` の例外は受け皿が無く、アプリごと落ちるため）。メインウィンドウ用の `WindowBoundsKeeper` も同じ。
 - 位置は設定ストアに `WindowPosition.<キー>` として保存する。画面内にいるかの判定は `WindowPlacement.IsVisibleEnough`（メインウィンドウの `WindowBoundsKeeper` と共通）。キー（`positionKey`）は通知の種類ごとに指定でき、既定は `Notification`
 - 保存するタイミング
   - ドラッグの終了（離した通知とキャプチャ喪失のどちらからでも 1 回）

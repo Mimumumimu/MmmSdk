@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
+using MmmSdk.WinUI.Errors;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.Controls;
@@ -41,6 +42,8 @@ public sealed class TrayIcon : IDisposable
     private readonly uint _taskbarCreatedMessage;
     /// <summary>UI スレッドのディスパッチャー</summary>
     private readonly DispatcherQueue _dispatcher;
+    /// <summary>復旧できないエラーの報告先</summary>
+    private readonly FatalErrorHandler _fatalErrors;
 
     /// <summary>表示中のメニューのコマンド ID と処理。</summary>
     private readonly Dictionary<int, Func<Task>> _commands = [];
@@ -61,10 +64,14 @@ public sealed class TrayIcon : IDisposable
     /// <summary>トレイアイコンを作る（表示は <see cref="Show"/> で行う）</summary>
     /// <param name="sources">メニューに項目を出す機能</param>
     /// <param name="options">アプリごとの設定（ツールチップ・ウィンドウクラス名・アイコン・「終了」の文言）</param>
-    public TrayIcon(IEnumerable<ITrayMenuSource> sources, TrayIconOptions options)
+    /// <param name="fatalErrors">復旧できないエラーの報告先（メッセージの処理で予想外の例外が出たとき、ログ・ダイアログ・終了を任せる）</param>
+    public TrayIcon(IEnumerable<ITrayMenuSource> sources, TrayIconOptions options, FatalErrorHandler fatalErrors)
     {
         _sources = sources;
         _options = options;
+        _fatalErrors = fatalErrors;
+        // 異常終了のときも、アイコンがトレイに残らないようにする
+        fatalErrors.BeforeExit += RemoveIconBeforeExit;
         _taskbarCreatedMessage = PInvoke.RegisterWindowMessage("TaskbarCreated");
         _dispatcher = DispatcherQueue.GetForCurrentThread();
     }
@@ -162,6 +169,16 @@ public sealed class TrayIcon : IDisposable
         PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_SETVERSION, in data);
     }
 
+    /// <summary>異常終了の直前に、トレイからアイコンを消す</summary>
+    /// <remarks>呼ばれるスレッドは UI スレッドとは限らないので、ウィンドウは壊さず、アイコンの登録だけを外す。</remarks>
+    private void RemoveIconBeforeExit()
+    {
+        if (!_hwnd.IsNull)
+        {
+            RemoveIcon();
+        }
+    }
+
     /// <summary>トレイからアイコンを消す</summary>
     private unsafe void RemoveIcon()
     {
@@ -197,7 +214,25 @@ public sealed class TrayIcon : IDisposable
     /// <returns>メッセージの処理結果</returns>
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static LRESULT WndProc(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
-        => s_current?.HandleMessage(hwnd, msg, wParam, lParam) ?? PInvoke.DefWindowProc(hwnd, msg, wParam, lParam);
+    {
+        var current = s_current;
+        if (current is null)
+        {
+            return PInvoke.DefWindowProc(hwnd, msg, wParam, lParam);
+        }
+
+        try
+        {
+            return current.HandleMessage(hwnd, msg, wParam, lParam);
+        }
+        catch (Exception ex)
+        {
+            // [UnmanagedCallersOnly] から例外が抜けるとログも残らず落ちるため、ここで受けて、ログ・ダイアログ・終了を行う
+            current._fatalErrors.Report("トレイのメッセージ処理で予想外の例外が出ました", ex);
+            // Report は戻らない（コンパイラーには伝わらないため、念のため投げ直す）
+            throw;
+        }
+    }
 
     /// <summary>メッセージを処理する</summary>
     /// <param name="hwnd">ウィンドウのハンドル</param>
@@ -371,6 +406,7 @@ public sealed class TrayIcon : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _fatalErrors.BeforeExit -= RemoveIconBeforeExit;
 
         if (!_hwnd.IsNull)
         {

@@ -16,6 +16,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - 確認ダイアログ・ファイル/フォルダー選択（親ウィンドウを自動で決める）と、ウィンドウを親の上に擬似モーダルで出す部品
 - 同一 EXE の多重起動の防止
 - アプリの初期化（XAML の読み込み）より前でも出せる標準のメッセージボックス
+- エラーのログ（日付ごとのファイル）と、復旧できないエラーの処理（ログ → ダイアログ → 終了）。未処理の例外の最後の受け皿
 - ConPTY（Windows 擬似コンソール）にプロセスをつないで起動する部品（ターミナル画面を作るときの土台）
 - タスクトレイのアイコンと右クリックメニュー（Win32 を直接使う。メニューは自前描画でダーク/ライト対応）
 - 時刻の入力欄（`TimeInputBox`）・押せる領域（`LinkArea`）・IME のオン/オフ、添付ファイルの一時保存先の管理
@@ -99,7 +100,7 @@ services.AddMmmSdkWinUI();
 | メソッド | 登録するもの |
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`（すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる） |
-| `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ |
+| `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
 | `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
 
 ## 使い方
@@ -259,7 +260,37 @@ WinUI のウィンドウやアプリの初期化より前でも出せます。�
 
 ```csharp
 NativeMessageBox.ShowInformation("MyApp はすでに起動しています。", "MyApp");
+NativeMessageBox.ShowError("起動できませんでした。", "MyApp");
 ```
+
+### エラーのログと、復旧できないエラーの処理（`ErrorLog` / `FatalErrorHandler`）
+
+エラーの扱いは 3 段階です。
+
+1. **予測できる失敗**（ファイル・JSON・OS・COM など）は、範囲を絞った `catch` で受けて、画面に出す（`ErrorState` の InfoBar など）。使い続けられる
+2. **復旧が難しい失敗・予想外の失敗（バグ）**は、`FatalErrorHandler.Report` で、ログ → ダイアログ → 終了
+3. **`try/catch` を書けない場所**（`async void`・タイマー・待たれないタスク）は、`AttachTo` が付ける安全網が、2 と同じ処理を行う
+
+```csharp
+// アプリの最初（Host を作る前）に作って付ける。DI にも登録して、トレイなどの SDK の部品に渡す
+var fatalErrors = new FatalErrorHandler(new ErrorLog(Path.Combine(AppContext.BaseDirectory, "Logs")), "MyApp");
+fatalErrors.AttachTo(this);                       // this は Application
+services.AddSingleton(fatalErrors);
+
+// 復旧できない失敗を自分で見つけたとき
+catch (Exception ex)
+{
+    fatalErrors.Report("起動に失敗しました", ex);   // 戻らない
+}
+```
+
+- `ErrorLog`（`MmmSdk.Core.Logging`）は `yyyy-MM-dd.log` に、時刻・場所・バージョン・OS・例外（内部例外とスタックトレース）を追記します。落ちる直前に呼ばれるので、同期で書いて閉じてから戻ります。書けなかったとき（権限・ディスク）は、例外にせず `null` を返します
+- ダイアログは WinUI ではなく標準のメッセージボックス（`NativeMessageBox`）なので、XAML が壊れていても出ます
+- `AttachTo` は、UI スレッドの未処理例外（`Application.UnhandledException`）・どのスレッドの未処理例外（`AppDomain`）・待たれないタスクの例外（`TaskScheduler.UnobservedTaskException`）を集めます。取り消し（`OperationCanceledException`）だけのタスクは報告しません
+- 待たずに走らせるタスクは、`_ = SomeAsync();` で捨てずに `SomeAsync().Forget()`（`MmmSdk.Core.Tasks`）にします。捨てると、失敗が誰にも見えず、ガベージコレクションのときに初めて分かります。`Forget` は、失敗した時点で未処理例外にして、上の安全網が受けます。起きると分かっている失敗は、タスクの中で受けて画面に出してください
+- `BeforeExit` イベントで、終了の直前の後始末ができます（`TrayIcon` はこれでトレイのアイコンを外します）。呼ばれるスレッドは決まっていません
+- 複数のスレッドから同時に報告されたときは、最初の 1 つだけが報告し、ほかは終了を待ちます
+- `ErrorLog` で書けないこと（スタックオーバーフロー・ネイティブ側の破損）は、.NET のハンドラー自体が動かないため、残せません
 
 ### 画面に出すエラー（`ErrorState`）
 
