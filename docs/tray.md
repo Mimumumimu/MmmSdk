@@ -12,8 +12,8 @@
 - UI スレッドで作り、UI スレッドで破棄する。トレイはアプリに 1 つ（ウィンドウプロシージャが static のため）
 
 ## メニュー
-- 項目は `ITrayMenuSource` を DI に登録した順に、区切り線で分けて並べ、末尾に `TrayIconOptions.ExitText`（終了）。メニューは開くたびに作る（`GetItems` を呼ぶ）
-- `TrayMenuItem`: `Command`（クリックで処理）/ `Submenu` / `Disabled`（押せない）/ `Separator`。項目の処理の失敗は、トレイの通知（エラー）で知らせる
+- 項目は `ITrayMenuSource` を DI に登録した順に、区切り線で分けて並べ、末尾に `TrayIconOptions.ExitText`（終了。文言はアプリが渡す）。メニューは開くたびに作る（`GetItems` を呼ぶ）
+- `TrayMenuItem`: `Command`（クリックで処理）/ `Submenu` / `Disabled`（押せない）/ `Separator`。項目の処理の予測できる失敗は、処理の中で受けて、その機能のやり方で知らせる（受けなかった失敗は、バグとして安全網へ）
 - 項目はオーナードロー（`TrayMenuRenderer`。internal）
   - フォントは BIZ UDゴシック 12pt（無ければ Yu Gothic UI → Segoe UI。有無は `EnumFontFamiliesEx` で調べる）。メニューを出すモニターの DPI に合わせる
   - 配色はレジストリの `AppsUseLightTheme` でダーク / ライトを切り替える（Windows 11 風の色）
@@ -24,4 +24,4 @@
 
 ## 例外
 - `WndProc` は `[UnmanagedCallersOnly]` なので、例外が抜けるとログも残らず落ちる。中で `try/catch` して、`FatalErrorHandler.Report`（ログ → ダイアログ → 終了）に渡す。`TrayIcon` はコンストラクターで `FatalErrorHandler` を受け取り、異常終了の直前（`BeforeExit`）に、トレイからアイコンを外す（UI スレッドとは限らないので、ウィンドウは壊さずアイコンの登録だけ外す。このスレッドでの外し方は、まだ実機で確かめていない）
-- メニューのコマンドの失敗は、`ShowNotification`（トレイの通知）で知らせる
+- メニューのコマンドは、`Forget()` で走らせる。処理の中で受けなかった例外は、`TrayIcon` では受けず（広い `catch` でバグを隠さない）、安全網（ログ → ダイアログ → 終了）が受ける。予測できる失敗（パスが開けないなど）は、各 `ITrayMenuSource` の処理の中で受けて知らせる（トレイは、それを提供する機能が `TrayIcon` を知らなくてよいよう、通知の API を渡さない。アプリは `INotificationDialogService` などで知らせる）

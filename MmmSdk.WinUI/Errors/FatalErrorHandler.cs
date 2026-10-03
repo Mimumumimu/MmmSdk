@@ -12,13 +12,16 @@ namespace MmmSdk.WinUI.Errors;
 /// <param name="appName">ダイアログのタイトルと本文に出すアプリ名</param>
 /// <remarks>
 /// 予測できる失敗は、呼び出し側が範囲を絞った catch で受けて画面に出す。ここは、復旧が難しい失敗・予想外の失敗（バグ）の最後の受け皿。
-/// 順序は「ログ → ダイアログ → 終了」。ダイアログは WinUI ではなく Windows 標準（<see cref="NativeMessageBox"/>）なので、XAML が壊れていても出せる。
+/// 順序は「ログ → 後始末（<see cref="BeforeExit"/>）→ ダイアログ → 終了」。ダイアログは WinUI ではなく Windows 標準（<see cref="NativeMessageBox"/>）なので、XAML が壊れていても出せる。
 /// どのスレッドからでも呼べる。
 /// </remarks>
 public sealed class FatalErrorHandler(ErrorLog log, string appName)
 {
     /// <summary>処理を始めたか（0 = 未・1 = 済）</summary>
     private int _handling;
+
+    /// <summary>最初に報告したスレッドの ID。まだ無ければ 0</summary>
+    private int _reportingThreadId;
 
     /// <summary>終了の直前に行う後始末（トレイアイコンを消すなど）</summary>
     /// <remarks>呼ばれるスレッドは決まっていない。失敗してもログに残すだけで、終了は止めない。</remarks>
@@ -55,16 +58,31 @@ public sealed class FatalErrorHandler(ErrorLog log, string appName)
     /// <summary>エラーを報告して、アプリを終了する（戻らない）</summary>
     /// <param name="context">どこで起きたか（ログに書く短い説明）</param>
     /// <param name="exception">起きた例外</param>
-    /// <remarks>複数のスレッドから同時に呼ばれたときは、最初の 1 つだけが報告し、ほかは終了を待つ。</remarks>
+    /// <remarks>
+    /// 複数のスレッドから同時に呼ばれたときは、最初の 1 つだけが報告し、ほかは終了を待つ。
+    /// ダイアログ（Win32 の <c>MessageBox</c>）は、呼んだスレッドでモーダルのメッセージループを回すので、その間に、同じスレッドへ別の例外が来て、再びここへ入ることがある
+    /// （UI スレッドのディスパッチャー・トレイのウィンドウプロシージャー・タイマーは動き続ける）。このとき待つと、そのスレッドが止まって、最初のダイアログも戻れず、終了もしない。
+    /// そのため、最初に報告したスレッドからの再入は、ログだけ残して、すぐに終了する。
+    /// 後始末（トレイアイコンを外す）は、ダイアログの前に行う（ダイアログの間に、トレイのメニューを操作できないようにするため）。
+    /// </remarks>
     [DoesNotReturn]
     public void Report(string context, Exception exception)
     {
+        var threadId = Environment.CurrentManagedThreadId;
         if (Interlocked.Exchange(ref _handling, 1) != 0)
         {
+            if (Volatile.Read(ref _reportingThreadId) == threadId)
+            {
+                log.Write(context, exception);
+                Environment.Exit(1);
+            }
+
             Thread.Sleep(Timeout.Infinite);
         }
+        Volatile.Write(ref _reportingThreadId, threadId);
 
         var logPath = log.Write(context, exception);
+        RunBeforeExit();
         var location = logPath is null
             ? "ログを書き込めませんでした。"
             : $"詳細は次のログを見てください。\n{logPath}";
@@ -72,7 +90,6 @@ public sealed class FatalErrorHandler(ErrorLog log, string appName)
             $"予期しないエラーが起きたため、{appName} を終了します。\n\n{exception.GetType().Name}: {exception.Message}\n\n{location}",
             appName);
 
-        RunBeforeExit();
         Environment.Exit(1);
     }
 

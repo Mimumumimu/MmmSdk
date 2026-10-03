@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
+using MmmSdk.Core.Tasks;
 using MmmSdk.WinUI.Errors;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -329,7 +330,7 @@ public sealed class TrayIcon : IDisposable
 
             if (_commands.TryGetValue(selected, out var command))
             {
-                _dispatcher.TryEnqueue(() => _ = InvokeAsync(command));
+                _dispatcher.TryEnqueue(() => command().Forget());
             }
         }
         finally
@@ -381,22 +382,6 @@ public sealed class TrayIcon : IDisposable
         var id = nextId++;
         _commands[id] = invoked;
         _renderer!.AppendCommand(menu, id, text, isEnabled: true);
-    }
-
-    /// <summary>項目の処理を行う</summary>
-    /// <param name="command">項目の処理</param>
-    /// <returns>処理の完了を表すタスク</returns>
-    /// <remarks>失敗したらトレイの通知で知らせる（ウィンドウが隠れていても気付けるように）。</remarks>
-    private async Task InvokeAsync(Func<Task> command)
-    {
-        try
-        {
-            await command();
-        }
-        catch (Exception ex)
-        {
-            ShowNotification(_options.ToolTip, ex.Message, isError: true);
-        }
     }
 
     #endregion

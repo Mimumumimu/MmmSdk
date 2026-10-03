@@ -48,6 +48,23 @@
         PointerEntered="OnFramePointerEntered"
         PointerExited="OnFramePointerExited"
         Tapped="OnFrameTapped">
+        <!-- 枠の見た目（通常・ポインタ上・フォーカス中）。色は ThemeResource なので、テーマの切り替えに追従する -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+                <VisualState x:Name="Normal" />
+                <VisualState x:Name="PointerOver">
+                    <VisualState.Setters>
+                        <Setter Target="Frame.Background" Value="{ThemeResource TextControlBackgroundPointerOver}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Focused">
+                    <VisualState.Setters>
+                        <Setter Target="Frame.Background" Value="{ThemeResource TextControlBackgroundFocused}" />
+                        <Setter Target="FocusLine.Visibility" Value="Visible" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <StackPanel Orientation="Horizontal" Spacing="2">
             <TextBox
                 x:Name="HourBox"

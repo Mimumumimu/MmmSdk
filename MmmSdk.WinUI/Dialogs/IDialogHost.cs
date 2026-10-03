@@ -11,6 +11,9 @@ public interface IDialogHost
     /// <summary>ダイアログの親</summary>
     /// <remarks>
     /// いちばん手前のモーダルウィンドウ、無ければ最後に操作した普通のウィンドウ、それも無ければ最初に登録したウィンドウ。
+    /// 普通のウィンドウは、見えているもの（<c>AppWindow.IsVisible</c>）だけを選ぶ。× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えないため。
+    /// 見えているものが 1 つも無いときだけ、隠れたウィンドウ（最後に操作したもの、それも無ければ最初に登録したもの）を返す。このときは、
+    /// 親の画面が見えないので、<c>ContentDialog</c> は見えないまま待ち続ける。呼ぶ側が、先に見えるウィンドウを出してから呼ぶこと。
     /// </remarks>
     /// <exception cref="InvalidOperationException">親にできるウィンドウが 1 つも登録されていない。</exception>
     Window Owner { get; }

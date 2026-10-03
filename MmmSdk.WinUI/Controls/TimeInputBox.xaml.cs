@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using MmmSdk.WinUI.Input;
 using Windows.System;
 
@@ -62,11 +61,21 @@ public sealed partial class TimeInputBox : UserControl
         set => SetValue(MinuteProperty, value);
     }
 
-    /// <summary>値が変わったら、区画の表示を合わせる</summary>
+    /// <summary>値が変わったら、区画の表示を合わせる（範囲外の値は範囲内に収める）</summary>
     /// <param name="sender">変更されたコントロール</param>
     /// <param name="e">変更の情報</param>
+    /// <remarks>バインドなど外から来た範囲外の値（負の値・24 時など）は、表示と値がずれないよう、範囲内（時は 0〜23・分は 0〜59）に収め直す。</remarks>
     private static void OnValueChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
-        => ((TimeInputBox)sender).ShowValues();
+    {
+        var max = e.Property == HourProperty ? MaxHour : MaxMinute;
+        if (e.NewValue is int value && (value < 0 || value > max))
+        {
+            sender.SetValue(e.Property, Math.Clamp(value, 0, max));
+            return;
+        }
+
+        ((TimeInputBox)sender).ShowValues();
+    }
 
     /// <summary>時・分を 2 桁で表示する</summary>
     private void ShowValues()
@@ -185,12 +194,11 @@ public sealed partial class TimeInputBox : UserControl
     }
 
     /// <summary>枠の見た目（通常・ポインタ上・フォーカス中）を、標準の入力欄に合わせる</summary>
+    /// <remarks>色は XAML のビジュアルステート（<c>ThemeResource</c>）が持つので、テーマの切り替えに追従する。</remarks>
     private void UpdateFrame()
     {
         var focused = HourBox.FocusState != FocusState.Unfocused || MinuteBox.FocusState != FocusState.Unfocused;
-        var key = focused ? "TextControlBackgroundFocused" : _pointerOver ? "TextControlBackgroundPointerOver" : "TextControlBackground";
-        Frame.Background = (Brush)Application.Current.Resources[key];
-        FocusLine.Visibility = focused ? Visibility.Visible : Visibility.Collapsed;
+        VisualStateManager.GoToState(this, focused ? "Focused" : _pointerOver ? "PointerOver" : "Normal", false);
     }
 
     /// <summary>区画の値を 1 つ増減する（端を越えたら反対の端へ）</summary>
