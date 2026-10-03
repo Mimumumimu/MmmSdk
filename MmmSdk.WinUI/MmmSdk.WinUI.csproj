@@ -20,6 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ターミナル描画（xterm.js、MIT）。WebView2 から読み込むため、参照するアプリの出力フォルダー（Assets\Terminal）へコピーする（既定で None に含まれるので Update。フォルダー内は平らに置く） -->
+    <None Update="Terminal\Assets\*" Link="Assets\Terminal\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MmmSdk.Core\MmmSdk.Core.csproj" />
   </ItemGroup>
 

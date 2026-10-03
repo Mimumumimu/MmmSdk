@@ -17,7 +17,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - 同一 EXE の多重起動の防止
 - アプリの初期化（XAML の読み込み）より前でも出せる標準のメッセージボックス
 - エラーのログ（日付ごとのファイル）と、復旧できないエラーの処理（ログ → ダイアログ → 終了）。未処理の例外の最後の受け皿
-- ConPTY（Windows 擬似コンソール）にプロセスをつないで起動する部品（ターミナル画面を作るときの土台）
+- ターミナル（ConPTY でシェルを動かし、WebView2 上の xterm.js で描く画面）と、既定のシェルの決定（PowerShell 7 → Windows PowerShell）・シェル別のコマンド作り
+- ConPTY（Windows 擬似コンソール）にプロセスをつないで起動する部品（ターミナルの土台）
 - タスクトレイのアイコンと右クリックメニュー（Win32 を直接使う。メニューは自前描画でダーク/ライト対応）
 - 時刻の入力欄（`TimeInputBox`）・押せる領域（`LinkArea`）・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理（コントロールのテンプレート内の要素に触るため）
@@ -38,6 +39,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
 | `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
+| `MmmSdk.Core.Shells` | シェルの決定（`ShellInfo` / `ShellKind` / `ShellLocator`）と、シェル別のコマンド作り（`ShellCommands`） |
 | `MmmSdk.Core.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
 | `MmmSdk.Core.Logging` | エラーログの追記（`ErrorLog`。`yyyy-MM-dd.log`） |
 | `MmmSdk.Core.Tasks` | 待たずに走らせるタスクの失敗を未処理例外にする（`Forget`） |
@@ -48,6 +50,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`（時刻の入力欄）・`LinkArea`（押せる領域） |
 | `MmmSdk.WinUI.Input` | IME のオン/オフ（`ImeControl`） |
 | `MmmSdk.WinUI.Tray` | タスクトレイ（`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`）。DI 登録は `AddMmmSdkTray`（`SdkWinUIServiceCollectionExtensions` の中） |
+| `MmmSdk.WinUI.Terminal` | ターミナル（`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く） |
 | `MmmSdk.WinUI.ConPty` | ConPTY にプロセスをつないで起動する（`PseudoConsole`） |
 | `MmmSdk.WinUI.Windowing` | Window の拡張メソッド（前面に出す `SetForeground`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`）と、作業領域に収める計算（`WindowPlacement`）・位置と大きさの自動保存（`WindowBoundsKeeper`） |
 | `MmmSdk.WinUI.Errors` | 画面に出すエラー 1 件の状態（`ErrorState`。`InfoBar` に結び付ける）・復旧できないエラーの最後の受け皿（`FatalErrorHandler`） |
@@ -59,6 +62,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - .NET 10
 - WinUI 3（Windows App SDK 2.5）… `MmmSdk.WinUI` のみ
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
+- WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0（ターミナル描画。MIT。`MmmSdk.WinUI/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所）
 - Microsoft.Extensions.DependencyInjection.Abstractions（DI 登録用の拡張メソッド）
 - System.Text.Json（ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する）
 
@@ -331,6 +335,32 @@ var minute = MinuteScheduler.TruncateToMinute(now);                           //
 scheduler.Dispose();                                                          // 止める
 ```
 
+### ターミナル・シェル（`MmmSdk.WinUI.Terminal` / `MmmSdk.Core.Shells`）
+
+シェルを動かして画面に出す部品です。起動するシェルは `ShellInfo(Path, Kind)` で表し、既定は `ShellLocator.Default`（PATH 上の `pwsh.exe`、無ければ Windows PowerShell）です。
+
+```csharp
+services.AddTransient<ITerminalSession, PseudoConsoleSession>();   // 利用側ごとに 1 つ。Host の破棄時にシェルも終了する
+```
+
+```xml
+<!-- xmlns:terminal="using:MmmSdk.WinUI.Terminal" -->
+<terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" />
+```
+
+```csharp
+session.WorkingDirectory = directory;                       // Start の前に設定する
+session.Shell = new ShellInfo(path, ShellKind.PowerShell);  // 既定以外のシェルを使うとき
+if (ShellCommands.TryChangeDirectory(session.Shell, directory, out var command))
+{
+    session.Submit(command);                                // 貼り付けとして入力し、Enter で確定する
+}
+```
+
+- xterm.js のファイルは、参照するアプリの出力フォルダー（`Assets/Terminal/`）へ自動でコピーされます
+- 画面側の WebView2 ランタイムが無いときは、ターミナルの場所に理由が文字で出ます（ほかの機能は使えます）
+- 既定のシェルの探索は、最初に読むときにディスクへ触れます。UI スレッドで初めて読まないよう、起動時の準備で `_ = ShellLocator.Default` をバックグラウンドから読んでください
+
 ### ConPTY（`MmmSdk.WinUI.ConPty`）
 
 `PseudoConsole.Start` で、擬似コンソールにつないだプロセス（シェルなど）を起動します。端末の描画やキー入力の解釈は持ちません（出力は端末のエスケープシーケンスを含んだ UTF-8 のバイト列のままです）。
@@ -430,6 +460,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY（`PseudoConsole`）の仕組みと後始末の順序 |
+| [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面（xterm.js） |
 | [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存 |
 
 ## バージョン
@@ -472,3 +503,8 @@ git commit
 ## ライセンス
 
 このプロジェクトは [MIT License](./LICENSE.txt) のもとで公開されています。
+
+同梱しているサードパーティのライセンス:
+
+- xterm.js（MIT License）… [`MmmSdk.WinUI/Terminal/Assets/xterm.LICENSE.txt`](./MmmSdk.WinUI/Terminal/Assets/xterm.LICENSE.txt)
+- @xterm/addon-fit（MIT License）… [`MmmSdk.WinUI/Terminal/Assets/addon-fit.LICENSE.txt`](./MmmSdk.WinUI/Terminal/Assets/addon-fit.LICENSE.txt)
