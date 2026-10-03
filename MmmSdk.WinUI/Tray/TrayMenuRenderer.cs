@@ -1,5 +1,11 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Gdi;
+using Windows.Win32.UI.Controls;
+using Windows.Win32.UI.HiDpi;
 using Windows.Win32.UI.WindowsAndMessaging;
 using static MmmSdk.WinUI.Interop.NativeMethods;
 
@@ -65,17 +71,17 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <summary>配色</summary>
     private readonly Palette _palette;
     /// <summary>文字のフォント</summary>
-    private readonly nint _font;
+    private readonly HFONT _font;
 
     /// <summary>矢印用のフォント</summary>
-    /// <remarks>入っていなければ 0（矢印は Windows に描かせる）。</remarks>
-    private readonly nint _iconFont;
+    /// <remarks>入っていなければ null のハンドル（矢印は Windows に描かせる）。</remarks>
+    private readonly HFONT _iconFont;
     /// <summary>背景のブラシ</summary>
-    private readonly nint _backgroundBrush;
+    private readonly HBRUSH _backgroundBrush;
     /// <summary>選択中の項目の背景のブラシ</summary>
-    private readonly nint _hoverBrush;
+    private readonly HBRUSH _hoverBrush;
     /// <summary>区切り線のブラシ</summary>
-    private readonly nint _separatorBrush;
+    private readonly HBRUSH _separatorBrush;
     /// <summary>1 行の文字の高さ</summary>
     private readonly int _lineHeight;
 
@@ -84,17 +90,17 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <param name="y">メニューを出す位置の Y。</param>
     public TrayMenuRenderer(int x, int y)
     {
-        var monitor = MonitorFromPoint(new POINT { x = x, y = y }, MONITOR_DEFAULTTONEAREST);
-        var dpi = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out var dpiX, out _) == 0 ? dpiX : Windows.Win32.PInvoke.GetDpiForSystem();
+        var monitor = PInvoke.MonitorFromPoint(new System.Drawing.Point(x, y), MONITOR_FROM_FLAGS.MONITOR_DEFAULTTONEAREST);
+        var dpi = PInvoke.GetDpiForMonitor(monitor, MONITOR_DPI_TYPE.MDT_EFFECTIVE_DPI, out var dpiX, out _).Succeeded ? dpiX : PInvoke.GetDpiForSystem();
         _scale = dpi / 96.0;
 
         _palette = IsDarkMode() ? Palette.Dark : Palette.Light;
-        _backgroundBrush = CreateSolidBrush(_palette.Background);
-        _hoverBrush = CreateSolidBrush(_palette.Hover);
-        _separatorBrush = CreateSolidBrush(_palette.Separator);
+        _backgroundBrush = PInvoke.CreateSolidBrush(new COLORREF(_palette.Background));
+        _hoverBrush = PInvoke.CreateSolidBrush(new COLORREF(_palette.Hover));
+        _separatorBrush = PInvoke.CreateSolidBrush(new COLORREF(_palette.Separator));
 
         _font = CreateFont(FindInstalledFont(FontFaces) ?? FontFaces[^1], -(int)Math.Round(FontSizePoint * dpi / 72.0));
-        _iconFont = FindInstalledFont(IconFontFaces) is { } iconFace ? CreateFont(iconFace, -Px(ArrowSize)) : 0;
+        _iconFont = FindInstalledFont(IconFontFaces) is { } iconFace ? CreateFont(iconFace, -Px(ArrowSize)) : HFONT.Null;
         _lineHeight = MeasureText("Ag").Height;
     }
 
@@ -140,11 +146,11 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         var info = new MENUINFO
         {
             cbSize = (uint)sizeof(MENUINFO),
-            fMask = MIM_BACKGROUND | MIM_STYLE | MIM_APPLYTOSUBMENUS,
-            dwStyle = MNS_NOCHECK,
+            fMask = MENUINFO_MASK.MIM_BACKGROUND | MENUINFO_MASK.MIM_STYLE | MENUINFO_MASK.MIM_APPLYTOSUBMENUS,
+            dwStyle = MENUINFO_STYLE.MNS_NOCHECK,
             hbrBack = _backgroundBrush,
         };
-        SetMenuInfo(menu, &info);
+        PInvoke.SetMenuInfo(menu, in info);
     }
 
     #endregion
@@ -177,50 +183,50 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
         var hdc = item->hDC;
         var bounds = item->rcItem;
-        FillRect(hdc, &bounds, _backgroundBrush);
+        PInvoke.FillRect(hdc, in bounds, _backgroundBrush);
 
         if (entry.IsSeparator)
         {
             // 線は文字の書き出し位置から右端の手前まで
             var top = (bounds.top + bounds.bottom) / 2;
             var line = new RECT { left = bounds.left + Px(PaddingLeft), top = top, right = bounds.right - Px(SeparatorInset), bottom = top + Math.Max(1, Px(1)) };
-            FillRect(hdc, &line, _separatorBrush);
+            PInvoke.FillRect(hdc, in line, _separatorBrush);
             return;
         }
 
-        var isDisabled = (item->itemState & (ODS_GRAYED | ODS_DISABLED)) != 0;
-        if (!isDisabled && (item->itemState & ODS_SELECTED) != 0)
+        var isDisabled = (item->itemState & (ODS_FLAGS.ODS_GRAYED | ODS_FLAGS.ODS_DISABLED)) != 0;
+        if (!isDisabled && (item->itemState & ODS_FLAGS.ODS_SELECTED) != 0)
         {
-            var oldBrush = SelectObject(hdc, _hoverBrush);
-            var oldPen = SelectObject(hdc, GetStockObject(NULL_PEN));
-            RoundRect(hdc, bounds.left + Px(HoverInsetX), bounds.top + Px(HoverInsetY), bounds.right - Px(HoverInsetX), bounds.bottom - Px(HoverInsetY), Px(HoverRadius), Px(HoverRadius));
-            SelectObject(hdc, oldPen);
-            SelectObject(hdc, oldBrush);
+            var oldBrush = PInvoke.SelectObject(hdc, _hoverBrush);
+            var oldPen = PInvoke.SelectObject(hdc, PInvoke.GetStockObject(GET_STOCK_OBJECT_FLAGS.NULL_PEN));
+            PInvoke.RoundRect(hdc, bounds.left + Px(HoverInsetX), bounds.top + Px(HoverInsetY), bounds.right - Px(HoverInsetX), bounds.bottom - Px(HoverInsetY), Px(HoverRadius), Px(HoverRadius));
+            PInvoke.SelectObject(hdc, oldPen);
+            PInvoke.SelectObject(hdc, oldBrush);
         }
 
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, isDisabled ? _palette.DisabledText : _palette.Text);
-        var oldFont = SelectObject(hdc, _font);
+        PInvoke.SetBkMode(hdc, BACKGROUND_MODE.TRANSPARENT);
+        PInvoke.SetTextColor(hdc, new COLORREF(isDisabled ? _palette.DisabledText : _palette.Text));
+        var oldFont = PInvoke.SelectObject(hdc, _font);
 
         var textBounds = bounds;
         textBounds.left += Px(PaddingLeft);
         textBounds.right -= Px(entry.HasSubmenu ? ArrowArea : PaddingRight);
         // 「&」をアクセスキーの印として扱わない（名前をそのまま出す）
-        DrawText(hdc, entry.Text, -1, &textBounds, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS);
+        DrawText(hdc, entry.Text, ref textBounds, DRAW_TEXT_FORMAT.DT_SINGLELINE | DRAW_TEXT_FORMAT.DT_VCENTER | DRAW_TEXT_FORMAT.DT_NOPREFIX | DRAW_TEXT_FORMAT.DT_END_ELLIPSIS);
 
-        if (entry.HasSubmenu && _iconFont != 0)
+        if (entry.HasSubmenu && !_iconFont.IsNull)
         {
-            SelectObject(hdc, _iconFont);
+            PInvoke.SelectObject(hdc, _iconFont);
             var arrowBounds = bounds;
             arrowBounds.left = bounds.right - Px(ArrowArea);
             arrowBounds.right = bounds.right - Px(HoverInsetX);
-            DrawText(hdc, ChevronGlyph, -1, &arrowBounds, DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_NOPREFIX);
+            DrawText(hdc, ChevronGlyph, ref arrowBounds, DRAW_TEXT_FORMAT.DT_SINGLELINE | DRAW_TEXT_FORMAT.DT_VCENTER | DRAW_TEXT_FORMAT.DT_CENTER | DRAW_TEXT_FORMAT.DT_NOPREFIX);
 
             // Windows が後から描く標準の矢印を止める（テーマによっては背景と同じ色になって見えない）
-            ExcludeClipRect(hdc, bounds.left, bounds.top, bounds.right, bounds.bottom);
+            PInvoke.ExcludeClipRect(hdc, bounds.left, bounds.top, bounds.right, bounds.bottom);
         }
 
-        SelectObject(hdc, oldFont);
+        PInvoke.SelectObject(hdc, oldFont);
     }
 
     /// <summary>itemData から描画内容を引く</summary>
@@ -246,18 +252,32 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <returns>文字列の幅と高さ（px）</returns>
     private (int Width, int Height) MeasureText(string text)
     {
-        var hdc = GetDC(0);
+        var hdc = PInvoke.GetDC(HWND.Null);
         try
         {
-            var oldFont = SelectObject(hdc, _font);
+            var oldFont = PInvoke.SelectObject(hdc, _font);
             var bounds = new RECT();
-            DrawText(hdc, text, -1, &bounds, DT_SINGLELINE | DT_NOPREFIX | DT_CALCRECT);
-            SelectObject(hdc, oldFont);
+            DrawText(hdc, text, ref bounds, DRAW_TEXT_FORMAT.DT_SINGLELINE | DRAW_TEXT_FORMAT.DT_NOPREFIX | DRAW_TEXT_FORMAT.DT_CALCRECT);
+            PInvoke.SelectObject(hdc, oldFont);
             return (bounds.right - bounds.left, bounds.bottom - bounds.top);
         }
         finally
         {
-            ReleaseDC(0, hdc);
+            PInvoke.ReleaseDC(HWND.Null, hdc);
+        }
+    }
+
+    /// <summary>文字列を 1 つ描く（または大きさを測る）</summary>
+    /// <param name="hdc">描画先のデバイスコンテキスト</param>
+    /// <param name="text">描く文字列</param>
+    /// <param name="bounds">描く範囲。<c>DT_CALCRECT</c> のときは、必要な大きさを書き込む</param>
+    /// <param name="format">描き方のフラグ</param>
+    private static void DrawText(HDC hdc, string text, ref RECT bounds, DRAW_TEXT_FORMAT format)
+    {
+        fixed (char* chars = text)
+        fixed (RECT* rect = &bounds)
+        {
+            PInvoke.DrawText(hdc, chars, -1, rect, format);
         }
     }
 
@@ -265,17 +285,17 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <param name="face">フォント名</param>
     /// <param name="height">文字の高さ（論理単位。負なら文字の高さ）</param>
     /// <returns>フォントのハンドル</returns>
-    private static nint CreateFont(string face, int height)
+    private static HFONT CreateFont(string face, int height)
     {
         var logFont = new LOGFONTW
         {
             lfHeight = height,
             lfWeight = 400,
-            lfCharSet = DEFAULT_CHARSET,
-            lfQuality = CLEARTYPE_QUALITY,
+            lfCharSet = FONT_CHARSET.DEFAULT_CHARSET,
+            lfQuality = FONT_QUALITY.CLEARTYPE_QUALITY,
         };
-        CopyToFixed(face, logFont.lfFaceName, 32);
-        return CreateFontIndirect(&logFont);
+        CopyToBuffer(face, logFont.lfFaceName.AsSpan());
+        return PInvoke.CreateFontIndirect(in logFont);
     }
 
     /// <summary>候補のうち、この PC に入っている最初のフォント名。</summary>
@@ -284,15 +304,15 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <remarks>無い名前を指定しても GDI は別のフォントで代用して作れてしまうため、先に有無を調べる。</remarks>
     private static string? FindInstalledFont(string[] faces)
     {
-        var hdc = GetDC(0);
+        var hdc = PInvoke.GetDC(HWND.Null);
         try
         {
             foreach (var face in faces)
             {
-                var logFont = new LOGFONTW { lfCharSet = DEFAULT_CHARSET };
-                CopyToFixed(face, logFont.lfFaceName, 32);
+                var logFont = new LOGFONTW { lfCharSet = FONT_CHARSET.DEFAULT_CHARSET };
+                CopyToBuffer(face, logFont.lfFaceName.AsSpan());
                 var found = 0;
-                EnumFontFamiliesEx(hdc, &logFont, &OnFontFound, (nint)(&found), 0);
+                PInvoke.EnumFontFamiliesEx(hdc, &logFont, &OnFontFound, (nint)(&found), 0);
                 if (found != 0)
                 {
                     return face;
@@ -302,7 +322,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         }
         finally
         {
-            ReleaseDC(0, hdc);
+            PInvoke.ReleaseDC(HWND.Null, hdc);
         }
     }
 
@@ -312,10 +332,10 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <param name="fontType">フォントの種類</param>
     /// <param name="found">見つかったことを書き込む先（int へのポインタ）</param>
     /// <returns>列挙を続けるなら 0 以外、止めるなら 0</returns>
-    [UnmanagedCallersOnly]
-    private static int OnFontFound(void* logFont, void* textMetric, uint fontType, nint found)
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static int OnFontFound(LOGFONTW* logFont, TEXTMETRICW* textMetric, uint fontType, LPARAM found)
     {
-        *(int*)found = 1;
+        *(int*)found.Value = 1;
         // 1 件見つかれば十分なので列挙を止める
         return 0;
     }
@@ -373,10 +393,10 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <remarks>メニューが背景のブラシを使っているので、メニューを破棄してから呼ぶ。</remarks>
     public void Dispose()
     {
-        DeleteObject(_font);
-        if (_iconFont != 0) DeleteObject(_iconFont);
-        DeleteObject(_backgroundBrush);
-        DeleteObject(_hoverBrush);
-        DeleteObject(_separatorBrush);
+        PInvoke.DeleteObject(_font);
+        if (!_iconFont.IsNull) PInvoke.DeleteObject(_iconFont);
+        PInvoke.DeleteObject(_backgroundBrush);
+        PInvoke.DeleteObject(_hoverBrush);
+        PInvoke.DeleteObject(_separatorBrush);
     }
 }

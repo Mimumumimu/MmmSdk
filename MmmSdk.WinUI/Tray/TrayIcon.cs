@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.UI.Controls;
 using Windows.Win32.UI.Shell;
 using Windows.Win32.UI.WindowsAndMessaging;
 using static MmmSdk.WinUI.Interop.NativeMethods;
@@ -231,11 +232,11 @@ public sealed class TrayIcon : IDisposable
                 return new LRESULT(0);
 
             // メニューの項目は自分で描く（メニューを開いている間だけ届く）
-            case PInvoke.WM_MEASUREITEM when _renderer is not null && ((MEASUREITEMSTRUCT*)lParam.Value)->CtlType == ODT_MENU:
+            case PInvoke.WM_MEASUREITEM when _renderer is not null && ((MEASUREITEMSTRUCT*)lParam.Value)->CtlType == DRAWITEMSTRUCT_CTL_TYPE.ODT_MENU:
                 _renderer.Measure((MEASUREITEMSTRUCT*)lParam.Value);
                 return new LRESULT(1);
 
-            case PInvoke.WM_DRAWITEM when _renderer is not null && ((DRAWITEMSTRUCT*)lParam.Value)->CtlType == ODT_MENU:
+            case PInvoke.WM_DRAWITEM when _renderer is not null && ((DRAWITEMSTRUCT*)lParam.Value)->CtlType == DRAWITEMSTRUCT_CTL_TYPE.ODT_MENU:
                 _renderer.Draw((DRAWITEMSTRUCT*)lParam.Value);
                 return new LRESULT(1);
 

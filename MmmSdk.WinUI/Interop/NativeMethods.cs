@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
@@ -9,16 +8,6 @@ namespace MmmSdk.WinUI.Interop;
 /// <remarks>宣言は CsWin32 が生成する（<c>NativeMethods.txt</c>）。まだ移していない宣言は、用途ごとの <c>NativeMethods.&lt;用途&gt;.cs</c> に手書きで残っている。</remarks>
 internal static partial class NativeMethods
 {
-    /// <summary>座標</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct POINT
-    {
-        /// <summary>X 座標</summary>
-        public int x;
-        /// <summary>Y 座標</summary>
-        public int y;
-    }
-
     /// <summary>ウィンドウのオーナー（親）を設定する</summary>
     /// <param name="hWnd">ウィンドウのハンドル</param>
     /// <param name="owner">オーナーにするウィンドウのハンドル</param>
@@ -52,12 +41,4 @@ internal static partial class NativeMethods
         value.AsSpan(0, count).CopyTo(buffer);
         buffer[count] = '\0';
     }
-
-    /// <summary>固定長の文字列欄へ書き込む</summary>
-    /// <param name="value">書き込む文字列</param>
-    /// <param name="buffer">書き込み先の固定長バッファ</param>
-    /// <param name="length">バッファの文字数（終端を含む）</param>
-    /// <remarks>収まらない分は切り捨て、必ず終端する。</remarks>
-    public static unsafe void CopyToFixed(string value, char* buffer, int length) =>
-        CopyToBuffer(value, new Span<char>(buffer, length));
 }

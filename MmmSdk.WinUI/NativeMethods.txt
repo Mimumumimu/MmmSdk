@@ -53,6 +53,27 @@ MENU_ITEM_FLAGS
 TRACK_POPUP_MENU_FLAGS
 TrackPopupMenuEx
 
+// メニュー項目の描画（オーナードロー）
+CreateFontIndirect
+CreateSolidBrush
+DeleteObject
+DrawText
+DRAWITEMSTRUCT
+EnumFontFamiliesEx
+ExcludeClipRect
+FillRect
+GetDC
+GetDpiForMonitor
+GetStockObject
+MEASUREITEMSTRUCT
+MonitorFromPoint
+ReleaseDC
+RoundRect
+SelectObject
+SetBkMode
+SetMenuInfo
+SetTextColor
+
 // uxtheme の非公開 API（序数指定）を呼ぶための読み込み
 GetProcAddress
 LoadLibrary
