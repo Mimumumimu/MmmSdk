@@ -2,7 +2,7 @@
 
 `MmmSdk.Core.Storage` / `MmmSdk.Core.Settings` の設計。
 
-## JSON ファイルの読み書き（`JsonFileStore`）
+## JSON ファイルの読み書き（`IJsonFileStore` / `JsonFileStore`）
 - 保存先のフォルダは `AddMmmSdkCore(dataDirectory)` で渡す。アプリは `AppContext.BaseDirectory/Data` を渡している
 - 型の情報は呼ぶ側が `JsonTypeInfo<T>`（ソース生成）で渡す。トリミングしても動く形を保つため、リフレクションによるシリアライズは使わない
 - 書き込みは一時ファイルに書いてから置き換える（書き込み途中で失敗しても元のファイルが壊れない）

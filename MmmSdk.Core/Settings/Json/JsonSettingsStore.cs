@@ -12,7 +12,7 @@ namespace MmmSdk.Core.Settings.Json;
 /// 内部では「キー → JSON 要素」の辞書をメモリに持ち、取得時に目的の型へ変換する。最初のアクセスで 1 度だけ読み込む。
 /// ファイルが無い・空・壊れているときは空として扱う。壊れていたファイルは退避してから作り直す（<see cref="RecoveryMessage"/> に残す）。
 /// </remarks>
-public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
+public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
 {
     /// <summary>保存先のファイル名</summary>
     private const string FileName = "AppSettings.json";

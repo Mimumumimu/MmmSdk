@@ -30,11 +30,12 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 
 | 名前空間 | 内容 |
 | --- | --- |
-| `MmmSdk.Core.Storage` | JSON ファイルの読み書き（`JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
+| `MmmSdk.Core.Storage` | JSON ファイルの読み書き（`IJsonFileStore` / `JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
 | `MmmSdk.Core.Settings` | 汎用設定ストア（`ISettingsStore`）。JSON での実装は `MmmSdk.Core.Settings.Json`（`JsonSettingsStore`） |
-| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
-| `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
+| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
+| `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
+| `MmmSdk.Core.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
 | `MmmSdk.Core.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
 | `MmmSdk.Core.SingleInstance` | 多重起動の防止（`SingleInstanceGuard`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
@@ -94,15 +95,15 @@ services.AddMmmSdkWinUI();
 
 | メソッド | 登録するもの |
 | --- | --- |
-| `AddMmmSdkCore(dataDirectory)` | `JsonFileStore`・`ISettingsStore`・`WindowPositionService`・`PathOpener`（すべて Singleton） |
+| `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`（すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる） |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`（Singleton）。トレイを使うアプリだけが呼ぶ |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`（通知ウィンドウを作る処理）・`DialogService`（`IDialogService` と `IDialogHost` が同じインスタンスを返す）・`IFilePickerService`・`IFolderPickerService`（すべて Singleton）、`NotificationWindow`・`NotificationDialogViewModel`（Transient） |
 
 ## 使い方
 
 ### JSON ファイルの読み書き（`JsonFileStore`）
 
-アプリ固有のデータも、DI から受け取った `JsonFileStore` で同じフォルダーに保存できます。型の情報は、アプリ側で `JsonSerializable` 登録した `JsonTypeInfo<T>` を渡します（ソース生成）。
+アプリ固有のデータも、DI から受け取った `IJsonFileStore` で同じフォルダーに保存できます。型の情報は、アプリ側で `JsonSerializable` 登録した `JsonTypeInfo<T>` を渡します（ソース生成）。
 
 SDK と同じ書式（インデントあり・日本語や記号をエスケープしない・コメントと末尾のカンマを許す・プロパティ名の大文字小文字を区別しない）にするには、Context を `ReadableJsonOptions.Create()` で作ります。設定は Context に結び付くので、Context ごとに `Create()` で新しく作ってください。
 
@@ -147,7 +148,7 @@ var options = settings.Get("Foo.Options", new FooOptions(), MyJsonContext.Defaul
 - ファイルが無い・空・壊れているときは空の設定として扱い、例外は出しません。壊れていたときは退避して `RecoveryMessage` に、読めなかったときは `LoadError` に理由が残ります
 - ほかに `Contains(key)` / `RemoveAsync(key)` があります
 
-### ウィンドウ位置の保存（`WindowPositionService`）
+### ウィンドウ位置の保存（`IWindowPositionService`）
 
 ```csharp
 var position = positions.Load("Notification");                    // 保存が無ければ null
@@ -159,7 +160,7 @@ var visible = ScreenGeometry.IsVisibleEnough(windowRect, workAreas, 0.5);
 
 位置は設定ストアに `WindowPosition.<キー>` として保存されます。
 
-### パスを開く（`PathOpener` / `PathTarget`）
+### パスを開く（`IPathOpener` / `PathTarget`）
 
 ```csharp
 try
@@ -262,6 +263,17 @@ Error.Clear();                           // 消す
 ```csharp
 var guard = new SingleInstanceGuard("MyApp");   // アプリ起動の最初に作って、フィールドで持ち続ける
 if (!guard.IsFirstInstance) { /* すでに起動している。メッセージを出して終了する */ }
+```
+
+### 毎分 00 秒の処理（`MinuteScheduler`）
+
+開始直後に 1 回、以後はシステム時刻の毎分 00 秒に、処理を呼びます。固定間隔ではなく、次の 00 秒までの残り時間をその都度計算する単発タイマーを掛け直すので、時計のずれに追従します。タイマーが 00 秒より少し早く来ても、同じ分に 2 回は呼びません。
+
+```csharp
+var scheduler = new MinuteScheduler(TimeProvider.System);
+scheduler.Start(async now => { /* 毎分 00 秒の処理。now は現在の日時 */ });   // タイマーのスレッドで動く
+var minute = MinuteScheduler.TruncateToMinute(now);                           // 秒以下を切り捨てる
+scheduler.Dispose();                                                          // 止める
 ```
 
 ### タスクトレイ（`MmmSdk.WinUI.Tray`）
