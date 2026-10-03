@@ -287,6 +287,7 @@ catch (Exception ex)
 - `ErrorLog`（`MmmSdk.Core.Logging`）は `yyyy-MM-dd.log` に、時刻・場所・バージョン・OS・例外（内部例外とスタックトレース）を追記します。落ちる直前に呼ばれるので、同期で書いて閉じてから戻ります。書けなかったとき（権限・ディスク）は、例外にせず `null` を返します
 - ダイアログは WinUI ではなく標準のメッセージボックス（`NativeMessageBox`）なので、XAML が壊れていても出ます
 - `AttachTo` は、UI スレッドの未処理例外（`Application.UnhandledException`）・どのスレッドの未処理例外（`AppDomain`）・待たれないタスクの例外（`TaskScheduler.UnobservedTaskException`）を集めます。取り消し（`OperationCanceledException`）だけのタスクは報告しません
+- 待たずに走らせるタスクは、`_ = SomeAsync();` で捨てずに `SomeAsync().Forget()`（`MmmSdk.Core.Tasks`）にします。捨てると、失敗が誰にも見えず、ガベージコレクションのときに初めて分かります。`Forget` は、失敗した時点で未処理例外にして、上の安全網が受けます。起きると分かっている失敗は、タスクの中で受けて画面に出してください
 - `BeforeExit` イベントで、終了の直前の後始末ができます（`TrayIcon` はこれでトレイのアイコンを外します）。呼ばれるスレッドは決まっていません
 - 複数のスレッドから同時に報告されたときは、最初の 1 つだけが報告し、ほかは終了を待ちます
 - `ErrorLog` で書けないこと（スタックオーバーフロー・ネイティブ側の破損）は、.NET のハンドラー自体が動かないため、残せません
