@@ -1,6 +1,8 @@
 <Project>
   <!-- SDK の全プロジェクト共通の設定。プロジェクト固有の設定（対象フレームワーク・WinUI 等）は各 csproj に書く -->
   <PropertyGroup>
+    <!-- SDK のバージョン（major.minor.patch。アプリとは別に上げる）。ファイル・アセンブリのバージョンはここから自動で 4 桁（0.1.0.0）になる -->
+    <Version>0.1.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- XML ドキュメントコメントの検査（書き漏れ・参照切れを警告にする）。未使用 using の検査（IDE0005）にも必要 -->

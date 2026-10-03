@@ -21,7 +21,7 @@ public sealed partial class NotificationDialogViewModel(PathOpener opener) : Obs
     /// <summary>リンク先を開く</summary>
     /// <param name="path">開くリンク先のパス</param>
     /// <returns>開く処理の完了を表すタスク</returns>
-    /// <remarks>開けなかったときは何も表示しない（通知に失敗の表示は仕様にないため）。</remarks>
+    /// <remarks>開けなかったときは何も表示しない（通知ダイアログに失敗の表示は持たせない方針のため）。</remarks>
     [RelayCommand]
     private async Task OpenLinkAsync(string path)
     {
