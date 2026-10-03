@@ -1,6 +1,6 @@
-using MmmSdk.Core.Services;
+using MmmSdk.Core.Notifications;
 
-namespace MmmSdk.WinUI.Services;
+namespace MmmSdk.WinUI.Notifications;
 
 /// <summary>
 /// デスクトップ通知のウィンドウを表示する。

@@ -1,4 +1,4 @@
-namespace MmmSdk.Core.Services;
+namespace MmmSdk.Core.Notifications;
 
 /// <summary>
 /// 通知ダイアログの本文の 1 項目。

@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
-using MmmSdk.Core.Repositories;
-using MmmSdk.Core.Repositories.Json;
-using MmmSdk.Core.Services;
+using MmmSdk.Core.Paths;
+using MmmSdk.Core.Settings;
+using MmmSdk.Core.Settings.Json;
+using MmmSdk.Core.Storage;
+using MmmSdk.Core.WindowPositions;
 
 namespace MmmSdk.Core;
 

@@ -2,6 +2,11 @@
   <Configurations>
     <Platform Name="x64" />
   </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
   <Project Path="MmmSdk.Core/MmmSdk.Core.csproj" />
   <Project Path="MmmSdk.WinUI/MmmSdk.WinUI.csproj">
     <Platform Project="x64" />

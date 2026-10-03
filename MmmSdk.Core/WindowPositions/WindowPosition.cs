@@ -1,4 +1,4 @@
-namespace MmmSdk.Core.Services;
+namespace MmmSdk.Core.WindowPositions;
 
 /// <summary>
 /// ウィンドウの位置（画面全体の物理ピクセル座標での左上）。

@@ -1,4 +1,4 @@
-namespace MmmSdk.Core.Services;
+namespace MmmSdk.Core.Paths;
 
 /// <summary>リンクのパスが指す先の種類。</summary>
 public enum PathTargetKind

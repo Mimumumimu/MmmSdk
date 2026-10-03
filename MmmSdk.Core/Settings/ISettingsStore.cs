@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization.Metadata;
 
-namespace MmmSdk.Core.Repositories;
+namespace MmmSdk.Core.Settings;
 
 /// <summary>
 /// キーに対して任意の型の値を保存・取得する、アプリ共通の汎用設定ストア。

@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using MmmSdk.WinUI.Services;
-using MmmSdk.WinUI.ViewModels;
-using MmmSdk.WinUI.Views;
+using MmmSdk.WinUI.Notifications;
 
 namespace MmmSdk.WinUI;
 

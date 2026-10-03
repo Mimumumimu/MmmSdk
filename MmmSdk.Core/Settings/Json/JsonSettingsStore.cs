@@ -1,7 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using MmmSdk.Core.Storage;
 
-namespace MmmSdk.Core.Repositories.Json;
+namespace MmmSdk.Core.Settings.Json;
 
 /// <summary>
 /// 汎用設定ストアの JSON ファイル実装。全設定を <c>Data/AppSettings.json</c> の 1 ファイルに集約する。
@@ -17,7 +18,7 @@ public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
     private const string FileName = "AppSettings.json";
 
     /// <summary>辞書の読み書きを守るロック</summary>
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
 
     /// <summary>保存の順序を守るロック（古い内容が後から書かれないように）</summary>
     private readonly SemaphoreSlim _saveLock = new(1, 1);
@@ -103,7 +104,7 @@ public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
                 snapshot = new Dictionary<string, JsonElement>(values);
             }
 
-            await store.WriteAsync(FileName, snapshot, SdkJsonContext.Readable.DictionaryStringJsonElement, cancellationToken);
+            await store.WriteAsync(FileName, snapshot, SettingsJsonContext.Readable.DictionaryStringJsonElement, cancellationToken);
         }
         finally
         {
@@ -122,7 +123,7 @@ public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
 
         try
         {
-            var result = store.Read(FileName, SdkJsonContext.Readable.DictionaryStringJsonElement);
+            var result = store.Read(FileName, SettingsJsonContext.Readable.DictionaryStringJsonElement);
             _values = result.Value ?? [];
             RecoveryMessage = result.RecoveryMessage;
         }
@@ -140,6 +141,6 @@ public sealed class JsonSettingsStore(JsonFileStore store) : ISettingsStore
     /// <returns>型のソース生成メタデータ</returns>
     /// <exception cref="InvalidOperationException">基本型以外で、TypeInfo の指定が無いとき（呼び出し側のプログラムの誤り）。</exception>
     private static JsonTypeInfo<T> GetBuiltInTypeInfo<T>()
-        => SdkJsonContext.Readable.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>
+        => SettingsJsonContext.Readable.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>
             ?? throw new InvalidOperationException($"{typeof(T)} は JsonTypeInfo を渡さずに使えません。");
 }

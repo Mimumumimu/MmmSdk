@@ -1,6 +1,5 @@
 using System.Drawing;
 using Microsoft.UI;
-using Microsoft.UI.Input;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -8,12 +7,12 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using MmmSdk.Core.Services;
+using MmmSdk.Core.Notifications;
+using MmmSdk.Core.WindowPositions;
 using MmmSdk.WinUI.Interop;
-using MmmSdk.WinUI.ViewModels;
 using Windows.Graphics;
 
-namespace MmmSdk.WinUI.Views;
+namespace MmmSdk.WinUI.Notifications;
 
 /// <summary>デスクトップ通知のウィンドウ（見た目・表示内容と、ドラッグ・クリックで閉じる・位置の保存などの挙動）</summary>
 /// <remarks>

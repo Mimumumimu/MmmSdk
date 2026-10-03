@@ -1,8 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using MmmSdk.Core.Services;
-using MmmSdk.WinUI.Views;
+using MmmSdk.Core.Notifications;
 
-namespace MmmSdk.WinUI.Services;
+namespace MmmSdk.WinUI.Notifications;
 
 /// <summary>
 /// <see cref="INotificationDialogService"/> の実装。通知ウィンドウを 1 枚だけ持つ。

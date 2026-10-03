@@ -16,12 +16,22 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 
 ## 構成
 
-| プロジェクト | 対象 | 内容 |
-| --- | --- | --- |
-| `MmmSdk.Core` | `net10.0`（Windows / WinUI に依存しない） | `JsonFileStore`・`ISettingsStore` / `JsonSettingsStore`・`DataLoadResult`・`DataFileException`・`WindowPositionService`・`PathOpener` / `PathTarget`・`NotificationItem` |
-| `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`（WinUI 3） | `INotificationDialogService` / `NotificationDialogService`・`NotificationWindow` |
+| プロジェクト | 対象 |
+| --- | --- |
+| `MmmSdk.Core` | `net10.0`（Windows / WinUI に依存しない） |
+| `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`（WinUI 3） |
 
-名前空間は `MmmSdk.Core.*` / `MmmSdk.WinUI.*` です。
+プロジェクトの中は、部品ごとのフォルダーに分けています。名前空間はフォルダーと同じです。
+
+| 名前空間 | 内容 |
+| --- | --- |
+| `MmmSdk.Core.Storage` | JSON ファイルの読み書き（`JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
+| `MmmSdk.Core.Settings` | 汎用設定ストア（`ISettingsStore`）。JSON での実装は `MmmSdk.Core.Settings.Json`（`JsonSettingsStore`） |
+| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`WindowPositionService` / `WindowPosition`） |
+| `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
+| `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
+| `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
+| `MmmSdk.Core` / `MmmSdk.WinUI` | DI への登録（`AddMmmSdkCore` / `AddMmmSdkWinUI`） |
 
 ## 技術スタック
 
@@ -79,15 +89,25 @@ services.AddMmmSdkWinUI();
 
 アプリ固有のデータも、DI から受け取った `JsonFileStore` で同じフォルダーに保存できます。型の情報は、アプリ側で `JsonSerializable` 登録した `JsonTypeInfo<T>` を渡します（ソース生成）。
 
+SDK と同じ書式（インデントあり・日本語や記号をエスケープしない・コメントと末尾のカンマを許す・プロパティ名の大文字小文字を区別しない）にするには、Context を `ReadableJsonOptions.Create()` で作ります。設定は Context に結び付くので、Context ごとに `Create()` で新しく作ってください。
+
 ```csharp
-var result = await store.ReadAsync("Links.json", MyJsonContext.Default.LinkMenu);
+[JsonSerializable(typeof(LinkMenu))]
+internal sealed partial class MyJsonContext : JsonSerializerContext
+{
+    public static MyJsonContext Readable { get; } = new(ReadableJsonOptions.Create());
+}
+```
+
+```csharp
+var result = await store.ReadAsync("Links.json", MyJsonContext.Readable.LinkMenu);
 var menu = result.Value ?? new LinkMenu();   // ファイルが無い・空・壊れていたときは null
 if (result.RecoveryMessage is { } message)
 {
     // 壊れていたファイルを退避した。画面で知らせる
 }
 
-await store.WriteAsync("Links.json", menu, MyJsonContext.Default.LinkMenu);
+await store.WriteAsync("Links.json", menu, MyJsonContext.Readable.LinkMenu);
 ```
 
 - 読み込みの結果は `DataLoadResult<T>`（`Value` と `RecoveryMessage`）です
@@ -168,6 +188,16 @@ notifications.Show("お知らせ", "メッセージだけの簡易通知");
 ```powershell
 dotnet build .\MmmSdk.slnx
 ```
+
+ビルドの共通設定はリポジトリ直下にまとめています。アプリにサブモジュールとして取り込んだときも、SDK のプロジェクトはこちらの設定を使います（アプリ側の設定は混ざりません）。
+
+| ファイル | 内容 |
+| --- | --- |
+| `Directory.Build.props` | 全プロジェクト共通の設定（Nullable・XML ドキュメントコメントの検査・コードスタイルのビルド時検査など） |
+| `Directory.Packages.props` | NuGet パッケージのバージョン（中央パッケージ管理。csproj にはバージョンを書きません） |
+| `.editorconfig` | コードスタイル。未使用の using などはビルド時に警告になります |
+
+アプリと共通のパッケージ（Windows App SDK など）のバージョンを上げるときは、SDK を先に上げてから、アプリ側を同じバージョンにします。
 
 SDK 単体では実行できません。動作はアプリに組み込んで確認します。
 

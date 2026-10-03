@@ -1,4 +1,4 @@
-namespace MmmSdk.Core.Repositories;
+namespace MmmSdk.Core.Storage;
 
 /// <summary>
 /// 保存データの読み込み結果。

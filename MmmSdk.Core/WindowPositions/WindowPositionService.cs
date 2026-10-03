@@ -1,8 +1,7 @@
 using System.Drawing;
-using MmmSdk.Core.Repositories;
-using MmmSdk.Core.Repositories.Json;
+using MmmSdk.Core.Settings;
 
-namespace MmmSdk.Core.Services;
+namespace MmmSdk.Core.WindowPositions;
 
 /// <summary>
 /// ウィンドウの位置をキー単位で保存・復元する。
@@ -21,7 +20,7 @@ public sealed class WindowPositionService(ISettingsStore store)
     {
         var storeKey = KeyPrefix + key;
         return store.Contains(storeKey)
-            ? store.Get(storeKey, new WindowPosition(0, 0), SdkJsonContext.Readable.WindowPosition)
+            ? store.Get(storeKey, new WindowPosition(0, 0), WindowPositionJsonContext.Readable.WindowPosition)
             : null;
     }
 
@@ -30,7 +29,7 @@ public sealed class WindowPositionService(ISettingsStore store)
     /// <param name="position">保存する位置</param>
     /// <returns>保存の完了を表すタスク</returns>
     public Task SaveAsync(string key, WindowPosition position) =>
-        store.SetAsync(KeyPrefix + key, position, SdkJsonContext.Readable.WindowPosition);
+        store.SetAsync(KeyPrefix + key, position, WindowPositionJsonContext.Readable.WindowPosition);
 
     /// <summary>ウィンドウが、いずれかの作業領域に十分に見えているか</summary>
     /// <param name="window">ウィンドウの矩形（物理ピクセル）。</param>

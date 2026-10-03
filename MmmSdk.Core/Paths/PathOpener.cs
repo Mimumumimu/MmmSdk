@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace MmmSdk.Core.Services;
+namespace MmmSdk.Core.Paths;
 
 /// <summary>
 /// リンクのパス（URL・ファイル・フォルダ・実行ファイル）を既定のアプリで開く。

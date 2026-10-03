@@ -1,8 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MmmSdk.Core.Services;
+using MmmSdk.Core.Notifications;
+using MmmSdk.Core.Paths;
 
-namespace MmmSdk.WinUI.ViewModels;
+namespace MmmSdk.WinUI.Notifications;
 
 /// <summary>通知ウィンドウの ViewModel</summary>
 /// <param name="opener">リンク先を開く処理</param>
