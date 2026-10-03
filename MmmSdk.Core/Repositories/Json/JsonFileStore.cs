@@ -6,6 +6,7 @@ namespace MmmSdk.Core.Repositories.Json;
 /// <summary>
 /// データフォルダ内の JSON ファイルを読み書きする。書き込みは一時ファイルに書いてから置き換え、途中で失敗しても元のファイルを壊さない。
 /// </summary>
+/// <param name="dataDirectory">JSON ファイルを置くフォルダのパス</param>
 public sealed class JsonFileStore(string dataDirectory)
 {
     /// <summary>ファイル操作の同時実行を防ぐロック</summary>
@@ -13,9 +14,15 @@ public sealed class JsonFileStore(string dataDirectory)
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
     /// <summary>ファイルが存在するか</summary>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <returns>存在すれば true</returns>
     public bool Exists(string fileName) => File.Exists(GetPath(fileName));
 
     /// <summary>同期で読み込む</summary>
+    /// <typeparam name="T">読み込む値の型</typeparam>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <param name="typeInfo">値の型のソース生成メタデータ</param>
+    /// <returns>読み込んだ値と、壊れたファイルを退避したときのメッセージ</returns>
     /// <remarks>
     /// ファイルが無い・空（空白だけ）なら値は null。JSON として読めないファイルは退避して値を null で返す（<see cref="TryRecover"/>）。
     /// 小さなファイルを起動時などに UI スレッドで読む用途向け。
@@ -50,6 +57,11 @@ public sealed class JsonFileStore(string dataDirectory)
     }
 
     /// <summary>読み込む</summary>
+    /// <typeparam name="T">読み込む値の型</typeparam>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <param name="typeInfo">値の型のソース生成メタデータ</param>
+    /// <param name="cancellationToken">キャンセルを監視するトークン</param>
+    /// <returns>読み込んだ値と、壊れたファイルを退避したときのメッセージ</returns>
     /// <remarks>ファイルが無い・空（空白だけ）なら値は null。JSON として読めないファイルは退避して値を null で返す（<see cref="TryRecover"/>）。</remarks>
     /// <exception cref="DataFileException">ファイルを読めなかった・退避できなかった（ロック・権限など）。</exception>
     public async Task<DataLoadResult<T?>> ReadAsync<T>(string fileName, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
@@ -81,6 +93,13 @@ public sealed class JsonFileStore(string dataDirectory)
     }
 
     /// <summary>書き込む。一時ファイルに書いてから置き換える</summary>
+    /// <typeparam name="T">書き込む値の型</typeparam>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <param name="value">書き込む値</param>
+    /// <param name="typeInfo">値の型のソース生成メタデータ</param>
+    /// <param name="cancellationToken">キャンセルを監視するトークン</param>
+    /// <returns>書き込みの完了を表すタスク</returns>
+    /// <exception cref="DataFileException">保存できなかった（ロック・権限など）。</exception>
     public async Task WriteAsync<T>(string fileName, T value, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
     {
         var path = GetPath(fileName);
@@ -107,6 +126,11 @@ public sealed class JsonFileStore(string dataDirectory)
     }
 
     /// <summary>JSON を値に変換する。読めなければファイルを退避する。呼ぶ側は <c>_writeLock</c> を取っておくこと</summary>
+    /// <typeparam name="T">読み込む値の型</typeparam>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <param name="bytes">ファイルの中身</param>
+    /// <param name="typeInfo">値の型のソース生成メタデータ</param>
+    /// <returns>変換した値と、退避したときのメッセージ</returns>
     /// <remarks>空（BOM・空白だけ）なら値は null。</remarks>
     private DataLoadResult<T?> ParseOrRecover<T>(string fileName, byte[] bytes, JsonTypeInfo<T> typeInfo)
     {
@@ -128,6 +152,8 @@ public sealed class JsonFileStore(string dataDirectory)
     }
 
     /// <summary>中身が空（UTF-8 の BOM と空白だけ）か</summary>
+    /// <param name="bytes">ファイルの中身</param>
+    /// <returns>空なら true</returns>
     private static bool IsBlank(byte[] bytes)
     {
         var span = bytes.AsSpan();
@@ -139,11 +165,13 @@ public sealed class JsonFileStore(string dataDirectory)
     }
 
     /// <summary>壊れたファイルを退避する。呼ぶ側は <c>_writeLock</c> を取っておくこと</summary>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <param name="error">JSON として読めなかった原因の例外</param>
+    /// <returns>ユーザーへ表示するメッセージ</returns>
     /// <remarks>
     /// 同じフォルダに <c>名前.broken-yyyyMMdd-HHmmss.拡張子</c> で名前を変えて残す（自動では消さない）。
     /// 元のファイルは無くなるので、呼ぶ側は「ファイルが無いとき」と同じように作り直す。
     /// </remarks>
-    /// <returns>ユーザーへ表示するメッセージ</returns>
     /// <exception cref="DataFileException">退避できなかった。</exception>
     private string TryRecover(string fileName, JsonException error)
     {
@@ -171,5 +199,7 @@ public sealed class JsonFileStore(string dataDirectory)
     }
 
     /// <summary>ファイルのフルパスを返す</summary>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <returns>データフォルダと結合したパス</returns>
     private string GetPath(string fileName) => Path.Combine(dataDirectory, fileName);
 }

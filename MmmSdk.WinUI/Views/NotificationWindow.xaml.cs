@@ -64,6 +64,8 @@ public sealed partial class NotificationWindow : Window
     public NotificationDialogViewModel ViewModel { get; }
 
     /// <summary>ウィンドウを作る</summary>
+    /// <param name="viewModel">ウィンドウの ViewModel</param>
+    /// <param name="positions">位置の保存・復元</param>
     public NotificationWindow(NotificationDialogViewModel viewModel, WindowPositionService positions)
     {
         ViewModel = viewModel;
@@ -94,6 +96,10 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>内容を差し替えて表示し、到達を明滅で知らせる</summary>
+    /// <param name="title">通知のタイトル</param>
+    /// <param name="items">本文の項目</param>
+    /// <param name="onClicked">本文をクリックして閉じたときに呼ぶ処理。無ければ null</param>
+    /// <param name="positionKey">位置を保存・復元するキー</param>
     /// <remarks>
     /// 大きさ・位置を決めてから、フォーカスを奪わずに最前面へ表示する。
     /// 非アクティブで表示するとバインドの初回評価が走らないことがあるため、明示的に更新する。
@@ -123,6 +129,7 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>本文の Inlines を組み立てる</summary>
+    /// <param name="items">本文の項目</param>
     /// <remarks>
     /// 項目を改行で区切って並べる。リンクはクリックで開く。
     /// リンクだけの行は当たり判定が行末の余白まで横に伸びてしまうため、リンクの直後に全角スペースの Run を 1 つ置いて文字幅側に留める。
@@ -172,6 +179,8 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>保存位置が十分に見えていれば復元し、見えなければ既定位置（プライマリ作業領域の右下）を返す</summary>
+    /// <param name="key">位置を保存しているキー</param>
+    /// <returns>ウィンドウの左上の位置（物理ピクセル）</returns>
     /// <remarks>現在のモニタ構成で判定する。</remarks>
     private PointInt32 RestoreOrDefaultPosition(string key)
     {
@@ -201,6 +210,8 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>ウィンドウ全体が作業領域に収まるよう、位置をずらす</summary>
+    /// <param name="position">ウィンドウの左上の位置（物理ピクセル）</param>
+    /// <returns>作業領域に収まるようにずらした左上の位置</returns>
     /// <remarks>
     /// その位置にいちばん近いモニタの作業領域を使い、上下左右のはみ出しを内側へ寄せる。
     /// 作業領域より大きいときは左上に合わせる。保存する位置は変えない（ユーザーが置いた位置を残す）。
@@ -227,6 +238,8 @@ public sealed partial class NotificationWindow : Window
     #region ドラッグ移動・クリックで閉じる
 
     /// <summary>押下を記録する</summary>
+    /// <param name="sender">イベントの送信元</param>
+    /// <param name="e">ポインタイベントの情報</param>
     /// <remarks>右上のキャプションボタン領域・スクロールバーでの押下は対象外（閉じるのは OS のボタンに任せる）。</remarks>
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
     {
@@ -242,6 +255,8 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>しきい値を超えて動いたらドラッグとして、ウィンドウを動かす</summary>
+    /// <param name="sender">イベントの送信元</param>
+    /// <param name="e">ポインタイベントの情報</param>
     /// <remarks>
     /// ウィンドウが動くとポインタの相対座標が変わるため、画面座標のカーソル位置で移動量を測る。
     /// ドラッグになった時点でポインタをキャプチャする（リンクの押下を横取りしないよう、動かすまではしない）。
@@ -269,6 +284,8 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>離したとき、ドラッグなら位置を保存し、動かしていなければクリックとして閉じる</summary>
+    /// <param name="sender">イベントの送信元</param>
+    /// <param name="e">ポインタイベントの情報</param>
     /// <remarks>
     /// リンクのクリックとの発火順に依存しないよう、閉じる判定は 1 サイクル遅らせ、その時点でリンクがクリックされていなければ閉じる。
     /// </remarks>
@@ -296,6 +313,8 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>キャプチャを失ったら、押下の追跡を終える</summary>
+    /// <param name="sender">イベントの送信元</param>
+    /// <param name="e">ポインタイベントの情報</param>
     /// <remarks>離した通知（Released）より先にキャプチャ喪失が来ることがあるため、ドラッグ中だったらここでも終了処理（位置の保存）を行う。</remarks>
     private void OnPointerCaptureLost(object sender, PointerRoutedEventArgs e)
     {
@@ -314,6 +333,7 @@ public sealed partial class NotificationWindow : Window
 
     /// <summary>右上のキャプションボタン（×など）の領域か</summary>
     /// <param name="position">ルート要素内の座標（DIP）。</param>
+    /// <returns>キャプションボタンの領域なら true</returns>
     private bool IsOnCaptionButtons(Windows.Foundation.Point position)
     {
         var scale = Scale;
@@ -323,6 +343,8 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>押下した要素がスクロールバーの中か</summary>
+    /// <param name="element">押下した要素。無ければ null</param>
+    /// <returns>スクロールバーの中なら true</returns>
     private static bool IsOnScrollBar(DependencyObject? element)
     {
         for (; element is not null; element = VisualTreeHelper.GetParent(element))

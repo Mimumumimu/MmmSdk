@@ -34,11 +34,15 @@ public static class PathTarget
     };
 
     /// <summary>開くときの実際のパス</summary>
+    /// <param name="path">入力されたパス</param>
+    /// <returns>前後の空白・引用符を除き、環境変数を展開したパス</returns>
     /// <remarks>前後の空白・引用符を除き、環境変数を展開する。</remarks>
     public static string Expand(string path)
         => Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
 
     /// <summary>パスの種類を判定する。</summary>
+    /// <param name="path">入力されたパス</param>
+    /// <returns>パスが指す先の種類</returns>
     /// <remarks>ファイルの有無を調べるため、ネットワーク上のパスでは時間がかかることがある。UI スレッドからは呼ばない。</remarks>
     public static PathTargetKind Classify(string path)
     {

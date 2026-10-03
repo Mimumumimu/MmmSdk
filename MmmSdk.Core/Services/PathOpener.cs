@@ -9,6 +9,8 @@ namespace MmmSdk.Core.Services;
 public sealed class PathOpener
 {
     /// <summary>開く。</summary>
+    /// <param name="path">開くパス（URL・ファイル・フォルダ・実行ファイル。環境変数を展開する）</param>
+    /// <returns>開く処理の完了を表すタスク</returns>
     /// <remarks>シェル実行は呼び出し元をしばらく止めることがあるため、バックグラウンドで実行する。</remarks>
     /// <exception cref="PathOpenException">開けなかった。</exception>
     public Task OpenAsync(string path) => Task.Run(() =>
@@ -39,4 +41,6 @@ public sealed class PathOpener
 }
 
 /// <summary>リンクを開けなかったことを表す例外</summary>
+/// <param name="message">ユーザーへ表示できるメッセージ</param>
+/// <param name="innerException">原因の例外。無ければ null</param>
 public sealed class PathOpenException(string message, Exception? innerException = null) : Exception(message, innerException);

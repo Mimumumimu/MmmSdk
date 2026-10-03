@@ -43,36 +43,59 @@ internal static partial class NativeMethods
     }
 
     /// <summary>ウィンドウの拡張スタイルなどを取得する</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
+    /// <param name="nIndex">取得する値のインデックス（<see cref="GWL_EXSTYLE"/> など）</param>
+    /// <returns>取得した値</returns>
     [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
     public static partial nint GetWindowLongPtr(nint hWnd, int nIndex);
 
     /// <summary>ウィンドウの拡張スタイルなどを設定する</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
+    /// <param name="nIndex">設定する値のインデックス（<see cref="GWL_EXSTYLE"/> など）</param>
+    /// <param name="dwNewLong">新しい値</param>
+    /// <returns>設定前の値</returns>
     [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
     public static partial nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
 
     /// <summary>ウィンドウの前後関係・位置・表示状態を変える</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
+    /// <param name="hWndInsertAfter">直前に置くウィンドウのハンドル（<see cref="HWND_TOPMOST"/> など）</param>
+    /// <param name="x">左端の位置</param>
+    /// <param name="y">上端の位置</param>
+    /// <param name="cx">幅</param>
+    /// <param name="cy">高さ</param>
+    /// <param name="uFlags">動作を指定するフラグ（<c>SWP_*</c>）</param>
+    /// <returns>成功すれば true</returns>
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool SetWindowPos(nint hWnd, nint hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
 
     /// <summary>マウスカーソルの位置（画面座標）を取得する</summary>
+    /// <param name="lpPoint">カーソルの位置を受け取る</param>
+    /// <returns>成功すれば true</returns>
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GetCursorPos(out POINT lpPoint);
 
     /// <summary>ウィンドウの DPI を取得する</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
+    /// <returns>DPI（100% で 96）</returns>
     [LibraryImport("user32.dll")]
     public static partial uint GetDpiForWindow(nint hWnd);
 
     /// <summary>システムの寸法・設定値を取得する</summary>
+    /// <param name="nIndex">取得する項目（<c>SM_*</c>）</param>
+    /// <returns>取得した値</returns>
     [LibraryImport("user32.dll")]
     public static partial int GetSystemMetrics(int nIndex);
 
     /// <summary>ウィンドウを、フォーカスを奪わない（クリックでアクティブにならない）ウィンドウにする</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
     public static void SetNoActivate(nint hWnd) =>
         SetWindowLongPtr(hWnd, GWL_EXSTYLE, GetWindowLongPtr(hWnd, GWL_EXSTYLE) | WS_EX_NOACTIVATE);
 
     /// <summary>フォーカスを奪わずに、最前面へ表示する</summary>
+    /// <param name="hWnd">ウィンドウのハンドル</param>
     public static void ShowTopmostNoActivate(nint hWnd) =>
         SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
 }

@@ -5,6 +5,7 @@ using MmmSdk.Core.Services;
 namespace MmmSdk.WinUI.ViewModels;
 
 /// <summary>通知ウィンドウの ViewModel</summary>
+/// <param name="opener">リンク先を開く処理</param>
 /// <remarks>本文の Inlines の組み立ては View 側で行う（リンクのクリックを含むため）。</remarks>
 public sealed partial class NotificationDialogViewModel(PathOpener opener) : ObservableObject
 {
@@ -17,6 +18,8 @@ public sealed partial class NotificationDialogViewModel(PathOpener opener) : Obs
     public partial IReadOnlyList<NotificationItem> Items { get; set; } = [];
 
     /// <summary>リンク先を開く</summary>
+    /// <param name="path">開くリンク先のパス</param>
+    /// <returns>開く処理の完了を表すタスク</returns>
     /// <remarks>開けなかったときは何も表示しない（通知に失敗の表示は仕様にないため）。</remarks>
     [RelayCommand]
     private async Task OpenLinkAsync(string path)
