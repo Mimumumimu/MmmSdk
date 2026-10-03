@@ -24,9 +24,10 @@ public sealed class FatalErrorHandler(ErrorLog log, string appName)
     /// <remarks>呼ばれるスレッドは決まっていない。失敗してもログに残すだけで、終了は止めない。</remarks>
     public event Action? BeforeExit;
 
-    /// <summary>どこにも受け皿が無い未処理の例外を、すべてここへ集める</summary>
+    /// <summary>未処理の例外の受け皿を張る</summary>
     /// <param name="application">アプリケーション（UI スレッドの未処理例外を受ける）</param>
     /// <remarks>
+    /// どこにも受け皿が無い未処理の例外を、すべてここへ集める。
     /// アプリの最初（Host を作る前）に呼ぶ。<c>try/catch</c> を書ける場所では、書いてそこで受けること。
     /// これは、書けない場所（<c>async void</c>・タイマー・待たれないタスク）の最後の安全網。
     /// </remarks>
