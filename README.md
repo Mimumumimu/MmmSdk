@@ -27,7 +27,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.Core.Storage` | JSON ファイルの読み書き（`JsonFileStore`）・共通の書式（`ReadableJsonOptions`）・読み込み結果（`DataLoadResult`）・読み書きの失敗（`DataFileException`） |
 | `MmmSdk.Core.Settings` | 汎用設定ストア（`ISettingsStore`）。JSON での実装は `MmmSdk.Core.Settings.Json`（`JsonSettingsStore`） |
-| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`WindowPositionService` / `WindowPosition`） |
+| `MmmSdk.Core.WindowPositions` | ウィンドウ位置の保存・復元（`WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`） |
 | `MmmSdk.Core.Paths` | URL・ファイル・フォルダーを開く処理（`PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Notifications` | 通知の項目（`NotificationItem`） |
 | `MmmSdk.WinUI.Notifications` | 通知ダイアログ（`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationDialogViewModel`） |
@@ -139,7 +139,7 @@ var position = positions.Load("Notification");                    // 保存が�
 await positions.SaveAsync("Notification", new WindowPosition(x, y));
 
 // 全モニターの作業領域に対して、ウィンドウが面積の 50% 以上見えているか
-var visible = WindowPositionService.IsVisibleEnough(windowRect, workAreas, 0.5);
+var visible = ScreenGeometry.IsVisibleEnough(windowRect, workAreas, 0.5);
 ```
 
 位置は設定ストアに `WindowPosition.<キー>` として保存されます。
