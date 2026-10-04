@@ -86,18 +86,27 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         try
         {
             Directory.CreateDirectory(dataDirectory);
-            var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
             try
             {
-                await JsonSerializer.SerializeAsync(stream, value, typeInfo, cancellationToken).ConfigureAwait(false);
-                // 置き換える前に、中身をディスクまで書き出す（電源断で、空や途中までのファイルに置き換わらないように）
-                stream.Flush(flushToDisk: true);
+                var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
+                try
+                {
+                    await JsonSerializer.SerializeAsync(stream, value, typeInfo, cancellationToken).ConfigureAwait(false);
+                    // 置き換える前に、中身をディスクまで書き出す（電源断で、空や途中までのファイルに置き換わらないように）
+                    stream.Flush(flushToDisk: true);
+                }
+                finally
+                {
+                    await stream.DisposeAsync().ConfigureAwait(false);
+                }
+                File.Move(tempPath, path, overwrite: true);
             }
-            finally
+            catch
             {
-                await stream.DisposeAsync().ConfigureAwait(false);
+                // 失敗（取り消しを含む）で一時ファイルを残さない。削除できなくても、元の例外を優先する
+                TryDeleteTempFile(tempPath);
+                throw;
             }
-            File.Move(tempPath, path, overwrite: true);
         }
         catch (Exception ex) when (IsFileAccessError(ex))
         {
@@ -106,6 +115,20 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         finally
         {
             _fileLock.Release();
+        }
+    }
+
+    /// <summary>一時ファイルを削除する。削除できなくても例外にしない</summary>
+    /// <param name="tempPath">一時ファイルのフルパス</param>
+    private static void TryDeleteTempFile(string tempPath)
+    {
+        try
+        {
+            File.Delete(tempPath);
+        }
+        catch (Exception ex) when (IsFileAccessError(ex))
+        {
+            // 次の書き込みで同じ名前を上書きするので、残っても害はない
         }
     }
 
@@ -207,13 +230,13 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <summary>ファイルのフルパスを返す</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <returns>データフォルダと結合したパス</returns>
-    /// <remarks>ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入ると、データフォルダの外を読み書きできてしまうので、ファイル名だけを受け付ける。</remarks>
-    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダを含んでいる（呼ぶ側のバグ）。</exception>
+    /// <remarks>ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入ると、データフォルダの外を読み書きできてしまう。<c>:</c> が入ると、代替データストリーム（<c>x.json:ads</c>）として、見えない場所に読み書きできてしまう。そのため、ファイル名だけを受け付ける。</remarks>
+    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダや <c>:</c> を含んでいる（呼ぶ側のバグ）。</exception>
     private string GetPath(string fileName)
     {
-        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName || fileName is "." or "..")
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName || fileName is "." or ".." || fileName.Contains(':'))
         {
-            throw new ArgumentException($"ファイル名には、フォルダを含まない名前を指定してください: {fileName}", nameof(fileName));
+            throw new ArgumentException($"ファイル名には、フォルダや「:」を含まない名前を指定してください: {fileName}", nameof(fileName));
         }
         return Path.Combine(dataDirectory, fileName);
     }
