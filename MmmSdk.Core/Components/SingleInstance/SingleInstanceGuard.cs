@@ -1,5 +1,4 @@
-using System.Security.Cryptography;
-using System.Text;
+using MmmSdk.Core.Utilities;
 
 namespace MmmSdk.Core.Components.SingleInstance;
 
@@ -18,9 +17,7 @@ public sealed class SingleInstanceGuard
     /// <param name="appName">アプリを区別する名前（Mutex 名の先頭に付ける。アプリごとに別の名前にする）</param>
     public SingleInstanceGuard(string appName)
     {
-        var exePath = Environment.ProcessPath ?? AppContext.BaseDirectory;
-        var exeHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(exePath.ToUpperInvariant())));
-        _mutex = new Mutex(initiallyOwned: true, $@"Local\{appName}_{exeHash}", out var createdNew);
+        _mutex = new Mutex(initiallyOwned: true, $@"Local\{appName}_{ExePathHash.Current}", out var createdNew);
         IsFirstInstance = createdNew;
     }
 }
