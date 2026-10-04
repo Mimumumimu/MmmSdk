@@ -94,6 +94,12 @@ public sealed partial class TerminalControl : UserControl
             newSession.OutputReceived += control.OnOutputReceived;
             newSession.Exited += control.OnSessionExited;
             newSession.SubmitRequested += control.OnSubmitRequested;
+
+            // 端末の準備ができたあとに渡されたときは、ここで起動する（準備の前なら、準備ができたときに起動する）
+            if (control._webViewReady && !newSession.IsStarted)
+            {
+                control.StartSessionAsync(restart: false).Forget();
+            }
         }
     }
 
@@ -250,6 +256,21 @@ public sealed partial class TerminalControl : UserControl
             return;
         }
         Session?.Write(data);
+    }
+
+    /// <summary>シェルを起動し直す（起動していなければ起動する）</summary>
+    /// <returns>起動し直しの完了を表すタスク</returns>
+    /// <remarks>
+    /// 起動するシェル（<see cref="ITerminalSession.Shell"/>）を替えたあとに呼ぶ。動いているシェル（とその中の CLI）は終了する。
+    /// 表示の準備がまだのとき・<see cref="Session"/> が無いときは何もしない（準備ができたときに、そのときの設定で起動する）。
+    /// </remarks>
+    public Task RestartSessionAsync()
+    {
+        if (!_webViewReady || Session is not { } session || _isRestarting)
+        {
+            return Task.CompletedTask;
+        }
+        return StartSessionAsync(restart: session.IsStarted);
     }
 
     /// <summary>シェルを起動する（restart が true なら起動し直す）</summary>

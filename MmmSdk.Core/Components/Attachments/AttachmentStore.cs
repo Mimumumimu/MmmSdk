@@ -1,19 +1,20 @@
+using System.Runtime.Versioning;
+using MmmSdk.Core.Components.Shells;
+
 namespace MmmSdk.Core.Components.Attachments;
 
 /// <summary>添付ファイルの一時保存先（%TEMP%\アプリ名\session_日時\）の管理</summary>
-/// <param name="appName">アプリを区別する名前（一時フォルダの名前に使う。アプリごとに別の名前にする）</param>
-/// <param name="timeProvider">現在時刻の提供元</param>
 /// <remarks>
-/// アプリ全体で 1 つ。
+/// 保存先ごとに 1 つ（Windows の %TEMP% と、WSL の /tmp（<see cref="ForWsl"/>））。
 /// 保存するのは、元がファイルではないもの（貼り付けた画像など）だけ。ディスク上にあるファイルは、コピーせずに元のパスを使う想定なので、ファイルをコピーする口は持たない。
 /// <list type="bullet">
 /// <item>最初の添付でセッションフォルダを作り、以降は連番を付けて保存する（同名でも衝突しない）</item>
 /// <item>添付を全部取り除いたらフォルダごと削除して初期化する</item>
-/// <item>送信済みのファイルは CLI が後から読むため、アプリ終了まで残す</item>
+/// <item>送信済みのファイルは CLI が後から読むため、アプリ終了まで残す（WSL の /tmp では、終了しても消さない）</item>
 /// <item>フォルダは、同じアプリの別ビルド（Debug / Release など、別の場所の EXE）と共有する</item>
 /// </list>
 /// </remarks>
-public sealed class AttachmentStore(string appName, TimeProvider timeProvider) : IDisposable
+public sealed class AttachmentStore : IDisposable
 {
     /// <summary>古い一時フォルダとみなす経過時間。</summary>
     /// <remarks>
@@ -23,9 +24,17 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     /// </remarks>
     private static readonly TimeSpan StaleAge = TimeSpan.FromDays(1);
 
+    /// <summary>一時フォルダのルートを決める処理</summary>
+    /// <remarks>最初の添付のときに 1 度だけ呼ぶ（WSL のディストリビューション名の取得など、作るときに済ませなくてよい処理があるため）。</remarks>
+    private readonly Func<string> _resolveRoot;
+    /// <summary>現在時刻の提供元</summary>
+    private readonly TimeProvider _timeProvider;
+    /// <summary>終了時の削除と、古い一時フォルダの掃除をするか</summary>
+    /// <remarks>WSL の /tmp では、しない（WSL の再起動で空になるのに任せる。ユーザーの決定）。</remarks>
+    private readonly bool _cleansUp;
     /// <summary>一時フォルダのルート</summary>
-    /// <remarks>同じアプリの別ビルドと共有する（パスを短く保つため、EXE ごとには分けない）。</remarks>
-    private readonly string _root = Path.Combine(Path.GetTempPath(), appName);
+    /// <remarks>同じアプリの別ビルドと共有する（パスを短く保つため、EXE ごとには分けない）。最初の添付まで null。</remarks>
+    private string? _root;
     /// <summary>このインスタンスが作ったセッションフォルダ</summary>
     /// <remarks>終了時に削除する。</remarks>
     private readonly List<string> _ownedSessions = [];
@@ -36,6 +45,48 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     private int _sequence;
     /// <summary>古い一時フォルダの掃除を済ませたか</summary>
     private bool _staleCleaned;
+
+    /// <summary>Windows の一時フォルダ（%TEMP%\アプリ名\）に保存する一時保存先を作る</summary>
+    /// <param name="appName">アプリを区別する名前（一時フォルダの名前に使う。アプリごとに別の名前にする）</param>
+    /// <param name="timeProvider">現在時刻の提供元</param>
+    public AttachmentStore(string appName, TimeProvider timeProvider)
+        : this(() => Path.Combine(Path.GetTempPath(), appName), timeProvider, cleansUp: true)
+    {
+    }
+
+    /// <summary>一時保存先を作る</summary>
+    /// <param name="resolveRoot">一時フォルダのルートを決める処理</param>
+    /// <param name="timeProvider">現在時刻の提供元</param>
+    /// <param name="cleansUp">終了時の削除と、古い一時フォルダの掃除をするか</param>
+    private AttachmentStore(Func<string> resolveRoot, TimeProvider timeProvider, bool cleansUp)
+    {
+        _resolveRoot = resolveRoot;
+        _timeProvider = timeProvider;
+        _cleansUp = cleansUp;
+    }
+
+    /// <summary>WSL の既定のディストリビューションの /tmp（<c>\\wsl.localhost\&lt;名前&gt;\tmp\アプリ名\</c>）に保存する一時保存先を作る</summary>
+    /// <param name="appName">アプリを区別する名前（一時フォルダの名前に使う。アプリごとに別の名前にする）</param>
+    /// <param name="timeProvider">現在時刻の提供元</param>
+    /// <returns>WSL の /tmp に保存する一時保存先</returns>
+    /// <remarks>
+    /// WSL で動く CLI に渡すときは、保存先のパスを Linux の形（<c>/tmp/アプリ名/...</c>。<see cref="WslPath"/>）にして渡す。
+    /// 終了時の削除と古い一時フォルダの掃除はしない（WSL の /tmp は、systemd が有効なら WSL の起動のたびに空になるため。ユーザーの決定）。送信前に取り除いた添付は、Windows と同じくすぐ消す。
+    /// ディストリビューション名は最初の添付のときに調べる。見つからない（WSL が入っていない）ときは、その添付が <see cref="IOException"/> で失敗する。
+    /// </remarks>
+    [SupportedOSPlatform("windows")]
+    public static AttachmentStore ForWsl(string appName, TimeProvider timeProvider)
+        => new(() => WslTempRoot(appName), timeProvider, cleansUp: false);
+
+    /// <summary>WSL の /tmp の中の、アプリの一時フォルダのルートを決める</summary>
+    /// <param name="appName">アプリを区別する名前</param>
+    /// <returns>Windows から見たパス（<c>\\wsl.localhost\&lt;名前&gt;\tmp\アプリ名</c>）</returns>
+    /// <exception cref="IOException">WSL の既定のディストリビューションが見つからない。</exception>
+    [SupportedOSPlatform("windows")]
+    private static string WslTempRoot(string appName)
+        => WslDistribution.TryGetDefaultName(out var distribution)
+            ? Path.Combine($@"\\wsl.localhost\{distribution}\tmp", appName)
+            : throw new IOException("WSL のディストリビューションが見つかりません。WSL とディストリビューション（Ubuntu など）が入っているか確認してください。");
 
     /// <summary>データをファイルとして添付する</summary>
     /// <param name="content">ファイルの内容</param>
@@ -81,6 +132,11 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     /// <inheritdoc />
     public void Dispose()
     {
+        if (!_cleansUp)
+        {
+            return;
+        }
+
         foreach (var directory in _ownedSessions)
         {
             TryDeleteDirectory(directory);
@@ -118,13 +174,14 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     /// <summary>セッションフォルダを作る</summary>
     private void StartSession()
     {
-        if (!_staleCleaned)
+        _root ??= _resolveRoot();
+        if (_cleansUp && !_staleCleaned)
         {
             _staleCleaned = true;
-            DeleteStaleSessions();
+            DeleteStaleSessions(_root);
         }
 
-        var now = timeProvider.GetLocalNow();
+        var now = _timeProvider.GetLocalNow();
         var baseName = $"session_{now:yyyyMMdd_HHmmss_fff}";
         var session = Path.Combine(_root, baseName);
         // 同じミリ秒にセッションを作っても（作り直し・フォルダを共有する別ビルド）、前のファイルを上書きしないよう、重なったら接尾辞を付ける
@@ -139,15 +196,16 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
     }
 
     /// <summary>古いセッションフォルダを削除する</summary>
-    private void DeleteStaleSessions()
+    /// <param name="root">一時フォルダのルート</param>
+    private void DeleteStaleSessions(string root)
     {
-        if (!Directory.Exists(_root))
+        if (!Directory.Exists(root))
         {
             return;
         }
 
-        var threshold = timeProvider.GetUtcNow().UtcDateTime - StaleAge;
-        foreach (var directory in Directory.EnumerateDirectories(_root, "session_*"))
+        var threshold = _timeProvider.GetUtcNow().UtcDateTime - StaleAge;
+        foreach (var directory in Directory.EnumerateDirectories(root, "session_*"))
         {
             if (Directory.GetLastWriteTimeUtc(directory) < threshold)
             {

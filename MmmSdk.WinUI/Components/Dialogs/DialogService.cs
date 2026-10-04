@@ -83,8 +83,9 @@ public sealed class DialogService : IDialogService, IDialogHost
                 Content = message,
                 PrimaryButtonText = primaryText,
                 CloseButtonText = closeText,
-                // 取り消しにくい操作なので、Enter で誤って実行しないようキャンセルを既定にする
-                DefaultButton = ContentDialogButton.Close,
+                // 取り消しにくい操作なので、既定のボタンを置かない（Enter で誤って実行しない）。
+                // キャンセルを既定にすると、キャンセルが強調色になり、主な操作に見えてしまうため、どちらも強調しない
+                DefaultButton = ContentDialogButton.None,
             };
             return await dialog.ShowAsync() == ContentDialogResult.Primary;
         }

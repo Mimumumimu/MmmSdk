@@ -49,7 +49,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元（`IWindowPositionService` / `WindowPositionService` / `WindowPosition`）と、画面との位置関係の計算（`ScreenGeometry`。見えているか・作業領域に収める） |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理（`IPathOpener` / `PathOpener` / `PathOpenException`）と種類の判定（`PathTarget`） |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目（`NotificationItem`） |
-| `MmmSdk.Core.Components.Shells` | シェルの決定（`ShellInfo` / `ShellKind` / `ShellLocator`）と、シェル別のコマンド作り（`ShellCommands`） |
+| `MmmSdk.Core.Components.Shells` | シェルの決定（`ShellInfo` / `ShellKind` / `ShellLocator`）と、シェル別のコマンド作り・パスの変換（`ShellCommands`）、WSL のパス（`WslPath`）・ディストリビューション（`WslDistribution`） |
 | `MmmSdk.Core.Components.Scheduling` | 毎分 00 秒に処理を呼ぶ（`MinuteScheduler`） |
 | `MmmSdk.Core.Components.Logging` | エラーログの追記（`ErrorLog`。`yyyy-MM-dd.log`） |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先（`AttachmentStore`） |
@@ -244,7 +244,7 @@ UI スレッドから呼びます。ダイアログの親は `IDialogHost`（実
 // 起動時に、親の候補にするウィンドウを登録する（最初に登録したウィンドウが、最後の手段の親になる）
 dialogs.TrackWindow(mainWindow);
 
-if (await dialogs.ConfirmAsync("削除", "削除しますか？", "削除", "キャンセル")) { /* 「削除」が押された */ }  // 既定のボタンはキャンセル
+if (await dialogs.ConfirmAsync("削除", "削除しますか？", "削除", "キャンセル")) { /* 「削除」が押された */ }  // 既定のボタンなし（Enter で実行しない）
 
 var file = await filePicker.PickFileAsync();       // キャンセルなら null
 var folder = await folderPicker.PickFolderAsync(); // キャンセルなら null
@@ -368,11 +368,18 @@ services.AddTransient<ITerminalSession, PseudoConsoleSession>();   // 利用側�
 ```csharp
 session.WorkingDirectory = directory;                       // Start の前に設定する
 session.Shell = new ShellInfo(path, ShellKind.PowerShell);  // 既定以外のシェルを使うとき
+session.Shell = ShellLocator.Wsl;                           // WSL（既定のディストリビューションの既定のシェル）を使うとき
 if (ShellCommands.TryChangeDirectory(session.Shell, directory, out var command))
 {
-    session.Submit(command);                                // 貼り付けとして入力し、Enter で確定する
+    session.Submit(command);                                // 貼り付けとして入力し、Enter で確定する（WSL では cd -- '/mnt/d/...'）
+}
+if (ShellCommands.TryConvertPath(session.Shell, filePath, out var shellPath))
+{
+    // CLI に渡すパス（WSL では D:\a.txt → /mnt/d/a.txt、\\wsl.localhost\Ubuntu\tmp\a.jpg → /tmp/a.jpg）
 }
 ```
+
+- 起動するシェルを、読み込みなどが済んでから決めるときは、XAML で `Session` をつながず、決めてからコードで `TerminalView.Session = session` と渡してください（渡したときに起動します）。起動したあとにシェルを替えるときは、`session.Shell` を替えてから `TerminalView.RestartSessionAsync()` を呼んでください
 
 - xterm.js のファイルは、参照するアプリの出力フォルダー（`Assets/Terminal/`）へ自動でコピーされます
 - `UserDataFolder` は WebView2 のデータ（キャッシュなど）の保存先です。省略すると、EXE の隣に `<EXE 名>.WebView2` フォルダーができます。読み込まれる前に設定してください（初期化のときに 1 回だけ読みます）
@@ -463,8 +470,7 @@ store.CloseSession();                                     // 送信済み。次�
 
 保存するのは、元がファイルではないもの（貼り付けた画像など）だけです。ディスク上にあるファイルは、コピーせずに元のパスをそのまま使ってください（ファイルをコピーする口はありません）。
 
-```csharp
-```
+WSL で動く CLI に渡すときは、WSL の /tmp に保存する `AttachmentStore.ForWsl("MyApp", timeProvider)` を使い、保存先のパスを `ShellCommands.TryConvertPath` で `/tmp/MyApp/...` にして渡してください。WSL の /tmp は WSL の起動のたびに空になる（systemd が有効なとき）ので、終了時の削除はしません。
 
 ### ビジュアルツリーの検索（`VisualTreeSearch`）
 

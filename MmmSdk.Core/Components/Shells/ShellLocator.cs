@@ -23,6 +23,14 @@ public static class ShellLocator
     /// </remarks>
     public static ShellInfo Default => DefaultShell.Value;
 
+    /// <summary>WSL のシェル（システムフォルダーの wsl.exe）</summary>
+    /// <remarks>
+    /// 引数なしの wsl.exe は、既定のディストリビューションで、そのユーザーの既定のシェル（bash など）を起動する。
+    /// 開始位置は、起動するプロセスの作業ディレクトリ（Windows のパス）を wsl.exe が Linux のパスに変換して使う。
+    /// WSL が入っていない PC でも wsl.exe はあり、起動すると入れ方の案内を出して終了する。
+    /// </remarks>
+    public static ShellInfo Wsl { get; } = new(Path.Combine(Environment.SystemDirectory, "wsl.exe"), ShellKind.Wsl);
+
     /// <summary>既定のシェルを探す</summary>
     /// <returns>PATH 上の pwsh.exe があればそれ、無ければ Windows PowerShell（システムフォルダー内）</returns>
     private static ShellInfo FindDefault()
