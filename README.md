@@ -361,7 +361,7 @@ services.AddTransient<ITerminalSession, PseudoConsoleSession>();   // 利用側�
 
 ```xml
 <!-- xmlns:terminal="using:MmmSdk.WinUI.Components.Terminal" -->
-<terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" />
+<terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" UserDataFolder="{x:Bind local:AppPaths.WebView2Directory}" />
 ```
 
 ```csharp
@@ -374,6 +374,7 @@ if (ShellCommands.TryChangeDirectory(session.Shell, directory, out var command))
 ```
 
 - xterm.js のファイルは、参照するアプリの出力フォルダー（`Assets/Terminal/`）へ自動でコピーされます
+- `UserDataFolder` は WebView2 のデータ（キャッシュなど）の保存先です。省略すると、EXE の隣に `<EXE 名>.WebView2` フォルダーができます。読み込まれる前に設定してください（初期化のときに 1 回だけ読みます）
 - 画面側の WebView2 ランタイムが無いときは、ターミナルの場所に理由が文字で出ます（ほかの機能は使えます）
 - 既定のシェルの探索は、最初に読むときにディスクへ触れます。UI スレッドで初めて読まないよう、起動時の準備で `_ = ShellLocator.Default` をバックグラウンドから読んでください
 

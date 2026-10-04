@@ -69,6 +69,14 @@ public sealed partial class TerminalControl : UserControl
         set => SetValue(SessionProperty, value);
     }
 
+    /// <summary>WebView2 のデータ（キャッシュなど）の保存先フォルダー</summary>
+    /// <remarks>
+    /// 読み込まれる前に設定する（WebView2 の初期化のときに 1 回だけ読む）。
+    /// null のときは WebView2 の既定（EXE の隣の <c>&lt;EXE 名&gt;.WebView2</c>）。
+    /// 同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す。
+    /// </remarks>
+    public string? UserDataFolder { get; set; }
+
     /// <summary>セッションが差し替わったら、イベントの購読を付け替える</summary>
     /// <param name="d">変更されたコントロール</param>
     /// <param name="e">変更の情報</param>
@@ -121,7 +129,10 @@ public sealed partial class TerminalControl : UserControl
 
         try
         {
-            await WebView.EnsureCoreWebView2Async();
+            var environment = UserDataFolder is null
+                ? null
+                : await CoreWebView2Environment.CreateWithOptionsAsync(null, UserDataFolder, new CoreWebView2EnvironmentOptions());
+            await WebView.EnsureCoreWebView2Async(environment);
         }
         catch (COMException ex)
         {

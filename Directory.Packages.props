@@ -11,6 +11,12 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.346" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <!--
+      Windows App SDK は、全部入りのパッケージ（Microsoft.WindowsAppSDK）ではなく、使う部品のパッケージだけを参照する（AI・検索などの使わない DLL を出力に入れないため）。
+      バージョンは、全部入りのパッケージ 2.5.1 がそろえている組み合わせに合わせる（上げるときは、新しい全部入りのパッケージの依存のバージョンを写す）。
+    -->
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
   </ItemGroup>
 </Project>

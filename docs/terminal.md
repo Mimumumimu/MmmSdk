@@ -38,6 +38,7 @@ services.AddTransient<ITerminalSession, PseudoConsoleSession>(); // 利用側ご
 ```
 ```xml
 <!-- xmlns:terminal="using:MmmSdk.WinUI.Components.Terminal" -->
-<terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" />
+<terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" UserDataFolder="{x:Bind local:AppPaths.WebView2Directory}" />
 ```
+- `UserDataFolder` は WebView2 のデータ（キャッシュなど）の保存先。読み込まれる前に設定する（初期化のときに 1 回だけ読む）。省略すると WebView2 の既定（EXE の隣の `<EXE 名>.WebView2`）。同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す（MmmTool は `Data\WebView2`）
 - 起動するシェルを替えるときは、`Start` の前に `session.Shell = new ShellInfo(path, kind)` を設定する
