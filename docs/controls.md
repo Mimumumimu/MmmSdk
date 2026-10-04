@@ -41,5 +41,5 @@ services.AddSingleton(provider => new AttachmentStore("MyApp", provider.GetRequi
 ```
 
 ## 添付の画像（`MmmSdk.WinUI.Components.Attachments`）
-- `IImageConverter.ToJpegAsync(stream)`: 画像（PNG・BMP など）を JPEG に変換する（実装は `ImageConverter`。`AddMmmSdkWinUI` が Singleton で登録する）。JPEG は透過を持てないので、アルファは無視する。貼り付けたスクリーンショットなどを、添付のファイルにするときに使う
+- `IImageConverter.ToJpegAsync(stream)`: 画像（PNG・BMP など）を JPEG に変換する（実装は `ImageConverter`。`AddMmmSdkWinUI` が Singleton で登録する）。JPEG は透過を持てないので、アルファは無視する。画像の大きさ（解像度・容量）に上限は設けない（意図した仕様。大きな画像も元の解像度のまま変換する。添付ファイル（`AttachmentStore`）の大きさにも上限は無い）。貼り付けたスクリーンショットなどを、添付のファイルにするときに使う
 - `ThumbnailImage.FromFile(path)`: サムネイルを作る（XAML の `x:Bind` から関数として呼ぶ。パスが空なら null）。ファイルを開いたままにしない（削除できなくなるため）よう、中身をメモリに読み込んでから表示する。表示サイズに合わせて高さ 144 でデコードする。読み込みの失敗（`IOException`・`UnauthorizedAccessException`・`COMException`）は、空のまま表示する

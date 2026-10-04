@@ -4,6 +4,7 @@ using Windows.Storage.Streams;
 namespace MmmSdk.WinUI.Components.Attachments;
 
 /// <summary>画像を JPEG に変換する</summary>
+/// <remarks>画像の大きさ（解像度・容量）に上限は設けない。大きな画像も、元の解像度のまま変換する（意図した仕様。上限を付けると、添付したい画像が添付できなくなるため）。</remarks>
 public sealed class ImageConverter : IImageConverter
 {
     /// <inheritdoc />
