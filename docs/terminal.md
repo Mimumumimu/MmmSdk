@@ -21,6 +21,7 @@
 
 ## 画面（`TerminalControl`）
 - WebView2 上の xterm.js で描く `UserControl`。`Session` に `ITerminalSession` を渡すと、入出力をつなぐ。`FocusTerminal()` でフォーカスを移す
+- ブラウザとしての動きは止めてある（再読み込み・右クリック・ズーム・新しいウィンドウ）。ページの移動も、同梱の画面（仮想ホスト）以外へは `NavigationStarting` で取り消す（`NewWindowRequested` の抑止と合わせて、外のページに切り替わらないようにする）
 - xterm.js・addon-fit（MIT。ライセンスファイルも同梱）は `MmmSdk.WinUI/Components/Terminal/Assets/`。SDK の csproj が、参照するアプリの出力フォルダー（`Assets/Terminal/`）へコピーする。**アプリは何も書かなくてよい**（アセットはフォルダー内に平らに置く。サブフォルダーを足すときは csproj のリンクの書き方を直す）
 - 仮想ホスト `terminal.mmmsdk.invalid` で `Assets/Terminal/` を読み込む（`DenyCors`）。守りは多重：ページの CSP（外部への通信・フレーム・フォームを禁止）・`AreHostObjectsAllowed = false`・ブラウザーの機能（再読み込み・検索・印刷・ズーム・右クリックメニュー）を止める・メッセージの送信元の検査・Release で DevTools を無効化
 - Ctrl+C のコピーは、クリップボードへ書き込めたときだけ選択を解除する。拒否されたときは選択を残し、`console.error` に出す（画面には出さない）。サイズ変更の通知は 1 フレームに 1 回にまとめる

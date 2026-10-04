@@ -28,9 +28,17 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <summary>文字の大きさ（pt）</summary>
     private const int FontSizePoint = 12;
 
+    /// <summary>実際に使う文字のフォント（<see cref="FontFaces"/> のうち、入っている最初のもの）</summary>
+    /// <remarks>列挙は重いので、メニューを開くたびではなく、最初に 1 度だけ求める（起動後にインストールされたフォントは、次の起動まで使わない）。</remarks>
+    private static readonly string FontFace = FindInstalledFont(FontFaces) ?? FontFaces[^1];
+
     /// <summary>サブメニューの矢印に使うアイコンフォント</summary>
     /// <remarks>先頭から順に、入っているものを使う。</remarks>
     private static readonly string[] IconFontFaces = ["Segoe Fluent Icons", "Segoe MDL2 Assets"];
+
+    /// <summary>実際に使うアイコンフォント。どれも入っていなければ null（矢印を描かない）</summary>
+    /// <remarks>文字のフォント（<see cref="FontFace"/>）と同じく、最初に 1 度だけ求める。</remarks>
+    private static readonly string? IconFontFace = FindInstalledFont(IconFontFaces);
 
     /// <summary>右向きの山形（ChevronRight）。</summary>
     private const string ChevronGlyph = "";
@@ -99,8 +107,8 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         _hoverBrush = PInvoke.CreateSolidBrush(new COLORREF(_palette.Hover));
         _separatorBrush = PInvoke.CreateSolidBrush(new COLORREF(_palette.Separator));
 
-        _font = CreateFont(FindInstalledFont(FontFaces) ?? FontFaces[^1], -(int)Math.Round(FontSizePoint * dpi / 72.0));
-        _iconFont = FindInstalledFont(IconFontFaces) is { } iconFace ? CreateFont(iconFace, -Px(ArrowSize)) : HFONT.Null;
+        _font = CreateFont(FontFace, -(int)Math.Round(FontSizePoint * dpi / 72.0));
+        _iconFont = IconFontFace is { } iconFace ? CreateFont(iconFace, -Px(ArrowSize)) : HFONT.Null;
         _lineHeight = MeasureText("Ag").Height;
     }
 

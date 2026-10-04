@@ -10,6 +10,9 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- トリミング・AOT に戻せる形を、ビルドの警告で確かめる（Core と同じ設定。制約: この設定を足したあとのビルドは、ユーザーの VS で確かめる） -->
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>

@@ -59,12 +59,15 @@ public sealed class PseudoConsole : IDisposable
     public WaitHandle ExitHandle { get; }
 
     /// <summary>擬似コンソールを作り、プロセスをつないで起動する</summary>
-    /// <param name="commandLine">プロセスを起動するコマンドライン</param>
+    /// <param name="commandLine">プロセスを起動するコマンドライン（実行ファイルのパスは、空白を含むことがあるので、引用符で囲んで渡す）</param>
     /// <param name="workingDirectory">プロセスの作業ディレクトリ</param>
     /// <param name="columns">端末の桁数</param>
     /// <param name="rows">端末の行数</param>
     /// <returns>起動した擬似コンソール</returns>
-    /// <remarks>失敗したときは、作った分をすべて解放してから例外を投げる。</remarks>
+    /// <remarks>
+    /// 失敗したときは、作った分をすべて解放してから例外を投げる。
+    /// <paramref name="commandLine"/> は、そのまま <c>CreateProcess</c> に渡す。実行ファイルのパスを引用符で囲まないと、パスの空白で区切られて、別のファイルが起動することがある（<c>ShellInfo.CommandLine</c> は囲んで作る）。
+    /// </remarks>
     /// <exception cref="Win32Exception">パイプの作成またはプロセスの起動に失敗した</exception>
     /// <exception cref="COMException">擬似コンソールを作成できなかった</exception>
     public static unsafe PseudoConsole Start(string commandLine, string workingDirectory, int columns, int rows)

@@ -142,11 +142,21 @@ public sealed partial class TerminalControl : UserControl
         core.Settings.AreDevToolsEnabled = false;
 #endif
         core.NewWindowRequested += (_, args) => args.Handled = true;
+        // 仮想ホスト（同梱のターミナルの画面）以外へ移動させない（リンクなどで、外のページに切り替わらないように）
+        core.NavigationStarting += (_, args) => args.Cancel = !IsTerminalPageUri(args.Uri);
         core.WebMessageReceived += OnWebMessageReceived;
         core.SetVirtualHostNameToFolderMapping(
             HostName, Path.Combine(AppContext.BaseDirectory, "Assets", "Terminal"), CoreWebView2HostResourceAccessKind.DenyCors);
         core.Navigate($"https://{HostName}/index.html");
     }
+
+    /// <summary>同梱のターミナルの画面（仮想ホスト）の URI か</summary>
+    /// <param name="uri">移動先の URI</param>
+    /// <returns>仮想ホストの https の URI なら true</returns>
+    private static bool IsTerminalPageUri(string uri)
+        => Uri.TryCreate(uri, UriKind.Absolute, out var parsed)
+            && parsed.Scheme == Uri.UriSchemeHttps
+            && string.Equals(parsed.Host, HostName, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>WebView2 の初期化失敗の理由を表示する</summary>
     /// <param name="exception">初期化の失敗</param>
