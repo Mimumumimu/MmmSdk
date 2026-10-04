@@ -1,9 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MmmSdk.Core.Utilities;
+namespace MmmSdk.Core.Components.SingleInstance;
 
-/// <summary>実行中の EXE のパスから作るハッシュ（EXE ごとに名前を分けるために使う）</summary>
+/// <summary>実行中の EXE のパスから作るハッシュ（多重起動の判定を EXE ごとに分けるために使う）</summary>
 internal static class ExePathHash
 {
     /// <summary>実行中の EXE のパスの SHA-256（16 進数の文字列）</summary>

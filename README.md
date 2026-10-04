@@ -456,10 +456,14 @@ ImeControl.TurnOff();   // 英数字を打つ欄にフォーカスが来たと�
 ```csharp
 services.AddSingleton(provider => new AttachmentStore("MyApp", provider.GetRequiredService<TimeProvider>()));
 
-var path = await store.AddFileAsync(sourcePath);          // コピーして添付（連番付き）
-var path2 = await store.AddAsync(bytes, "image.jpg");     // データをファイルとして添付
+var path = await store.AddAsync(bytes, "image.jpg");      // データをファイルとして添付（連番付き）
 store.Remove(path);                                       // 取り除く（今のセッションの添付だけ。空ならフォルダごと削除）
 store.CloseSession();                                     // 送信済み。次の添付は新しいセッションへ
+```
+
+保存するのは、元がファイルではないもの（貼り付けた画像など）だけです。ディスク上にあるファイルは、コピーせずに元のパスをそのまま使ってください（ファイルをコピーする口はありません）。
+
+```csharp
 ```
 
 ### ビジュアルツリーの検索（`VisualTreeSearch`）

@@ -1,5 +1,3 @@
-using MmmSdk.Core.Utilities;
-
 namespace MmmSdk.Core.Components.SingleInstance;
 
 /// <summary>同一 EXE の二重起動を防ぐ</summary>
