@@ -92,4 +92,3 @@ MessageBox
 
 // uxtheme の非公開 API（序数指定）を呼ぶための読み込み
 GetProcAddress
-LoadLibrary

@@ -1,6 +1,9 @@
+using MmmSdk.Core.Components.SingleInstance;
+using MmmSdk.Core.Utilities;
+
 namespace MmmSdk.Core.Components.Attachments;
 
-/// <summary>添付ファイルの一時保存先（%TEMP%\アプリ名\session_日時\）の管理</summary>
+/// <summary>添付ファイルの一時保存先（%TEMP%\アプリ名\EXE パスのハッシュ\session_日時\）の管理</summary>
 /// <param name="appName">アプリを区別する名前（一時フォルダの名前に使う。アプリごとに別の名前にする）</param>
 /// <param name="timeProvider">現在時刻の提供元</param>
 /// <remarks>
@@ -9,16 +12,21 @@ namespace MmmSdk.Core.Components.Attachments;
 /// <item>最初の添付でセッションフォルダを作り、以降は連番を付けて保存する（同名でも衝突しない）</item>
 /// <item>添付を全部取り除いたらフォルダごと削除して初期化する</item>
 /// <item>送信済みのファイルは CLI が後から読むため、アプリ終了まで残す</item>
+/// <item>フォルダは EXE のパスごとに分ける（<see cref="SingleInstanceGuard"/> と同じ区別。同時に動いている別ビルドのフォルダに触れない）</item>
 /// </list>
 /// </remarks>
 public sealed class AttachmentStore(string appName, TimeProvider timeProvider) : IDisposable
 {
     /// <summary>古い一時フォルダとみなす経過時間。</summary>
-    /// <remarks>前回までの残り（異常終了など）は、この時間より古いものだけ消す（同時起動している別ビルドのフォルダを消さないため）。</remarks>
+    /// <remarks>前回までの残り（異常終了など）は、この時間より古いものだけ消す。消すのは同じ EXE のフォルダの中だけ。</remarks>
     private static readonly TimeSpan StaleAge = TimeSpan.FromDays(1);
 
-    /// <summary>一時フォルダのルート</summary>
-    private readonly string _root = Path.Combine(Path.GetTempPath(), appName);
+    /// <summary>一時フォルダのルート（EXE のパスごと）</summary>
+    /// <remarks>
+    /// 別のパスの EXE（Debug / Release など）は別のルートになるので、古いフォルダの掃除が、動いている別ビルドのフォルダを消すことはない。
+    /// 同じ EXE の二重起動は <see cref="SingleInstanceGuard"/> で防ぐので、同じルートを使うのは同時に 1 つだけ。
+    /// </remarks>
+    private readonly string _root = Path.Combine(Path.GetTempPath(), appName, ExePathHash.Current);
     /// <summary>このインスタンスが作ったセッションフォルダ</summary>
     /// <remarks>終了時に削除する。</remarks>
     private readonly List<string> _ownedSessions = [];
@@ -131,7 +139,13 @@ public sealed class AttachmentStore(string appName, TimeProvider timeProvider) :
         }
 
         var now = timeProvider.GetLocalNow();
-        var session = Path.Combine(_root, $"session_{now:yyyyMMdd_HHmmss_fff}");
+        var baseName = $"session_{now:yyyyMMdd_HHmmss_fff}";
+        var session = Path.Combine(_root, baseName);
+        // 同じミリ秒にセッションを作り直しても、前のファイルを上書きしないよう、重なったら接尾辞を付ける
+        for (var suffix = 2; Directory.Exists(session); suffix++)
+        {
+            session = Path.Combine(_root, $"{baseName}_{suffix}");
+        }
         Directory.CreateDirectory(session);
         _ownedSessions.Add(session);
         _session = session;

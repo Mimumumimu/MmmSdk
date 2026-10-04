@@ -155,7 +155,7 @@ await store.WriteAsync("Links.json", menu, MyJsonContext.Readable.LinkMenu);
 - JSON として読めないファイルは `名前.broken-yyyyMMdd-HHmmss.json`（同じ秒に重なったら `-2` 以降）へ名前を変えて退避し、`Value` は null、`RecoveryMessage` にユーザー向けのメッセージが入ります。退避したファイルは自動では消しません
 - 0 バイト・空白だけのファイルは、退避せずに null として扱います
 - ロック・権限などで読み書きできないときは `DataFileException`（メッセージはそのまま画面に出せる形）
-- 読み込み・書き込みはファイル操作ごとにロックを取るので、別スレッドから同時に呼べます
+- 読み込み・書き込みはファイル操作ごとに、ファイル名ごとのロックを取るので、別スレッドから同時に呼べます（別のファイルは待たせません）
 
 ### 汎用設定ストア（`ISettingsStore`）
 
@@ -169,7 +169,7 @@ await settings.SetAsync("Reminder.SnoozeIntervalMinutes", 30);            // 保
 var options = settings.Get("Foo.Options", new FooOptions(), MyJsonContext.Default.FooOptions);
 ```
 
-- `Get` は同期です。最初のアクセスで 1 度だけファイルを読み、以後はメモリから返します
+- `Get` は同期です。最初のアクセスで 1 度だけファイルを読み、以後はメモリから返します。起動時の準備で `EnsureLoadedAsync` を呼んでおくと、最初の読み込みを非同期で済ませられます（UI スレッドを止めません）
 - ファイルが無い・空・壊れているときは空の設定として扱い、例外は出しません。壊れていたときは退避して `RecoveryMessage` に、読めなかったときは `LoadError` に理由が残ります
 - 例外を出さずに「ある・型が合う」を確かめたいときは `TryGet(key, out value)` を使います（`int.TryParse` と同じ形）。`Get` は既定値を返す版です
 - 読めなかった（`LoadError`）ときは `IsReadOnly` が true になり（一時的なロックだったときのために、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存します）、元のデータを上書きで消さないよう、`SetAsync` / `RemoveAsync` は何も保存せず `false` を返します。保存できたときだけ `true` です（例外にはしません）

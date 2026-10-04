@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
@@ -9,13 +10,14 @@ namespace MmmSdk.Core.Components.Storage;
 /// <param name="dataDirectory">JSON ファイルを置くフォルダのパス</param>
 public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
 {
-    /// <summary>ファイル操作の同時実行を防ぐロック</summary>
+    /// <summary>ファイル操作の同時実行を防ぐロック（ファイル名ごと）</summary>
     /// <remarks>
-    /// 読み込みも書き込みも取る（読み込みと壊れたファイルの退避の間に、書き込みが割り込まないように）。
+    /// 同じファイルの読み込みと書き込みで取る（読み込みと壊れたファイルの退避の間に、書き込みが割り込まないように）。別のファイルは待たせない。
     /// 待つ処理（await）をまたいで持つので、継続を元のスレッド（UI スレッド）に戻さない（<c>ConfigureAwait(false)</c>）。
-    /// 戻すと、UI スレッドが別ファイルの同期の <see cref="Read{T}"/> でこのロックを待っている間に、継続が UI スレッドを待って、デッドロックする。
+    /// 戻すと、UI スレッドが同じファイルの同期の <see cref="Read{T}"/> でこのロックを待っている間に、継続が UI スレッドを待って、デッドロックする。
+    /// ファイル名の大文字小文字は区別しない（Windows のファイルシステムに合わせる）。
     /// </remarks>
-    private readonly SemaphoreSlim _fileLock = new(1, 1);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileLocks = new(StringComparer.OrdinalIgnoreCase);
 
     /// <inheritdoc />
     public bool Exists(string fileName) => File.Exists(GetPath(fileName));
@@ -23,7 +25,8 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <inheritdoc />
     public DataLoadResult<T?> Read<T>(string fileName, JsonTypeInfo<T> typeInfo)
     {
-        _fileLock.Wait();
+        var fileLock = GetFileLock(fileName);
+        fileLock.Wait();
         try
         {
             if (!TryGetExistingPath(fileName, out var path))
@@ -44,14 +47,15 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         }
         finally
         {
-            _fileLock.Release();
+            fileLock.Release();
         }
     }
 
     /// <inheritdoc />
     public async Task<DataLoadResult<T?>> ReadAsync<T>(string fileName, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken = default)
     {
-        await _fileLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var fileLock = GetFileLock(fileName);
+        await fileLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (!TryGetExistingPath(fileName, out var path))
@@ -72,7 +76,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         }
         finally
         {
-            _fileLock.Release();
+            fileLock.Release();
         }
     }
 
@@ -82,22 +86,32 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         var path = GetPath(fileName);
         var tempPath = path + ".tmp";
 
-        await _fileLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var fileLock = GetFileLock(fileName);
+        await fileLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             Directory.CreateDirectory(dataDirectory);
-            var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
             try
             {
-                await JsonSerializer.SerializeAsync(stream, value, typeInfo, cancellationToken).ConfigureAwait(false);
-                // 置き換える前に、中身をディスクまで書き出す（電源断で、空や途中までのファイルに置き換わらないように）
-                stream.Flush(flushToDisk: true);
+                var stream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
+                try
+                {
+                    await JsonSerializer.SerializeAsync(stream, value, typeInfo, cancellationToken).ConfigureAwait(false);
+                    // 置き換える前に、中身をディスクまで書き出す（電源断で、空や途中までのファイルに置き換わらないように）
+                    stream.Flush(flushToDisk: true);
+                }
+                finally
+                {
+                    await stream.DisposeAsync().ConfigureAwait(false);
+                }
+                File.Move(tempPath, path, overwrite: true);
             }
-            finally
+            catch
             {
-                await stream.DisposeAsync().ConfigureAwait(false);
+                // 失敗（取り消しを含む）で一時ファイルを残さない。削除できなくても、元の例外を優先する
+                TryDeleteTempFile(tempPath);
+                throw;
             }
-            File.Move(tempPath, path, overwrite: true);
         }
         catch (Exception ex) when (IsFileAccessError(ex))
         {
@@ -105,7 +119,32 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         }
         finally
         {
-            _fileLock.Release();
+            fileLock.Release();
+        }
+    }
+
+    /// <summary>ファイルのロックを返す（無ければ作る）</summary>
+    /// <param name="fileName">データフォルダ内のファイル名</param>
+    /// <returns>そのファイル用のロック</returns>
+    /// <remarks>不正なファイル名（フォルダを含むなど）は、ロックを作る前に <see cref="GetPath"/> で拒否する。</remarks>
+    /// <exception cref="ArgumentException"><paramref name="fileName"/> が不正（呼ぶ側のバグ）。</exception>
+    private SemaphoreSlim GetFileLock(string fileName)
+    {
+        GetPath(fileName);
+        return _fileLocks.GetOrAdd(fileName, static _ => new SemaphoreSlim(1, 1));
+    }
+
+    /// <summary>一時ファイルを削除する。削除できなくても例外にしない</summary>
+    /// <param name="tempPath">一時ファイルのフルパス</param>
+    private static void TryDeleteTempFile(string tempPath)
+    {
+        try
+        {
+            File.Delete(tempPath);
+        }
+        catch (Exception ex) when (IsFileAccessError(ex))
+        {
+            // 次の書き込みで同じ名前を上書きするので、残っても害はない
         }
     }
 
@@ -131,7 +170,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     private static DataFileException ReadFailed(string fileName, Exception cause)
         => new($"{fileName} を読み込めませんでした。{cause.Message}", cause);
 
-    /// <summary>JSON を値に変換する。読めなければファイルを退避する。呼ぶ側は <c>_fileLock</c> を取っておくこと</summary>
+    /// <summary>JSON を値に変換する。読めなければファイルを退避する。呼ぶ側は <see cref="GetFileLock"/> のロックを取っておくこと</summary>
     /// <typeparam name="T">読み込む値の型</typeparam>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <param name="bytes">ファイルの中身</param>
@@ -170,7 +209,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         return span.Trim((ReadOnlySpan<byte>)[(byte)' ', (byte)'\t', (byte)'\r', (byte)'\n']).IsEmpty;
     }
 
-    /// <summary>壊れたファイルを退避する。呼ぶ側は <c>_fileLock</c> を取っておくこと</summary>
+    /// <summary>壊れたファイルを退避する。呼ぶ側は <see cref="GetFileLock"/> のロックを取っておくこと</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <param name="error">JSON として読めなかった原因の例外</param>
     /// <returns>ユーザーへ表示するメッセージ</returns>
@@ -207,13 +246,13 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <summary>ファイルのフルパスを返す</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <returns>データフォルダと結合したパス</returns>
-    /// <remarks>ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入ると、データフォルダの外を読み書きできてしまうので、ファイル名だけを受け付ける。</remarks>
-    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダを含んでいる（呼ぶ側のバグ）。</exception>
+    /// <remarks>ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入ると、データフォルダの外を読み書きできてしまう。<c>:</c> が入ると、代替データストリーム（<c>x.json:ads</c>）として、見えない場所に読み書きできてしまう。そのため、ファイル名だけを受け付ける。</remarks>
+    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダや <c>:</c> を含んでいる（呼ぶ側のバグ）。</exception>
     private string GetPath(string fileName)
     {
-        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName || fileName is "." or "..")
+        if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName || fileName is "." or ".." || fileName.Contains(':'))
         {
-            throw new ArgumentException($"ファイル名には、フォルダを含まない名前を指定してください: {fileName}", nameof(fileName));
+            throw new ArgumentException($"ファイル名には、フォルダや「:」を含まない名前を指定してください: {fileName}", nameof(fileName));
         }
         return Path.Combine(dataDirectory, fileName);
     }
