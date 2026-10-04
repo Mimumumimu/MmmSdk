@@ -6,7 +6,7 @@
 - 保存先のフォルダは `AddMmmSdkCore(dataDirectory)` で渡す。アプリは `AppContext.BaseDirectory/Data` を渡している
 - 型の情報は呼ぶ側が `JsonTypeInfo<T>`（ソース生成）で渡す。トリミングしても動く形を保つため、リフレクションによるシリアライズは使わない
 - 書き込みは一時ファイルに書いてから置き換える（書き込み途中で失敗しても元のファイルが壊れない）
-- 読み込みも書き込みと同じロックを取る（読み込みと退避の間に書き込みが割り込まないように）。別スレッドから同時に呼べる
+- 読み込みも書き込みと同じロックを取る（読み込みと退避の間に書き込みが割り込まないように）。ロックはファイル名ごと（別のファイルは待たせない。大文字小文字は区別しない）。別スレッドから同時に呼べる
 
 ## シリアライザの設定（`ReadableJsonOptions`）
 - インデントあり・日本語や記号を非エスケープ・コメントと末尾のカンマを許す・プロパティ名は camelCase で書き、読み込みでは大文字小文字を区別しない・null は書かない
@@ -32,7 +32,7 @@
 
 ## 汎用設定ストア（`ISettingsStore` / `JsonSettingsStore`）
 - `Data/AppSettings.json` の 1 ファイル（キー → JSON 要素の辞書）。ローカル専用。`AddMmmSdkCore` が Singleton で登録する
-- `Get(key, 既定値)` は同期。最初のアクセスで 1 度だけ読み込み、以後はメモリから返す
+- `Get(key, 既定値)` は同期。最初のアクセスで 1 度だけ読み込み、以後はメモリから返す。起動時の準備で `EnsureLoadedAsync` を呼んでおくと、最初の読み込みを非同期で済ませられる（UI スレッドを止めない。読めなかったときも例外にせず `LoadError` に残す）
 - `SetAsync` / `RemoveAsync` は保存完了まで待つ。保存は専用のロックで順序を守る（古い内容が後から書かれないように）
 - インターフェース（`ISettingsStore`）は、型情報つき（`JsonTypeInfo<T>`）の `Get` / `TryGet` / `SetAsync` と、`Contains` / `RemoveAsync` と、状態（`LoadError` / `IsReadOnly` / `RecoveryMessage`）だけ。保存先を替えるときは、これだけを実装する
 - `string` / `bool` / `int` / `long` / `double` は、型ごとの専用のメソッド（`SettingsStoreExtensions` の拡張メソッド。型情報つきのメソッドを呼ぶだけ）で、型情報なしで使える。それ以外の型を渡すと、実行時ではなく、ビルドで誤りになる。それ以外は呼ぶ側が `JsonSerializable` 登録した `JsonTypeInfo<T>` を渡す（ソース生成を維持するため）

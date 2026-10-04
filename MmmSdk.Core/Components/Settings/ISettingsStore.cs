@@ -32,6 +32,15 @@ public interface ISettingsStore
     /// <summary>壊れていたファイルを退避して作り直したときのメッセージ。通常は null。</summary>
     string? RecoveryMessage { get; }
 
+    /// <summary>設定ファイルを、まだ読んでいなければ非同期で読み込んでおく</summary>
+    /// <param name="cancellationToken">キャンセルを監視するトークン</param>
+    /// <returns>読み込みの完了を表すタスク</returns>
+    /// <remarks>
+    /// 読み込まなくても、最初の <c>Get</c> などで同期で読まれる（UI スレッドを、ファイルの読み込みの間だけ止める）。起動時の準備で呼んでおけば、止めずに済む。
+    /// 読めなかったときも例外は投げず、<see cref="LoadError"/> に残す（読み込み済みなら、何もしない）。
+    /// </remarks>
+    Task EnsureLoadedAsync(CancellationToken cancellationToken = default);
+
     /// <summary>値を取得する。無い・型が合わないときは既定値を返す。</summary>
     /// <typeparam name="T">値の型</typeparam>
     /// <param name="key">設定のキー</param>
