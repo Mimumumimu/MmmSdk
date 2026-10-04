@@ -83,7 +83,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 
 ## 必要環境
 
-- Windows 10 (1809) 以上（x64）… `MmmSdk.WinUI` を使う場合
+- Windows 10 (1809) 以上 … `MmmSdk.WinUI` を使う場合
+- x64 … `MmmSdk.Core` も含めて、全プロジェクトを x64 専用でビルドします（AnyCPU は使いません。参照するアプリも x64 にします）
 - .NET 10 SDK
 - Visual Studio 2026 以降（「WinUI アプリケーション開発」ワークロード）
 
