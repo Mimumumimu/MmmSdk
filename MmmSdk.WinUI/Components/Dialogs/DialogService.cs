@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using MmmSdk.WinUI.Utilities;
 
 namespace MmmSdk.WinUI.Components.Dialogs;
 
@@ -88,6 +89,81 @@ public sealed class DialogService : IDialogService, IDialogHost
                 DefaultButton = ContentDialogButton.None,
             };
             return await dialog.ShowAsync() == ContentDialogResult.Primary;
+        }
+        finally
+        {
+            _confirmLock.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<FileConflictChoice> AskFileConflictAsync(
+        string title,
+        string message,
+        string replaceText,
+        string skipText,
+        string closeText,
+        string? decideEachText = null)
+    {
+        await _confirmLock.WaitAsync();
+        try
+        {
+            var choice = FileConflictChoice.Cancel;
+            var dialog = new ContentDialog
+            {
+                XamlRoot = Owner.Content.XamlRoot,
+                Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
+                Title = title,
+                CloseButtonText = closeText,
+                DefaultButton = ContentDialogButton.None,
+            };
+
+            // 選択肢のボタンを押したら、選択を覚えてダイアログを閉じる
+            Button CreateOption(string glyph, string text, FileConflictChoice value)
+            {
+                var button = new Button
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Left,
+                    Padding = new Thickness(12, 10, 12, 10),
+                    Content = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 12,
+                        Children =
+                        {
+                            new FontIcon { Glyph = glyph, FontSize = 16 },
+                            new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center },
+                        },
+                    },
+                };
+                button.Click += (_, _) =>
+                {
+                    choice = value;
+                    dialog.Hide();
+                };
+                return button;
+            }
+
+            // 既定のボタンを置かなくても、最初の入力欄 (置き換えるボタン)にフォーカスが当たり、Enter・Space 1 回で置き換えてしまう。
+            // 開いたら、取りやめるボタンへフォーカスを移す (取りやめるボタンを強調色にしないままにするため、DefaultButton には使わない)
+            dialog.Opened += (_, _) => VisualTreeSearch.FindDescendant<Button>(dialog, "CloseButton")?.Focus(FocusState.Programmatic);
+
+            var options = new StackPanel { Spacing = 8, Margin = new Thickness(0, 16, 0, 0) };
+            options.Children.Add(CreateOption("", replaceText, FileConflictChoice.Replace));
+            options.Children.Add(CreateOption("", skipText, FileConflictChoice.Skip));
+            if (decideEachText is not null)
+            {
+                options.Children.Add(CreateOption("", decideEachText, FileConflictChoice.DecideEach));
+            }
+
+            var content = new StackPanel();
+            content.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.WrapWholeWords });
+            content.Children.Add(options);
+            dialog.Content = content;
+
+            await dialog.ShowAsync();
+            return choice;
         }
         finally
         {

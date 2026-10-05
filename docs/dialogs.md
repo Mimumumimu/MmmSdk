@@ -1,4 +1,4 @@
-# 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止
+# 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止
 
 アプリから移した汎用部品。アプリ固有の画面・文言は持たない (`MmmSdk.WinUI.Components.Dialogs` / `MmmSdk.Core.Components.SingleInstance`)。
 
@@ -10,13 +10,23 @@
 - 普通のウィンドウは `TrackWindow` で登録する。アクティブになるたびに「最後に操作したウィンドウ」を更新し、閉じたら候補から外す
 - モーダルウィンドウは `ShowModalAsync` で開く間だけ覚える (その上に開くダイアログの親にするため。一覧の上に入力画面・確認を重ねられる)
 - `ConfirmAsync(title, message, primaryText, closeText)`: 確認ダイアログ。ボタンの文言は、実行・取りやめとも、アプリが言語に合わせて渡す (SDK は日本語を埋め込まない)。取り消しにくい操作の確認用に、既定のボタンを置かない (Enter で誤って実行しない。キャンセルを既定にすると、キャンセルが強調色になって主な操作に見えるので、どちらも強調しない)。コードで作る `ContentDialog` には既定のスタイルが当たらないので、`DefaultContentDialogStyle` を明示している
+- `AskFileConflictAsync(title, message, replaceText, skipText, closeText, decideEachText = null)`: 保存先に同じ名前のファイルがあるときの扱いを聞く。選択肢は縦に並べたボタン (Windows のファイルのコピーの確認と同じ形)で、結果は `FileConflictChoice`(`Replace` / `Skip` / `DecideEach` / `Cancel`)。`decideEachText` を渡したときだけ「ファイルごとに決める」の選択肢が出て、`DecideEach` が返りうる (複数のファイルをまとめて聞くとき)。1 つのファイルについて聞くときは省く。取りやめるボタン・Esc は `Cancel`。置き換えは取り消しにくいので、`ConfirmAsync` と同じく既定のボタンを置かない。既定のボタンが無いと最初の選択肢 (置き換える)にフォーカスが当たり、Enter・Space 1 回で置き換えてしまうので、開いたら取りやめるボタンへフォーカスを移す (`Opened`。強調色は付けない)。文言は、すべてアプリが渡す。`ConfirmAsync` と同じロックで順番に開く
 - 口は 2 つ。確認ダイアログは `IDialogService`、親の決定 (`Owner` / `TrackWindow` / `ShowModalAsync`)は `IDialogHost`。どちらも同じ `DialogService` が実装し、DI では同じインスタンスを返す。ViewModel は `IDialogService`、ウィンドウを開くアプリ側のサービスは `IDialogHost` を受け取る (具象型には依存しない)
 - UI スレッドから呼ぶ
 
 ## ファイル/フォルダー選択
 
 - `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null
+- `IFilePickerService.PickFilesAsync`: 複数のファイルを選べる。選ばれたパスの一覧を返し、キャンセルなら空
+- `IFilePickerService.PickSaveFileAsync(suggestedFileName)`: 保存先を選ぶ (名前を付けて保存)。最初に入れておくファイル名を渡す。保存の種類は、そのファイル名の拡張子 1 つだけ (拡張子が無いときは、拡張子なしを表す `.`)。同じ名前のファイルがあるときの上書きの確認は、ダイアログが出す。キャンセルなら null
 - Windows App SDK のピッカー。アンパッケージでも、親のウィンドウ ID (`IDialogHost.Owner`)を渡すだけで使える
+
+## クリップボード (`MmmSdk.WinUI.Components.Clipboards`)
+
+- `IClipboardService`: クリップボードのテキストの読み書き。ViewModel から UI 型 (`Windows.ApplicationModel.DataTransfer`)に触れずに使うための口。UI スレッドから呼ぶ
+- `SetText(text)`: テキストを載せる。他のアプリがクリップボードを使っているときなどは `COMException`
+- `GetTextAsync()`: テキストを取り出す。テキストが無ければ null。読めなかったときは `COMException`
+- 名前空間を `Clipboard` にしないのは、`Windows.ApplicationModel.DataTransfer.Clipboard` の型名を隠さないため (フォルダ名は `Clipboards`)
 
 ## NativeMessageBox (標準のメッセージボックス。`MmmSdk.WinUI.Utilities`)
 

@@ -62,7 +62,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | 名前空間 | 内容 |
 | --- | --- |
 | `MmmSdk.WinUI.Components.Notifications` | 通知ダイアログ (`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`) |
-| `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost`。実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService`) |
+| `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost`。実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService`。複数選択・保存先の選択を含む)・同じ名前のファイルがあるときの確認 (`AskFileConflictAsync`) |
+| `MmmSdk.WinUI.Components.Clipboards` | クリップボードのテキストの読み書き (`IClipboardService` / `ClipboardService`) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
@@ -248,6 +249,16 @@ if (await dialogs.ConfirmAsync("削除", "削除しますか？", "削除", "キ
 
 var file = await filePicker.PickFileAsync();       // キャンセルなら null
 var folder = await folderPicker.PickFolderAsync(); // キャンセルなら null
+var files = await filePicker.PickFilesAsync();     // 複数選択。キャンセルなら空
+var path = await filePicker.PickSaveFileAsync("report.txt"); // 保存先 (名前を付けて保存)。キャンセルなら null
+
+// 保存先に同じ名前のファイルがあるとき (Windows のコピーの確認と同じ形。最後の引数を省くと「ファイルごとに決める」を出さない)
+var choice = await dialogs.AskFileConflictAsync("置換またはスキップ", "同じ名前のファイルが 3 個あります。", "置き換える", "スキップする", "キャンセル", "ファイルごとに決める");
+// choice は FileConflictChoice.Replace / Skip / DecideEach / Cancel
+
+// クリップボードのテキスト (UI 型に触れずに使える)
+clipboard.SetText("テキスト");
+var text = await clipboard.GetTextAsync();         // テキストが無ければ null
 ```
 
 アプリ固有のウィンドウを擬似モーダルで開くときは、ウィンドウに `PseudoModal` を付け、`IDialogHost.ShowModalAsync` で開きます (親は `Owner`)。
@@ -485,7 +496,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | --- | --- |
 | [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア |
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
-| [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル・多重起動の防止 |
+| [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
