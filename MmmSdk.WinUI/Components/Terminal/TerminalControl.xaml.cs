@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.Web.WebView2.Core;
 using MmmSdk.Core.Utilities;
 
@@ -358,6 +359,37 @@ public sealed partial class TerminalControl : UserControl
             _unconfirmedChars += text.Length;
             PostMessage("output", text);
         }
+    }
+
+    /// <summary>テキスト入力欄から直接フォーカスが来るときは、見えない部品を一度経由させてから端末に移す</summary>
+    /// <param name="sender">イベントの送信元</param>
+    /// <param name="args">フォーカスの移動の情報</param>
+    /// <remarks>
+    /// <para>
+    /// 回避策。根本の原因は特定できていない (WinUI または WebView2 側の不具合と考えている)。
+    /// 入力欄 (TextBox など)から WebView2 へ直接フォーカスが移ると、タスクバーの IME は日本語入力のままなのに、
+    /// WebView2 の入力欄 (xterm.js の textarea)につながらず、英字が入る (キー入力が IME に渡らない)。
+    /// 別のウィンドウへ切り替えて戻るか、ほかの部品 (ツリーなど)を一度経由すると、つながる。
+    /// WebView2 側のフォーカスのイベント・IME のオン・オフの状態・XAML のフォーカスの状態は、直るときと直らないときで同じだった。
+    /// </para>
+    /// <para>
+    /// そこで、入力欄からのときだけ、見えない経由先 (<c>FocusRelay</c>)を挟んでから端末に移す (フォーカスの外れ・付け直しが 1 回ずつ増える)。
+    /// 経由先から WebView2 へ移るときは、元が入力欄ではないので、ここで再び経由させることはない。
+    /// WinUI・WebView2 の更新で直ったら、この処理と <c>FocusRelay</c> を外す (外して、入力欄 → ターミナルで日本語を打てれば確認できる)。
+    /// </para>
+    /// </remarks>
+    private void OnWebViewGettingFocus(UIElement sender, GettingFocusEventArgs args)
+    {
+        if (!_webViewReady || args.OldFocusedElement is not (TextBox or PasswordBox or RichEditBox))
+        {
+            return;
+        }
+
+        if (!args.TrySetNewFocusedElement(FocusRelay))
+        {
+            _dispatcherQueue.TryEnqueue(() => FocusRelay.Focus(FocusState.Programmatic));
+        }
+        _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, FocusTerminal);
     }
 
     /// <summary>端末にキーボードフォーカスを移す。</summary>

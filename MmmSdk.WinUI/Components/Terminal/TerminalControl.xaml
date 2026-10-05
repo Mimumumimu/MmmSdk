@@ -6,7 +6,18 @@
 
     <Grid Background="#FF0C0C0C">
         <!-- 読み込み前に白く光らないよう、端末と同じ背景色にしておく -->
-        <WebView2 x:Name="WebView" DefaultBackgroundColor="#FF0C0C0C" />
+        <WebView2 x:Name="WebView" DefaultBackgroundColor="#FF0C0C0C" GettingFocus="OnWebViewGettingFocus" />
+
+        <!-- テキスト入力欄からのフォーカスを一度受けるための、見えない部品 (OnWebViewGettingFocus を参照) -->
+        <ContentControl x:Name="FocusRelay"
+                        Width="1"
+                        Height="1"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        IsHitTestVisible="False"
+                        IsTabStop="False"
+                        Opacity="0"
+                        UseSystemFocusVisuals="False" />
 
         <!-- WebView2 を初期化できなかったときだけ出す -->
         <TextBlock x:Name="InitializationErrorText"
