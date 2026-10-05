@@ -13,6 +13,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - ウィンドウ位置の保存・復元、画面外に出たウィンドウの判定
 - URL・ファイル・フォルダー・実行ファイルを既定のアプリで開く処理と、パスの種類の判定 (環境変数の展開つき)
 - デスクトップ通知のダイアログ (フォーカスを奪わない常に最前面のウィンドウ。ドラッグ移動・位置保存・クリックで閉じる・本文のリンク)
+- 日本語の読み上げ (Windows 標準の音声合成。読み上げ中に次を呼ぶと差し替える)
 - 確認ダイアログ・ファイル/フォルダー選択 (親ウィンドウを自動で決める)と、ウィンドウを親の上に擬似モーダルで出す部品
 - 同一 EXE の多重起動の防止
 - アプリの初期化 (XAML の読み込み)より前でも出せる標準のメッセージボックス
@@ -65,6 +66,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Notifications` | 通知ダイアログ (`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`) |
 | `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost`。実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService`。複数選択・保存先の選択を含む)・同じ名前のファイルがあるときの確認 (`AskFileConflictAsync`) |
 | `MmmSdk.WinUI.Components.Clipboards` | クリップボードのテキストの読み書き (`IClipboardService` / `ClipboardService`) |
+| `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService`。Windows 標準の音声合成を使う) |
 | `MmmSdk.WinUI.Components.Secrets` | 秘密を Windows の資格情報マネージャーに保存する (`CredentialSecretStore`。`ISecretStore` の実装) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
@@ -126,7 +128,7 @@ services.AddMmmSdkWinUI();
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`(すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる) |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`(Singleton)。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISecretStore`(すべて Singleton)、`NotificationWindow`・`NotificationWindowViewModel`(Transient) |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISecretStore`・`ISpeechService`(すべて Singleton)、`NotificationWindow`・`NotificationWindowViewModel`(Transient) |
 
 ## 使い方
 
@@ -238,6 +240,19 @@ notifications.Show("お知らせ", "メッセージだけの簡易通知");
 - ドラッグで移動、クリックで閉じます。本文のリンクをクリックすると `PathOpener` で開きます
 - 表示位置は `positionKey`(既定は `"Notification"`)ごとに保存・復元します。保存位置が画面外になっていたら、プライマリモニターの作業領域の右下に出します
 - 表示されたときに、ウィンドウ全体を数回点滅させて知らせます
+
+### 読み上げ (`ISpeechService`)
+
+UI スレッドから呼びます。Windows 標準の音声合成で、日本語の音声で読み上げます。
+
+```csharp
+await speech.SpeakAsync("会議の時間です。");   // 合成と再生の開始まで待つ (読み上げの終わりは待たない)
+speech.SpeakAsync("会議の時間です。").Forget();  // 待たずに走らせるとき
+```
+
+- 読み上げ中に呼ぶと、前の読み上げを止めて新しいほうを読みます (重なりません)
+- 日本語の音声が入っていない PC では、何も読まずに戻ります
+- システムのメディア操作 (音量キーの表示・再生キー)には出ません
 
 ### 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル (`MmmSdk.WinUI.Components.Dialogs`)
 
@@ -505,6 +520,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア・秘密の保存 |
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止 |
+| [docs/speech.md](docs/speech.md) | 読み上げ (Windows 標準の音声合成)の仕組みと決定の理由 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
