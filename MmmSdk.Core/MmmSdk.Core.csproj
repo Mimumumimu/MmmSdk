@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <!-- トリミング・AOT でも動くことを、ビルドの分析で確かめる（README の「トリミングしても動く」を裏付ける） -->
+    <!-- トリミング・AOT でも動くことを、ビルドの分析で確かめる (README の「トリミングしても動く」を裏付ける) -->
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>

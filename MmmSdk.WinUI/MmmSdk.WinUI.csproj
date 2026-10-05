@@ -9,7 +9,7 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- トリミング・AOT に戻せる形を、ビルドの警告で確かめる（Core と同じ設定。制約: この設定を足したあとのビルドは、ユーザーの VS で確かめる） -->
+    <!-- トリミング・AOT に戻せる形を、ビルドの警告で確かめる (Core と同じ設定。制約: この設定を足したあとのビルドは、ユーザーの VS で確かめる) -->
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
@@ -19,7 +19,7 @@
     <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <!--
-      Windows App SDK は使う部品だけ（WinUI と、ファイル/フォルダー選択の Foundation）。
+      Windows App SDK は使う部品だけ (WinUI と、ファイル/フォルダー選択の Foundation)。
       InteractiveExperiences は WinUI の依存だが、WinUI が求める版が公開されていないため、全部入りのパッケージと同じ版を明示する
     -->
     <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" />
@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- ターミナル描画（xterm.js、MIT）。WebView2 から読み込むため、参照するアプリの出力フォルダー（Assets\Terminal）へコピーする（既定で None に含まれるので Update。フォルダー内は平らに置く） -->
+    <!-- ターミナル描画 (xterm.js、MIT)。WebView2 から読み込むため、参照するアプリの出力フォルダー (Assets\Terminal)へコピーする (既定で None に含まれるので Update。フォルダー内は平らに置く) -->
     <None Update="Components\Terminal\Assets\*" Link="Assets\Terminal\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 

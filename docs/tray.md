@@ -1,27 +1,27 @@
 # タスクトレイ
 
-アプリから移した汎用部品（`MmmSdk.WinUI.Components.Tray`）。アプリ名・文言・アイコンは `TrayIconOptions` で受け取り、アプリ固有の知識は持たない。
+アプリから移した汎用部品 (`MmmSdk.WinUI.Components.Tray`)。アプリ名・文言・アイコンは `TrayIconOptions` で受け取り、アプリ固有の知識は持たない。
 
 ## TrayIcon
-- `Shell_NotifyIcon` を直接呼ぶ（`NOTIFYICON_VERSION_4`。P/Invoke は CsWin32 が生成する）。WinForms には依存しない
-- 通知を受ける専用の非表示トップレベルウィンドウを UI スレッドで作る（`Show`）。メッセージ専用ウィンドウにしないのは、`TaskbarCreated`（エクスプローラーの再起動でアイコンを付け直す）がブロードキャストで、メッセージ専用ウィンドウには届かないため
+- `Shell_NotifyIcon` を直接呼ぶ (`NOTIFYICON_VERSION_4`。P/Invoke は CsWin32 が生成する)。WinForms には依存しない
+- 通知を受ける専用の非表示トップレベルウィンドウを UI スレッドで作る (`Show`)。メッセージ専用ウィンドウにしないのは、`TaskbarCreated`(エクスプローラーの再起動でアイコンを付け直す)がブロードキャストで、メッセージ専用ウィンドウには届かないため
 - ウィンドウクラス名は `TrayIconOptions.WindowClassName`。登録はプロセスごとなので、別の EXE と重なってもよい。アプリごとに別の名前にする
-- 左クリック（`NIN_SELECT`・`NIN_KEYSELECT`）で `OpenRequested`、右クリック（`WM_CONTEXTMENU`）で Win32 のポップアップメニュー。通知の中で画面を操作しないよう、`OpenRequested` は処理が戻ってから UI スレッドで呼ぶ
-- アイコンは `TrayIconOptions.IconPath` から、DPI に合わせた小アイコンで読む。未指定・読めないときは Windows 標準のアプリアイコン（トレイから操作できなくなるのを避ける）
-- `ShowNotification`: バルーン通知（情報 / エラー）。タイトルは 64 文字、本文は 256 文字で切り捨てる
-- UI スレッドで作り、UI スレッドで破棄する。トレイはアプリに 1 つ（ウィンドウプロシージャが static のため）
+- 左クリック (`NIN_SELECT`・`NIN_KEYSELECT`)で `OpenRequested`、右クリック (`WM_CONTEXTMENU`)で Win32 のポップアップメニュー。通知の中で画面を操作しないよう、`OpenRequested` は処理が戻ってから UI スレッドで呼ぶ
+- アイコンは `TrayIconOptions.IconPath` から、DPI に合わせた小アイコンで読む。未指定・読めないときは Windows 標準のアプリアイコン (トレイから操作できなくなるのを避ける)
+- `ShowNotification`: バルーン通知 (情報 / エラー)。タイトルは 64 文字、本文は 256 文字で切り捨てる
+- UI スレッドで作り、UI スレッドで破棄する。トレイはアプリに 1 つ (ウィンドウプロシージャが static のため)
 
 ## メニュー
-- 項目は `ITrayMenuSource` を DI に登録した順に、区切り線で分けて並べ、末尾に `TrayIconOptions.ExitText`（終了。文言はアプリが渡す）。メニューは開くたびに作る（`GetItems` を呼ぶ）
-- `TrayMenuItem`: `Command`（クリックで処理）/ `Submenu` / `Disabled`（押せない）/ `Separator`。項目の処理の予測できる失敗は、処理の中で受けて、その機能のやり方で知らせる（受けなかった失敗は、バグとして安全網へ）
-- 項目はオーナードロー（`TrayMenuRenderer`。internal）
-  - フォントは BIZ UDゴシック 12pt（無ければ Yu Gothic UI → Segoe UI。有無は `EnumFontFamiliesEx` で調べる）。メニューを出すモニターの DPI に合わせる
-  - 配色はレジストリの `AppsUseLightTheme` でダーク / ライトを切り替える（Windows 11 風の色）
+- 項目は `ITrayMenuSource` を DI に登録した順に、区切り線で分けて並べ、末尾に `TrayIconOptions.ExitText`(終了。文言はアプリが渡す)。メニューは開くたびに作る (`GetItems` を呼ぶ)
+- `TrayMenuItem`: `Command`(クリックで処理)/ `Submenu` / `Disabled`(押せない)/ `Separator`。項目の処理の予測できる失敗は、処理の中で受けて、その機能のやり方で知らせる (受けなかった失敗は、バグとして安全網へ)
+- 項目はオーナードロー (`TrayMenuRenderer`。internal)
+  - フォントは BIZ UDゴシック 12pt (無ければ Yu Gothic UI → Segoe UI。有無は `EnumFontFamiliesEx` で調べる)。メニューを出すモニターの DPI に合わせる
+  - 配色はレジストリの `AppsUseLightTheme` でダーク / ライトを切り替える (Windows 11 風の色)
   - チェック欄の余白は `MNS_NOCHECK` で無くし、代わりに文字の左を 36px あける。区切り線は文字の書き出し位置から右端まで
-  - 行は詰め気味（上下 4px・区切り線の行 7px）
-  - サブメニューの矢印は Segoe Fluent Icons（無ければ MDL2）で自分で描き、`ExcludeClipRect` で標準の矢印を止める
-  - 枠（外周・影）は Windows が描くので、uxtheme の非公開序数 135 / 136 でシステムのダーク設定に従わせている（Windows 10 1903 / ビルド 18362 以上でだけ呼ぶ。序数の意味が違う 1809 や、見つからない環境ではライトのまま。uxtheme は読み込み済みのものを取り、アドレスは 1 度だけ引く）
+  - 行は詰め気味 (上下 4px・区切り線の行 7px)
+  - サブメニューの矢印は Segoe Fluent Icons (無ければ MDL2)で自分で描き、`ExcludeClipRect` で標準の矢印を止める
+  - 枠 (外周・影)は Windows が描くので、uxtheme の非公開序数 135 / 136 でシステムのダーク設定に従わせている (Windows 10 1903 / ビルド 18362 以上でだけ呼ぶ。序数の意味が違う 1809 や、見つからない環境ではライトのまま。uxtheme は読み込み済みのものを取り、アドレスは 1 度だけ引く)
 
 ## 例外
-- `WndProc` は `[UnmanagedCallersOnly]` なので、例外が抜けるとログも残らず落ちる。中で `try/catch` して、`FatalErrorHandler.Report`（ログ → ダイアログ → 終了）に渡す。`TrayIcon` はコンストラクターで `FatalErrorHandler` を受け取り、異常終了の直前（`BeforeExit`）に、トレイからアイコンを外す（UI スレッドとは限らないので、ウィンドウは壊さずアイコンの登録だけ外す。このスレッドでの外し方は、まだ実機で確かめていない）
-- メニューのコマンドは、`Forget()` で走らせる。処理の中で受けなかった例外は、`TrayIcon` では受けず（広い `catch` でバグを隠さない）、安全網（ログ → ダイアログ → 終了）が受ける。予測できる失敗（パスが開けないなど）は、各 `ITrayMenuSource` の処理の中で受けて知らせる（トレイは、それを提供する機能が `TrayIcon` を知らなくてよいよう、通知の API を渡さない。アプリは `INotificationDialogService` などで知らせる）
+- `WndProc` は `[UnmanagedCallersOnly]` なので、例外が抜けるとログも残らず落ちる。中で `try/catch` して、`FatalErrorHandler.Report`(ログ → ダイアログ → 終了)に渡す。`TrayIcon` はコンストラクターで `FatalErrorHandler` を受け取り、異常終了の直前 (`BeforeExit`)に、トレイからアイコンを外す (UI スレッドとは限らないので、ウィンドウは壊さずアイコンの登録だけ外す。このスレッドでの外し方は、まだ実機で確かめていない)
+- メニューのコマンドは、`Forget()` で走らせる。処理の中で受けなかった例外は、`TrayIcon` では受けず (広い `catch` でバグを隠さない)、安全網 (ログ → ダイアログ → 終了)が受ける。予測できる失敗 (パスが開けないなど)は、各 `ITrayMenuSource` の処理の中で受けて知らせる (トレイは、それを提供する機能が `TrayIcon` を知らなくてよいよう、通知の API を渡さない。アプリは `INotificationDialogService` などで知らせる)

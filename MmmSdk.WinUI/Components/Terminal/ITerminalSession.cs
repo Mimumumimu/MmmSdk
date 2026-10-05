@@ -45,13 +45,13 @@ public interface ITerminalSession : IDisposable
     /// <remarks>シェルの終了待ちで UI スレッドを止めないよう、終了処理はバックグラウンドで行う。</remarks>
     Task RestartAsync(int columns, int rows);
 
-    /// <summary>シェルへ入力をそのまま送る（キー入力など）。</summary>
+    /// <summary>シェルへ入力をそのまま送る (キー入力など)。</summary>
     /// <param name="text">送る文字列</param>
     void Write(string text);
 
     /// <summary>テキストを貼り付けとして入力し、続けて Enter で確定する。</summary>
     /// <param name="text">入力するテキスト</param>
-    /// <remarks>端末の表示側を通すことで、複数行でも CLI が 1 行ずつ実行せずひとまとまりで受け取れる（ブラケットペースト）。</remarks>
+    /// <remarks>端末の表示側を通すことで、複数行でも CLI が 1 行ずつ実行せずひとまとまりで受け取れる (ブラケットペースト)。</remarks>
     void Submit(string text);
 
     /// <summary>端末サイズを変更する。</summary>

@@ -11,8 +11,8 @@ namespace MmmSdk.WinUI.Components.Windowing;
 
 /// <summary>ウィンドウを親の上に擬似モーダルで出す</summary>
 /// <remarks>
-/// 表示中は親を操作できないようにし（Win32 のモーダルダイアログと同じく <c>EnableWindow</c> で親を無効にする。<c>OverlappedPresenter.IsModal</c> では親を操作できてしまった）、
-/// 閉じるときに親を戻して前面に出す。モーダルの上にさらにモーダルを重ねてもよい（親が自分を無効にし、閉じたら戻す）。
+/// 表示中は親を操作できないようにし (Win32 のモーダルダイアログと同じく <c>EnableWindow</c> で親を無効にする。<c>OverlappedPresenter.IsModal</c> では親を操作できてしまった)、
+/// 閉じるときに親を戻して前面に出す。モーダルの上にさらにモーダルを重ねてもよい (親が自分を無効にし、閉じたら戻す)。
 /// </remarks>
 public sealed class PseudoModal
 {
@@ -38,9 +38,9 @@ public sealed class PseudoModal
     /// <summary>親ウィンドウの表示倍率</summary>
     public double OwnerScale { get; private set; } = 1.0;
 
-    /// <summary>親を設定する（表示の前に呼ぶ）</summary>
+    /// <summary>親を設定する (表示の前に呼ぶ)</summary>
     /// <param name="owner">親のウィンドウ</param>
-    /// <remarks>常に親の手前に出るようにする。表示倍率も親に合わせて取っておく（初期サイズを決めるため）。</remarks>
+    /// <remarks>常に親の手前に出るようにする。表示倍率も親に合わせて取っておく (初期サイズを決めるため)。</remarks>
     public void SetOwner(Window owner)
     {
         _owner = Win32Interop.GetWindowFromWindowId(owner.AppWindow.Id);
@@ -59,7 +59,7 @@ public sealed class PseudoModal
         }
     }
 
-    /// <summary>親の中央に置く（作業領域からはみ出す分は内側へ寄せる）</summary>
+    /// <summary>親の中央に置く (作業領域からはみ出す分は内側へ寄せる)</summary>
     public void CenterOnOwner()
     {
         if (_ownerWindow is null)
@@ -72,7 +72,7 @@ public sealed class PseudoModal
         _window.MoveCentered(new RectInt32(position.X, position.Y, size.Width, size.Height));
     }
 
-    /// <summary>コードから閉じる（OK・キャンセル等）</summary>
+    /// <summary>コードから閉じる (OK・キャンセル等)</summary>
     /// <remarks><c>Window.Close()</c> では <c>AppWindow.Closing</c> が来ないので、閉じる前にここで親を戻す。</remarks>
     public void Close()
     {
@@ -94,8 +94,8 @@ public sealed class PseudoModal
 
     /// <summary>親を操作できる状態に戻す</summary>
     /// <remarks>
-    /// 自分が消える前に戻す（無効のままだと、閉じたあとに親ではなく別のアプリが前面に来るため）。
-    /// 閉じ方（コードから・×・Alt+F4）によって通る場所が違うので、何度呼んでもよい。
+    /// 自分が消える前に戻す (無効のままだと、閉じたあとに親ではなく別のアプリが前面に来るため)。
+    /// 閉じ方 (コードから・×・Alt+F4)によって通る場所が違うので、何度呼んでもよい。
     /// </remarks>
     private void EnableOwner()
     {

@@ -8,7 +8,7 @@ namespace MmmSdk.WinUI.Controls;
 /// <summary>押すとリンクを開く領域</summary>
 /// <remarks>
 /// <see cref="IsLinkEnabled"/> のときだけ、マウスを乗せると手の形のカーソルと背景で押せることを示す。押したときの処理は <c>Tapped</c> で受ける側が行う。
-/// カーソルの形（<c>ProtectedCursor</c>）は派生クラスからしか変えられないため、<see cref="Grid"/> を派生させている。
+/// カーソルの形 (<c>ProtectedCursor</c>)は派生クラスからしか変えられないため、<see cref="Grid"/> を派生させている。
 /// </remarks>
 public sealed partial class LinkArea : Grid
 {

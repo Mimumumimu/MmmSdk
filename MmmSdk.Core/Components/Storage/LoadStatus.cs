@@ -1,11 +1,11 @@
 namespace MmmSdk.Core.Components.Storage;
 
-/// <summary>保存ファイルの読み込み結果（失敗したか・壊れたファイルを退避したか）を覚える</summary>
+/// <summary>保存ファイルの読み込み結果 (失敗したか・壊れたファイルを退避したか)を覚える</summary>
 /// <remarks>
 /// 読み込みを行うサービスが 1 つ持ち、<see cref="LoadError"/> と <see cref="RecoveryMessage"/> を画面に出す。
-/// 読み込みに失敗した（ロック・権限などで読めなかった）ときは、元のデータを上書きで消さないよう、サービスが <see cref="HasFailed"/> を見て保存を止める
-/// （止め方は、呼び出しの性質に合わせてサービスごとに決める。ユーザーの操作による保存は <see cref="ThrowIfSaveBlocked"/> で例外にし、補助的な保存は黙って行わない）。
-/// 壊れていた（JSON として読めなかった）ファイルは退避済みなので、失敗ではなく <see cref="RecoveryMessage"/> で知らせるだけで、保存は止めない。
+/// 読み込みに失敗した (ロック・権限などで読めなかった)ときは、元のデータを上書きで消さないよう、サービスが <see cref="HasFailed"/> を見て保存を止める
+/// (止め方は、呼び出しの性質に合わせてサービスごとに決める。ユーザーの操作による保存は <see cref="ThrowIfSaveBlocked"/> で例外にし、補助的な保存は黙って行わない)。
+/// 壊れていた (JSON として読めなかった)ファイルは退避済みなので、失敗ではなく <see cref="RecoveryMessage"/> で知らせるだけで、保存は止めない。
 /// </remarks>
 public sealed class LoadStatus
 {
@@ -18,13 +18,13 @@ public sealed class LoadStatus
     /// <summary>壊れていたファイルを退避して作り直したときのメッセージ。無ければ null</summary>
     public string? RecoveryMessage { get; private set; }
 
-    /// <summary>読み込みに失敗しているか（保存を止める判断に使う）</summary>
+    /// <summary>読み込みに失敗しているか (保存を止める判断に使う)</summary>
     public bool HasFailed => _failure is not null;
 
     /// <summary>読み込みに成功したことを記録する</summary>
     /// <param name="recoveryMessage">壊れたファイルを退避したときのメッセージ。無ければ null</param>
     /// <param name="keepPreviousRecoveryMessage">
-    /// 退避のメッセージが無いとき、前回のメッセージを残すか（読み直しても、最初の読み込みで起きた退避を画面で知らせ続けたいとき true）
+    /// 退避のメッセージが無いとき、前回のメッセージを残すか (読み直しても、最初の読み込みで起きた退避を画面で知らせ続けたいとき true)
     /// </param>
     public void Succeeded(string? recoveryMessage = null, bool keepPreviousRecoveryMessage = false)
     {
@@ -43,8 +43,8 @@ public sealed class LoadStatus
     }
 
     /// <summary>複数のファイルの読み込み結果をまとめて記録する</summary>
-    /// <param name="failures">失敗の原因（無ければ空）。1 件でもあれば失敗として記録する</param>
-    /// <param name="recoveryMessages">壊れたファイルを退避したときのメッセージ（無ければ空）</param>
+    /// <param name="failures">失敗の原因 (無ければ空)。1 件でもあれば失敗として記録する</param>
+    /// <param name="recoveryMessages">壊れたファイルを退避したときのメッセージ (無ければ空)</param>
     /// <remarks>複数あるメッセージは改行でつなぐ。</remarks>
     public void Record(IReadOnlyList<DataFileException> failures, IReadOnlyList<string> recoveryMessages)
     {
@@ -53,7 +53,7 @@ public sealed class LoadStatus
         RecoveryMessage = recoveryMessages.Count > 0 ? string.Join("\n", recoveryMessages) : null;
     }
 
-    /// <summary>読み込みの失敗を消す（保存や読み直しに成功して、ファイルが読める状態に戻ったとき）</summary>
+    /// <summary>読み込みの失敗を消す (保存や読み直しに成功して、ファイルが読める状態に戻ったとき)</summary>
     public void ClearFailure()
     {
         _failure = null;

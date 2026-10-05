@@ -15,10 +15,10 @@ public interface INotificationDialogService
 
     /// <summary>タイトルと項目のリストを表示する</summary>
     /// <param name="title">通知のタイトル</param>
-    /// <param name="items">本文の項目（1 項目 1 行。リンク付きにもできる）</param>
+    /// <param name="items">本文の項目 (1 項目 1 行。リンク付きにもできる)</param>
     /// <param name="onClicked">
-    /// ユーザーが本文（リンク以外）をクリックして閉じたときだけ呼ぶ。×・Alt+F4・別の通知への差し替えでは呼ばない。
-    /// 通知ごとに設定し直す（渡さなければ前回の分もクリアされる）。
+    /// ユーザーが本文 (リンク以外)をクリックして閉じたときだけ呼ぶ。×・Alt+F4・別の通知への差し替えでは呼ばない。
+    /// 通知ごとに設定し直す (渡さなければ前回の分もクリアされる)。
     /// </param>
     /// <param name="positionKey">位置を保存・復元するキー。</param>
     void Show(string title, IReadOnlyList<NotificationItem> items, Action? onClicked = null, string positionKey = DefaultPositionKey);

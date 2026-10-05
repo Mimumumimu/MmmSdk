@@ -4,21 +4,21 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Interop;
 
-/// <summary>CsWin32 の API を組み合わせる小さな補助（オーナー設定・フォーカスを奪わない表示・ドラッグなど）。ほかの用途は <c>NativeMethods.*.cs</c>（IME・メニュー）</summary>
+/// <summary>CsWin32 の API を組み合わせる小さな補助 (オーナー設定・フォーカスを奪わない表示・ドラッグなど)。ほかの用途は <c>NativeMethods.*.cs</c>(IME・メニュー)</summary>
 /// <remarks>
-/// 宣言は CsWin32 が生成する（<c>NativeMethods.txt</c>）。手書きで残るのは、CsWin32 のメタデータに無い uxtheme の非公開 API（序数指定。<c>NativeMethods.Menu.cs</c>）と、
-/// 生成された API を組み合わせる小さな補助（<c>NativeMethods.Ime.cs</c> など）だけ。
+/// 宣言は CsWin32 が生成する (<c>NativeMethods.txt</c>)。手書きで残るのは、CsWin32 のメタデータに無い uxtheme の非公開 API (序数指定。<c>NativeMethods.Menu.cs</c>)と、
+/// 生成された API を組み合わせる小さな補助 (<c>NativeMethods.Ime.cs</c> など)だけ。
 /// </remarks>
 internal static partial class NativeMethods
 {
-    /// <summary>ウィンドウのオーナー（親）を設定する</summary>
+    /// <summary>ウィンドウのオーナー (親)を設定する</summary>
     /// <param name="hWnd">ウィンドウのハンドル</param>
     /// <param name="owner">オーナーにするウィンドウのハンドル</param>
     /// <remarks>オーナーより常に手前に表示され、オーナーと一緒に最小化される。</remarks>
     public static void SetOwner(nint hWnd, nint owner) =>
         PInvoke.SetWindowLongPtr((HWND)hWnd, WINDOW_LONG_PTR_INDEX.GWLP_HWNDPARENT, owner);
 
-    /// <summary>ウィンドウを、フォーカスを奪わない（クリックでアクティブにならない）ウィンドウにする</summary>
+    /// <summary>ウィンドウを、フォーカスを奪わない (クリックでアクティブにならない)ウィンドウにする</summary>
     /// <param name="hWnd">ウィンドウのハンドル</param>
     public static void SetNoActivate(nint hWnd)
     {

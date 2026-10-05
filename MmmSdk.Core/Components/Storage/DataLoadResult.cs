@@ -7,6 +7,6 @@ namespace MmmSdk.Core.Components.Storage;
 /// <param name="Value">読み込んだ値</param>
 /// <param name="RecoveryMessage">壊れたファイルを退避して作り直したときのメッセージ。通常は null</param>
 /// <remarks>
-/// 保存ファイルが壊れていて退避・作り直しをしたときは <see cref="RecoveryMessage"/> にその旨が入る（そのままユーザーへ表示できる形）。
+/// 保存ファイルが壊れていて退避・作り直しをしたときは <see cref="RecoveryMessage"/> にその旨が入る (そのままユーザーへ表示できる形)。
 /// </remarks>
 public sealed record DataLoadResult<T>(T Value, string? RecoveryMessage = null);

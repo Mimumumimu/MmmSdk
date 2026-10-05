@@ -16,7 +16,7 @@ namespace MmmSdk.WinUI.Components.Terminal;
 public sealed partial class TerminalControl : UserControl
 {
     /// <summary>Assets/Terminal を読むための仮想ホスト名。</summary>
-    /// <remarks>出力フォルダーの Assets/Terminal（SDK が xterm.js などを配る場所）を WebView2 から読むために使う。</remarks>
+    /// <remarks>出力フォルダーの Assets/Terminal (SDK が xterm.js などを配る場所)を WebView2 から読むために使う。</remarks>
     private const string HostName = "terminal.mmmsdk.invalid";
 
     /// <summary>セッションの依存関係プロパティ</summary>
@@ -69,10 +69,10 @@ public sealed partial class TerminalControl : UserControl
         set => SetValue(SessionProperty, value);
     }
 
-    /// <summary>WebView2 のデータ（キャッシュなど）の保存先フォルダー</summary>
+    /// <summary>WebView2 のデータ (キャッシュなど)の保存先フォルダー</summary>
     /// <remarks>
-    /// 読み込まれる前に設定する（WebView2 の初期化のときに 1 回だけ読む）。
-    /// null のときは WebView2 の既定（EXE の隣の <c>&lt;EXE 名&gt;.WebView2</c>）。
+    /// 読み込まれる前に設定する (WebView2 の初期化のときに 1 回だけ読む)。
+    /// null のときは WebView2 の既定 (EXE の隣の <c>&lt;EXE 名&gt;.WebView2</c>)。
     /// 同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す。
     /// </remarks>
     public string? UserDataFolder { get; set; }
@@ -95,7 +95,7 @@ public sealed partial class TerminalControl : UserControl
             newSession.Exited += control.OnSessionExited;
             newSession.SubmitRequested += control.OnSubmitRequested;
 
-            // 端末の準備ができたあとに渡されたときは、ここで起動する（準備の前なら、準備ができたときに起動する）
+            // 端末の準備ができたあとに渡されたときは、ここで起動する (準備の前なら、準備ができたときに起動する)
             if (control._webViewReady && !newSession.IsStarted)
             {
                 control.StartSessionAsync(restart: false).Forget();
@@ -148,18 +148,18 @@ public sealed partial class TerminalControl : UserControl
         }
         var core = WebView.CoreWebView2;
 
-        // ブラウザとしての機能（再読み込み・検索・印刷・ズーム・右クリックメニュー等）を止め、端末として振る舞わせる
+        // ブラウザとしての機能 (再読み込み・検索・印刷・ズーム・右クリックメニュー等)を止め、端末として振る舞わせる
         core.Settings.AreBrowserAcceleratorKeysEnabled = false;
         core.Settings.AreDefaultContextMenusEnabled = false;
         core.Settings.IsStatusBarEnabled = false;
         core.Settings.IsZoomControlEnabled = false;
-        // ページからアプリ側のオブジェクトを呼べないようにする（メッセージのやり取りだけを使う）
+        // ページからアプリ側のオブジェクトを呼べないようにする (メッセージのやり取りだけを使う)
         core.Settings.AreHostObjectsAllowed = false;
 #if !DEBUG
         core.Settings.AreDevToolsEnabled = false;
 #endif
         core.NewWindowRequested += (_, args) => args.Handled = true;
-        // 仮想ホスト（同梱のターミナルの画面）以外へ移動させない（リンクなどで、外のページに切り替わらないように）
+        // 仮想ホスト (同梱のターミナルの画面)以外へ移動させない (リンクなどで、外のページに切り替わらないように)
         core.NavigationStarting += (_, args) => args.Cancel = !IsTerminalPageUri(args.Uri);
         core.WebMessageReceived += OnWebMessageReceived;
         core.SetVirtualHostNameToFolderMapping(
@@ -167,7 +167,7 @@ public sealed partial class TerminalControl : UserControl
         core.Navigate($"https://{HostName}/index.html");
     }
 
-    /// <summary>同梱のターミナルの画面（仮想ホスト）の URI か</summary>
+    /// <summary>同梱のターミナルの画面 (仮想ホスト)の URI か</summary>
     /// <param name="uri">移動先の URI</param>
     /// <returns>仮想ホストの https の URI なら true</returns>
     private static bool IsTerminalPageUri(string uri)
@@ -178,13 +178,13 @@ public sealed partial class TerminalControl : UserControl
     /// <summary>WebView2 の初期化失敗の理由を表示する</summary>
     /// <param name="exception">初期化の失敗</param>
     /// <remarks>
-    /// 制約: WebView2 ランタイムが入っていない PC で、どの例外が出るかは、この環境では確かめられていない。COMException 以外が出たときは、未処理例外の受け皿（ログ・ダイアログ・終了）が受ける。実機で確かめて、受ける例外を直す。
+    /// 制約: WebView2 ランタイムが入っていない PC で、どの例外が出るかは、この環境では確かめられていない。COMException 以外が出たときは、未処理例外の受け皿 (ログ・ダイアログ・終了)が受ける。実機で確かめて、受ける例外を直す。
     /// </remarks>
     private void ShowInitializationError(COMException exception)
     {
         WebView.Visibility = Visibility.Collapsed;
         InitializationErrorText.Text =
-            $"ターミナルを表示できません（WebView2 を初期化できませんでした）。\nWebView2 ランタイムがインストールされているか確認してください。\n\n{exception.Message}";
+            $"ターミナルを表示できません (WebView2 を初期化できませんでした)。\nWebView2 ランタイムがインストールされているか確認してください。\n\n{exception.Message}";
         InitializationErrorText.Visibility = Visibility.Visible;
     }
 
@@ -222,7 +222,7 @@ public sealed partial class TerminalControl : UserControl
         }
     }
 
-    /// <summary>xterm.js の準備ができたときの処理（シェルを起動する）</summary>
+    /// <summary>xterm.js の準備ができたときの処理 (シェルを起動する)</summary>
     private void OnTerminalReady()
     {
         _webViewReady = true;
@@ -240,7 +240,7 @@ public sealed partial class TerminalControl : UserControl
         FocusTerminal();
     }
 
-    /// <summary>端末への入力をシェルへ送る（シェル終了後は再起動する）</summary>
+    /// <summary>端末への入力をシェルへ送る (シェル終了後は再起動する)</summary>
     /// <param name="data">端末への入力</param>
     private void OnInput(string data)
     {
@@ -258,11 +258,11 @@ public sealed partial class TerminalControl : UserControl
         Session?.Write(data);
     }
 
-    /// <summary>シェルを起動し直す（起動していなければ起動する）</summary>
+    /// <summary>シェルを起動し直す (起動していなければ起動する)</summary>
     /// <returns>起動し直しの完了を表すタスク</returns>
     /// <remarks>
-    /// 起動するシェル（<see cref="ITerminalSession.Shell"/>）を替えたあとに呼ぶ。動いているシェル（とその中の CLI）は終了する。
-    /// 表示の準備がまだのとき・<see cref="Session"/> が無いときは何もしない（準備ができたときに、そのときの設定で起動する）。
+    /// 起動するシェル (<see cref="ITerminalSession.Shell"/>)を替えたあとに呼ぶ。動いているシェル (とその中の CLI)は終了する。
+    /// 表示の準備がまだのとき・<see cref="Session"/> が無いときは何もしない (準備ができたときに、そのときの設定で起動する)。
     /// </remarks>
     public Task RestartSessionAsync()
     {
@@ -273,9 +273,9 @@ public sealed partial class TerminalControl : UserControl
         return StartSessionAsync(restart: session.IsStarted);
     }
 
-    /// <summary>シェルを起動する（restart が true なら起動し直す）</summary>
+    /// <summary>シェルを起動する (restart が true なら起動し直す)</summary>
     /// <param name="restart">起動し直すなら true</param>
-    /// <returns>起動（または起動し直し）の完了を表すタスク</returns>
+    /// <returns>起動 (または起動し直し)の完了を表すタスク</returns>
     /// <remarks>起動し直すときの終了待ちは、UI スレッドを止めずに行う。</remarks>
     private async Task StartSessionAsync(bool restart)
     {
@@ -332,7 +332,7 @@ public sealed partial class TerminalControl : UserControl
         => OnOutputReceived(sender, "\r\n\x1b[90m[プロセスが終了しました。何かキーを押すと再起動します]\x1b[0m\r\n");
 
     /// <summary>ためた出力を端末へ送る</summary>
-    /// <remarks>端末の描画が追いついていない（<see cref="MaxUnconfirmedChars"/> 超）ときは送らず、受け取りが返ってから送る。</remarks>
+    /// <remarks>端末の描画が追いついていない (<see cref="MaxUnconfirmedChars"/> 超)ときは送らず、受け取りが返ってから送る。</remarks>
     private void FlushOutput()
     {
         if (!_webViewReady)

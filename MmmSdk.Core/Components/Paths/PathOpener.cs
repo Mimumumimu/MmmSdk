@@ -5,9 +5,9 @@ using System.Runtime.Versioning;
 namespace MmmSdk.Core.Components.Paths;
 
 /// <summary>
-/// リンクのパス（URL・ファイル・フォルダ・実行ファイル）を既定のアプリで開く。
+/// リンクのパス (URL・ファイル・フォルダ・実行ファイル)を既定のアプリで開く。
 /// </summary>
-/// <remarks>Windows 前提（シェル実行で開く。<see cref="PathTarget"/> も Windows 前提）。Windows 以外から実装の型を使うと、ビルドで警告になる（呼び出す側は <see cref="IPathOpener"/> で受け取る）。</remarks>
+/// <remarks>Windows 前提 (シェル実行で開く。<see cref="PathTarget"/> も Windows 前提)。Windows 以外から実装の型を使うと、ビルドで警告になる (呼び出す側は <see cref="IPathOpener"/> で受け取る)。</remarks>
 [SupportedOSPlatform("windows")]
 public sealed class PathOpener : IPathOpener
 {
@@ -22,7 +22,7 @@ public sealed class PathOpener : IPathOpener
 
         var startInfo = new ProcessStartInfo(target) { UseShellExecute = true };
 
-        // 実行ファイルは、自分のフォルダを作業フォルダにして起動する（隣のファイルを相対パスで読むものがあるため）
+        // 実行ファイルは、自分のフォルダを作業フォルダにして起動する (隣のファイルを相対パスで読むものがあるため)
         if (File.Exists(target) && Path.GetDirectoryName(target) is { Length: > 0 } directory)
         {
             startInfo.WorkingDirectory = directory;

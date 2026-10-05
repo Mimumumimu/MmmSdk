@@ -4,12 +4,12 @@ using MmmSdk.Core.Components.Shells;
 namespace MmmSdk.WinUI.Components.Terminal;
 
 /// <summary>
-/// ConPTY（Windows 擬似コンソール）でシェルを起動し、入出力をパイプでやり取りするセッション。
+/// ConPTY (Windows 擬似コンソール)でシェルを起動し、入出力をパイプでやり取りするセッション。
 /// </summary>
 /// <remarks>擬似コンソールとプロセスの起動は <see cref="PseudoConsole"/>。ここでは出力の読み取り・終了の通知・入力の確定を受け持つ。</remarks>
 public sealed class PseudoConsoleSession : ITerminalSession
 {
-    /// <summary>読み取り用のバッファの大きさ（バイト）</summary>
+    /// <summary>読み取り用のバッファの大きさ (バイト)</summary>
     private const int ReadBufferSize = 16 * 1024;
 
     /// <summary>出力を読み取り終わるのを待つ時間</summary>
@@ -58,7 +58,7 @@ public sealed class PseudoConsoleSession : ITerminalSession
         }
 
         _hasExited = false;
-        // 起動に失敗したときは、SDK が作った分を片付けてから例外を投げる（未起動の状態のまま）
+        // 起動に失敗したときは、SDK が作った分を片付けてから例外を投げる (未起動の状態のまま)
         var console = PseudoConsole.Start(Shell.CommandLine, WorkingDirectory, columns, rows);
         _console = console;
         _exitWait = ThreadPool.RegisterWaitForSingleObject(
@@ -73,7 +73,7 @@ public sealed class PseudoConsoleSession : ITerminalSession
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var (console, readTask) = Detach();
-        // 終了待ち（最大で数秒）は UI スレッドの外で行う
+        // 終了待ち (最大で数秒)は UI スレッドの外で行う
         await Task.Run(() => Release(console, readTask));
         ObjectDisposedException.ThrowIf(_disposed, this);
         Start(columns, rows);
@@ -107,7 +107,7 @@ public sealed class PseudoConsoleSession : ITerminalSession
         }
         else
         {
-            // 表示側が無いとき（未接続）は、そのまま書き込んで確定する
+            // 表示側が無いとき (未接続)は、そのまま書き込んで確定する
             Write(text);
             Write("\r");
         }
@@ -140,8 +140,8 @@ public sealed class PseudoConsoleSession : ITerminalSession
         Exited?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>現在の擬似コンソールを切り離す（解放は <see cref="Release"/>）</summary>
-    /// <returns>切り離した擬似コンソールと、出力を読み続けているタスク（無ければ null）</returns>
+    /// <summary>現在の擬似コンソールを切り離す (解放は <see cref="Release"/>)</summary>
+    /// <returns>切り離した擬似コンソールと、出力を読み続けているタスク (無ければ null)</returns>
     /// <remarks>以降は未起動の状態になる。呼び出しスレッドを止めない処理だけを行う。</remarks>
     private (PseudoConsole? Console, Task? ReadTask) Detach()
     {
@@ -169,7 +169,7 @@ public sealed class PseudoConsoleSession : ITerminalSession
         console?.Dispose();
     }
 
-    /// <summary>シェルの出力を読み続けて通知する（パイプが閉じるまで）</summary>
+    /// <summary>シェルの出力を読み続けて通知する (パイプが閉じるまで)</summary>
     /// <param name="output">シェルからの出力パイプ</param>
     private void ReadLoop(Stream output)
     {
@@ -192,7 +192,7 @@ public sealed class PseudoConsoleSession : ITerminalSession
         }
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
-            // パイプが閉じられた（セッション終了）
+            // パイプが閉じられた (セッション終了)
         }
     }
 }

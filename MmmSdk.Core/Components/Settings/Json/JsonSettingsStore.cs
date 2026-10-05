@@ -10,10 +10,10 @@ namespace MmmSdk.Core.Components.Settings.Json;
 /// </summary>
 /// <param name="store">JSON ファイルの読み書き</param>
 /// <remarks>
-/// 内部では「キー → JSON 要素」の辞書をメモリに持ち、取得時に目的の型へ変換する。最初のアクセスで 1 度だけ読み込む（<see cref="EnsureLoadedAsync"/> で先に非同期で読んでおくと、最初のアクセスで UI スレッドを止めない）。
-/// ファイルが無い・空・壊れているときは空として扱う。壊れていたファイルは退避してから作り直す（<see cref="RecoveryMessage"/> に残す）。
-/// ロック・権限などで読めなかったときは空として扱うが、元のファイルを上書きしないよう、保存はしない（<see cref="IsReadOnly"/>）。一時的なロックだったかもしれないので、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存する。
-/// 保存は、変更後のコピーをファイルに書き、成功してからメモリの辞書を差し替える（保存に失敗したとき、メモリだけが新しい状態にならない）。
+/// 内部では「キー → JSON 要素」の辞書をメモリに持ち、取得時に目的の型へ変換する。最初のアクセスで 1 度だけ読み込む (<see cref="EnsureLoadedAsync"/> で先に非同期で読んでおくと、最初のアクセスで UI スレッドを止めない)。
+/// ファイルが無い・空・壊れているときは空として扱う。壊れていたファイルは退避してから作り直す (<see cref="RecoveryMessage"/> に残す)。
+/// ロック・権限などで読めなかったときは空として扱うが、元のファイルを上書きしないよう、保存はしない (<see cref="IsReadOnly"/>)。一時的なロックだったかもしれないので、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存する。
+/// 保存は、変更後のコピーをファイルに書き、成功してからメモリの辞書を差し替える (保存に失敗したとき、メモリだけが新しい状態にならない)。
 /// </remarks>
 public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
 {
@@ -23,14 +23,14 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     /// <summary>辞書の読み書きを守るロック</summary>
     private readonly Lock _gate = new();
 
-    /// <summary>保存の順序を守るロック（古い内容が後から書かれないように）</summary>
+    /// <summary>保存の順序を守るロック (古い内容が後から書かれないように)</summary>
     private readonly SemaphoreSlim _saveLock = new(1, 1);
 
     /// <summary>キー → 値の辞書。最初のアクセスまでは null</summary>
     /// <remarks>書き換えず、保存に成功したときに、新しい辞書へ差し替える。</remarks>
     private Dictionary<string, JsonElement>? _values;
 
-    /// <summary>読み込みの結果（失敗したか・壊れたファイルを退避したか）</summary>
+    /// <summary>読み込みの結果 (失敗したか・壊れたファイルを退避したか)</summary>
     private readonly LoadStatus _status = new();
 
     /// <inheritdoc />
@@ -72,7 +72,7 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
             var result = await store.ReadAsync(FileName, SettingsJsonContext.Readable.DictionaryStringJsonElement, cancellationToken).ConfigureAwait(false);
             lock (_gate)
             {
-                // 読んでいる間に、別のスレッドが（同期で）読み込み済みなら、それを使う
+                // 読んでいる間に、別のスレッドが (同期で)読み込み済みなら、それを使う
                 if (_values is null)
                 {
                     ApplyLoaded(result);
@@ -158,9 +158,9 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     /// <summary>辞書のコピーを書き換えて保存し、成功したらメモリの辞書を差し替える</summary>
     /// <param name="change">辞書のコピーを書き換える処理</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
-    /// <returns>保存したら true。読み取り専用（読み込みに失敗している）ため保存しなかったら false</returns>
+    /// <returns>保存したら true。読み取り専用 (読み込みに失敗している)ため保存しなかったら false</returns>
     /// <remarks>書き換えたあとの内容を保存の順番どおりに書く。何も変わらなかったときも書くが、実害はない。</remarks>
-    /// <exception cref="DataFileException">保存に失敗した（ロック・権限など）。このときメモリの辞書は変えない。</exception>
+    /// <exception cref="DataFileException">保存に失敗した (ロック・権限など)。このときメモリの辞書は変えない。</exception>
     private async Task<bool> UpdateAsync(Action<Dictionary<string, JsonElement>> change, CancellationToken cancellationToken)
     {
         await _saveLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -215,8 +215,8 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
 
     /// <summary>ファイルを読み込んで、辞書と読み込みの結果を更新する。呼ぶ側は <c>_gate</c> を取っておくこと</summary>
     /// <remarks>
-    /// 読めなかったとき（<see cref="DataFileException"/>）は、結果を失敗にして、辞書は空のまま（すでに読めていた辞書は残す）にする。
-    /// 壊れたファイルを退避したときのメッセージは、読み直しても残す（最初の読み込みで起きた退避を、画面で知らせ続けるため）。
+    /// 読めなかったとき (<see cref="DataFileException"/>)は、結果を失敗にして、辞書は空のまま (すでに読めていた辞書は残す)にする。
+    /// 壊れたファイルを退避したときのメッセージは、読み直しても残す (最初の読み込みで起きた退避を、画面で知らせ続けるため)。
     /// </remarks>
     private void Load()
     {

@@ -1,7 +1,7 @@
 namespace MmmSdk.WinUI.Components.Tray;
 
 /// <summary>
-/// トレイメニューの 1 項目（文字とクリック時の処理の組、区切り線、またはサブメニュー）。
+/// トレイメニューの 1 項目 (文字とクリック時の処理の組、区切り線、またはサブメニュー)。
 /// </summary>
 public sealed class TrayMenuItem
 {
@@ -28,7 +28,7 @@ public sealed class TrayMenuItem
     public string Text { get; }
 
     /// <summary>クリック時の処理。</summary>
-    /// <remarks>失敗したら例外を投げる（トレイがメッセージを通知する）。</remarks>
+    /// <remarks>失敗したら例外を投げる (トレイがメッセージを通知する)。</remarks>
     public Func<Task>? Invoked { get; }
 
     /// <summary>サブメニューの項目</summary>
@@ -53,7 +53,7 @@ public sealed class TrayMenuItem
     /// <returns>サブメニューを持つ項目</returns>
     public static TrayMenuItem Submenu(string text, IReadOnlyList<TrayMenuItem> children) => new(text, null, children, true, false);
 
-    /// <summary>押せない項目（説明・状態の表示）。</summary>
+    /// <summary>押せない項目 (説明・状態の表示)。</summary>
     /// <param name="text">表示する文字</param>
     /// <returns>押せない項目</returns>
     public static TrayMenuItem Disabled(string text) => new(text, null, null, false, false);

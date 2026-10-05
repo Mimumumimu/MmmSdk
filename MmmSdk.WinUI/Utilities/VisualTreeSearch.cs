@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Media;
 namespace MmmSdk.WinUI.Utilities;
 
 /// <summary>ビジュアルツリーから要素を探す</summary>
-/// <remarks>コントロールのテンプレート内の要素（ScrollViewer・内部のボタンなど）に触るために使う。</remarks>
+/// <remarks>コントロールのテンプレート内の要素 (ScrollViewer・内部のボタンなど)に触るために使う。</remarks>
 public static class VisualTreeSearch
 {
     /// <summary>子孫から、指定の型の要素を探す</summary>

@@ -5,7 +5,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace MmmSdk.WinUI.Utilities;
 
 /// <summary>Windows 標準のメッセージボックス</summary>
-/// <remarks>WinUI のウィンドウやアプリの初期化（XAML の読み込み）より前でも出せる。多重起動の案内など、画面を作る前に知らせたいときに使う。</remarks>
+/// <remarks>WinUI のウィンドウやアプリの初期化 (XAML の読み込み)より前でも出せる。多重起動の案内など、画面を作る前に知らせたいときに使う。</remarks>
 public static class NativeMessageBox
 {
     /// <summary>情報のメッセージボックスを出して、閉じられるまで待つ</summary>

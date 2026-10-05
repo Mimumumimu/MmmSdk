@@ -11,7 +11,7 @@
 
     <Grid x:Name="RootGrid">
         <Grid.Resources>
-            <!-- 到達の明滅：不透明度 0 → 0.55（0.09 秒）→ 0（0.18 秒）を 3 回 -->
+            <!-- 到達の明滅：不透明度 0 → 0.55 (0.09 秒)→ 0 (0.18 秒)を 3 回 -->
             <Storyboard x:Name="BlinkStoryboard" RepeatBehavior="3x">
                 <DoubleAnimationUsingKeyFrames Storyboard.TargetName="BlinkOverlay" Storyboard.TargetProperty="Opacity">
                     <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0" />

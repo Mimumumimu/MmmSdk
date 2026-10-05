@@ -1,4 +1,4 @@
-// CsWin32 が生成する Win32 API の一覧（生成されるのは internal。用途ごとにまとめる）
+// CsWin32 が生成する Win32 API の一覧 (生成されるのは internal。用途ごとにまとめる)
 
 // ウィンドウの表示・スタイル・入力
 EnableWindow
@@ -18,7 +18,7 @@ ImmGetContext
 ImmReleaseContext
 ImmSetOpenStatus
 
-// 通知を受ける非表示ウィンドウ（トレイ用）
+// 通知を受ける非表示ウィンドウ (トレイ用)
 CreateWindowEx
 DefWindowProc
 DestroyWindow
@@ -53,7 +53,7 @@ MENU_ITEM_FLAGS
 TRACK_POPUP_MENU_FLAGS
 TrackPopupMenuEx
 
-// メニュー項目の描画（オーナードロー）
+// メニュー項目の描画 (オーナードロー)
 CreateFontIndirect
 CreateSolidBrush
 DeleteObject
@@ -90,5 +90,5 @@ UpdateProcThreadAttribute
 // メッセージボックス
 MessageBox
 
-// uxtheme の非公開 API（序数指定）を呼ぶための読み込み
+// uxtheme の非公開 API (序数指定)を呼ぶための読み込み
 GetProcAddress

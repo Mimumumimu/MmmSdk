@@ -4,8 +4,8 @@ namespace MmmSdk.Core.Components.Scheduling;
 /// <param name="timeProvider">現在時刻・タイマーの提供元</param>
 /// <remarks>
 /// 開始直後に 1 回、以後は毎分 00 秒に呼ぶ。固定間隔のタイマーではなく、次の 00 秒までの残り時間をその都度計算する単発タイマーを掛け直す
-/// （システム時刻の変更や、タイマーのずれに追従するため）。タイマーが 00 秒より少し早く来たときは、まだ前の分なので呼ばず、次の掛け直しに任せる
-/// （同じ分に 2 回呼ばない）。呼ばれる処理は、タイマーのスレッドで動く。
+/// (システム時刻の変更や、タイマーのずれに追従するため)。タイマーが 00 秒より少し早く来たときは、まだ前の分なので呼ばず、次の掛け直しに任せる
+/// (同じ分に 2 回呼ばない)。呼ばれる処理は、タイマーのスレッドで動く。
 /// </remarks>
 public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
 {
@@ -18,7 +18,7 @@ public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
     /// <summary>毎分呼ぶ処理</summary>
     private Func<DateTime, Task>? _onMinute;
 
-    /// <summary>最後に処理を呼んだ分（秒以下を切り捨てた時刻）</summary>
+    /// <summary>最後に処理を呼んだ分 (秒以下を切り捨てた時刻)</summary>
     /// <remarks>タイマーが 00 秒より少し早く来たときに、同じ分を 2 回呼ばないために使う。</remarks>
     private DateTime? _lastCalledMinute;
 
@@ -69,7 +69,7 @@ public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
     }
 
     /// <summary>タイマーが来たら処理を呼んで、次の 00 秒に掛け直す</summary>
-    /// <remarks>処理中の想定外の例外は握りつぶさない（async void なのでアプリの未処理例外になる）。</remarks>
+    /// <remarks>処理中の想定外の例外は握りつぶさない (async void なのでアプリの未処理例外になる)。</remarks>
     private async void OnTick()
     {
         try
@@ -82,7 +82,7 @@ public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
         }
     }
 
-    /// <summary>今の分の処理を呼ぶ（同じ分に呼んでいたら呼ばない）</summary>
+    /// <summary>今の分の処理を呼ぶ (同じ分に呼んでいたら呼ばない)</summary>
     /// <returns>処理の完了を表すタスク</returns>
     private async Task CallAsync()
     {
@@ -91,7 +91,7 @@ public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
         Func<DateTime, Task>? onMinute;
         lock (_gate)
         {
-            // 00 秒より少し早く来たときは、まだ前の分なので呼ばない（次の掛け直しで 00 秒過ぎに来る）
+            // 00 秒より少し早く来たときは、まだ前の分なので呼ばない (次の掛け直しで 00 秒過ぎに来る)
             if (_lastCalledMinute == minute)
             {
                 return;

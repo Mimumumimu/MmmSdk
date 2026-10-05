@@ -16,8 +16,8 @@ namespace MmmSdk.WinUI.Components.Tray;
 /// タスクトレイのアイコンと右クリックメニュー。Win32 の Shell_NotifyIcon を直接使う。メニューの項目は <see cref="ITrayMenuSource"/> から作る。
 /// </summary>
 /// <remarks>
-/// トレイからの通知を受けるため、専用の非表示ウィンドウを作る（メインウィンドウとは独立）。
-/// メッセージ専用ウィンドウ（HWND_MESSAGE）にしないのは、エクスプローラー再起動の通知（TaskbarCreated）がブロードキャストで、
+/// トレイからの通知を受けるため、専用の非表示ウィンドウを作る (メインウィンドウとは独立)。
+/// メッセージ専用ウィンドウ (HWND_MESSAGE)にしないのは、エクスプローラー再起動の通知 (TaskbarCreated)がブロードキャストで、
 /// メッセージ専用ウィンドウには届かないため。UI スレッドで作り、UI スレッドで破棄する。
 /// </remarks>
 public sealed class TrayIcon : IDisposable
@@ -25,10 +25,10 @@ public sealed class TrayIcon : IDisposable
     /// <summary>トレイアイコンの識別番号</summary>
     private const uint IconId = 1;
 
-    /// <summary>トレイアイコンの操作（クリック・右クリック等）の通知。</summary>
+    /// <summary>トレイアイコンの操作 (クリック・右クリック等)の通知。</summary>
     private const uint CallbackMessage = PInvoke.WM_APP + 1;
 
-    /// <summary>アイコンがキーボードで選択された通知（NIN_SELECT に NINF_KEY を足したもの）</summary>
+    /// <summary>アイコンがキーボードで選択された通知 (NIN_SELECT に NINF_KEY を足したもの)</summary>
     private const uint NinKeySelect = PInvoke.NIN_SELECT | 1;
 
     /// <summary>メッセージを受けるインスタンス</summary>
@@ -37,9 +37,9 @@ public sealed class TrayIcon : IDisposable
 
     /// <summary>メニューに項目を出す機能</summary>
     private readonly IEnumerable<ITrayMenuSource> _sources;
-    /// <summary>アプリごとの設定（文字・クラス名・アイコン）</summary>
+    /// <summary>アプリごとの設定 (文字・クラス名・アイコン)</summary>
     private readonly TrayIconOptions _options;
-    /// <summary>TaskbarCreated（エクスプローラー再起動の通知）のメッセージ番号</summary>
+    /// <summary>TaskbarCreated (エクスプローラー再起動の通知)のメッセージ番号</summary>
     private readonly uint _taskbarCreatedMessage;
     /// <summary>UI スレッドのディスパッチャー</summary>
     private readonly DispatcherQueue _dispatcher;
@@ -62,10 +62,10 @@ public sealed class TrayIcon : IDisposable
     /// <summary>破棄済みか</summary>
     private bool _disposed;
 
-    /// <summary>トレイアイコンを作る（表示は <see cref="Show"/> で行う）</summary>
+    /// <summary>トレイアイコンを作る (表示は <see cref="Show"/> で行う)</summary>
     /// <param name="sources">メニューに項目を出す機能</param>
-    /// <param name="options">アプリごとの設定（ツールチップ・ウィンドウクラス名・アイコン・「終了」の文言）</param>
-    /// <param name="fatalErrors">復旧できないエラーの報告先（メッセージの処理で予想外の例外が出たとき、ログ・ダイアログ・終了を任せる）</param>
+    /// <param name="options">アプリごとの設定 (ツールチップ・ウィンドウクラス名・アイコン・「終了」の文言)</param>
+    /// <param name="fatalErrors">復旧できないエラーの報告先 (メッセージの処理で予想外の例外が出たとき、ログ・ダイアログ・終了を任せる)</param>
     public TrayIcon(IEnumerable<ITrayMenuSource> sources, TrayIconOptions options, FatalErrorHandler fatalErrors)
     {
         _sources = sources;
@@ -77,7 +77,7 @@ public sealed class TrayIcon : IDisposable
         _dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
-    /// <summary>メインウィンドウを出すよう求められた（アイコンのクリック）。</summary>
+    /// <summary>メインウィンドウを出すよう求められた (アイコンのクリック)。</summary>
     public event EventHandler? OpenRequested;
 
     /// <summary>メニューの「終了」が選ばれた。</summary>
@@ -105,13 +105,13 @@ public sealed class TrayIcon : IDisposable
             };
             if (PInvoke.RegisterClassEx(windowClass) == 0)
             {
-                throw new InvalidOperationException($"トレイ用のウィンドウクラスを登録できませんでした（エラー {Marshal.GetLastPInvokeError()}）。");
+                throw new InvalidOperationException($"トレイ用のウィンドウクラスを登録できませんでした (エラー {Marshal.GetLastPInvokeError()})。");
             }
 
             _hwnd = PInvoke.CreateWindowEx(0, className, toolTip, 0, 0, 0, 0, 0, HWND.Null, HMENU.Null, hInstance, null);
             if (_hwnd.IsNull)
             {
-                throw new InvalidOperationException($"トレイ用のウィンドウを作成できませんでした（エラー {Marshal.GetLastPInvokeError()}）。");
+                throw new InvalidOperationException($"トレイ用のウィンドウを作成できませんでした (エラー {Marshal.GetLastPInvokeError()})。");
             }
         }
 
@@ -120,13 +120,13 @@ public sealed class TrayIcon : IDisposable
     }
 
     /// <summary>トレイに出すアイコン</summary>
-    /// <remarks>読めなければ Windows 標準のアプリアイコン（トレイから操作できなくなるのを避ける）。</remarks>
+    /// <remarks>読めなければ Windows 標準のアプリアイコン (トレイから操作できなくなるのを避ける)。</remarks>
     private HICON DisplayIcon => !_icon.IsNull ? _icon : PInvoke.LoadIcon(HINSTANCE.Null, PInvoke.IDI_APPLICATION);
 
     /// <summary>トレイから通知を出す</summary>
     /// <param name="title">通知のタイトル</param>
     /// <param name="message">通知の本文</param>
-    /// <param name="isError">エラーのアイコンで出すか（false なら情報のアイコン）</param>
+    /// <param name="isError">エラーのアイコンで出すか (false なら情報のアイコン)</param>
     /// <remarks>Windows の通知として表示される。</remarks>
     public unsafe void ShowNotification(string title, string message, bool isError)
     {
@@ -142,7 +142,7 @@ public sealed class TrayIcon : IDisposable
     #region アイコン
 
     /// <summary>Shell_NotifyIcon に渡すデータを作る</summary>
-    /// <param name="flags">有効にする項目を示すフラグ（<c>NIF_*</c>）</param>
+    /// <param name="flags">有効にする項目を示すフラグ (<c>NIF_*</c>)</param>
     /// <returns>トレイアイコンの識別情報を入れたデータ</returns>
     private unsafe NOTIFYICONDATAW CreateData(NOTIFY_ICON_DATA_FLAGS flags) => new()
     {
@@ -165,7 +165,7 @@ public sealed class TrayIcon : IDisposable
             return;
         }
 
-        // 新しい通知の形式（クリック = NIN_SELECT、右クリック = WM_CONTEXTMENU、座標は wParam）を使う
+        // 新しい通知の形式 (クリック = NIN_SELECT、右クリック = WM_CONTEXTMENU、座標は wParam)を使う
         data.Anonymous.uVersion = PInvoke.NOTIFYICON_VERSION_4;
         PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_SETVERSION, in data);
     }
@@ -187,8 +187,8 @@ public sealed class TrayIcon : IDisposable
         PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_DELETE, in data);
     }
 
-    /// <summary>指定されたアイコンファイルを、トレイの大きさ（DPI に合わせた小アイコン）で読む。</summary>
-    /// <returns>アイコンのハンドル。パスが未指定・ファイルが無い等で読めなければ null のハンドル（呼び出し側で Windows 標準のアイコンに代える）</returns>
+    /// <summary>指定されたアイコンファイルを、トレイの大きさ (DPI に合わせた小アイコン)で読む。</summary>
+    /// <returns>アイコンのハンドル。パスが未指定・ファイルが無い等で読めなければ null のハンドル (呼び出し側で Windows 標準のアイコンに代える)</returns>
     private unsafe HICON LoadTrayIcon()
     {
         if (_options.IconPath is not { } path)
@@ -210,8 +210,8 @@ public sealed class TrayIcon : IDisposable
     /// <summary>通知を受けるウィンドウのウィンドウプロシージャ</summary>
     /// <param name="hwnd">ウィンドウのハンドル</param>
     /// <param name="msg">メッセージ</param>
-    /// <param name="wParam">メッセージの付加情報（wParam）</param>
-    /// <param name="lParam">メッセージの付加情報（lParam）</param>
+    /// <param name="wParam">メッセージの付加情報 (wParam)</param>
+    /// <param name="lParam">メッセージの付加情報 (lParam)</param>
     /// <returns>メッセージの処理結果</returns>
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static LRESULT WndProc(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
@@ -230,7 +230,7 @@ public sealed class TrayIcon : IDisposable
         {
             // [UnmanagedCallersOnly] から例外が抜けるとログも残らず落ちるため、ここで受けて、ログ・ダイアログ・終了を行う
             current._fatalErrors.Report("トレイのメッセージ処理で予想外の例外が出ました", ex);
-            // Report は戻らない（コンパイラーには伝わらないため、念のため投げ直す）
+            // Report は戻らない (コンパイラーには伝わらないため、念のため投げ直す)
             throw;
         }
     }
@@ -238,8 +238,8 @@ public sealed class TrayIcon : IDisposable
     /// <summary>メッセージを処理する</summary>
     /// <param name="hwnd">ウィンドウのハンドル</param>
     /// <param name="msg">メッセージ</param>
-    /// <param name="wParam">メッセージの付加情報（wParam）</param>
-    /// <param name="lParam">メッセージの付加情報（lParam）</param>
+    /// <param name="wParam">メッセージの付加情報 (wParam)</param>
+    /// <param name="lParam">メッセージの付加情報 (lParam)</param>
     /// <returns>メッセージの処理結果</returns>
     private unsafe LRESULT HandleMessage(HWND hwnd, uint msg, WPARAM wParam, LPARAM lParam)
     {
@@ -261,13 +261,13 @@ public sealed class TrayIcon : IDisposable
                         _dispatcher.TryEnqueue(() => OpenRequested?.Invoke(this, EventArgs.Empty));
                         break;
                     case PInvoke.WM_CONTEXTMENU:
-                        // 座標は wParam の下位・上位 16 ビット（符号付き。マルチモニターで負になる）
+                        // 座標は wParam の下位・上位 16 ビット (符号付き。マルチモニターで負になる)
                         ShowMenu((short)(wParam.Value & 0xFFFF), (short)((wParam.Value >> 16) & 0xFFFF));
                         break;
                 }
                 return new LRESULT(0);
 
-            // メニューの項目は自分で描く（メニューを開いている間だけ届く）
+            // メニューの項目は自分で描く (メニューを開いている間だけ届く)
             case PInvoke.WM_MEASUREITEM when _renderer is not null && ((MEASUREITEMSTRUCT*)lParam.Value)->CtlType == DRAWITEMSTRUCT_CTL_TYPE.ODT_MENU:
                 _renderer.Measure((MEASUREITEMSTRUCT*)lParam.Value);
                 return new LRESULT(1);
@@ -290,9 +290,9 @@ public sealed class TrayIcon : IDisposable
     #region メニュー
 
     /// <summary>右クリックメニューを出し、選ばれた項目の処理を行う。</summary>
-    /// <param name="x">メニューを出す位置の X（画面座標）</param>
-    /// <param name="y">メニューを出す位置の Y（画面座標）</param>
-    /// <remarks>メニューは開くたびに作る（各機能の最新の内容を出すため）。</remarks>
+    /// <param name="x">メニューを出す位置の X (画面座標)</param>
+    /// <param name="y">メニューを出す位置の Y (画面座標)</param>
+    /// <remarks>メニューは開くたびに作る (各機能の最新の内容を出すため)。</remarks>
     private unsafe void ShowMenu(int x, int y)
     {
         var menu = PInvoke.CreatePopupMenu();
@@ -317,7 +317,7 @@ public sealed class TrayIcon : IDisposable
             }, ref nextId);
             renderer.ApplyTo(menu);
 
-            // 前面にしておかないと、メニューの外をクリックしても閉じない（Win32 のトレイメニューの決まり）
+            // 前面にしておかないと、メニューの外をクリックしても閉じない (Win32 のトレイメニューの決まり)
             PInvoke.SetForegroundWindow(_hwnd);
             var flags = TRACK_POPUP_MENU_FLAGS.TPM_RIGHTBUTTON | TRACK_POPUP_MENU_FLAGS.TPM_RETURNCMD
                 | TRACK_POPUP_MENU_FLAGS.TPM_NONOTIFY | TRACK_POPUP_MENU_FLAGS.TPM_BOTTOMALIGN;

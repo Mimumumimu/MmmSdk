@@ -1,7 +1,7 @@
 namespace MmmSdk.Core.Components.WindowPositions;
 
 /// <summary>
-/// ウィンドウの位置（と、位置と大きさ）をキー単位で保存・復元する（モックで差し替えられるようにするための口）。
+/// ウィンドウの位置 (と、位置と大きさ)をキー単位で保存・復元する (モックで差し替えられるようにするための口)。
 /// </summary>
 public interface IWindowPositionService
 {

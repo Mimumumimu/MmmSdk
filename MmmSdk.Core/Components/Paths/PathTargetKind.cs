@@ -12,7 +12,7 @@ public enum PathTargetKind
     /// <summary>フォルダ</summary>
     Folder,
 
-    /// <summary>実行ファイル（.exe・.bat 等）。</summary>
+    /// <summary>実行ファイル (.exe・.bat 等)。</summary>
     Executable,
 
     /// <summary>ファイル</summary>

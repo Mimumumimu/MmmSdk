@@ -6,7 +6,7 @@
     HorizontalAlignment="Left">
 
     <UserControl.Resources>
-        <!-- 区画（時・分）の入力欄。枠・背景・消去ボタンを持たない最小のテンプレート（見た目は外側の枠が受け持つ） -->
+        <!-- 区画 (時・分)の入力欄。枠・背景・消去ボタンを持たない最小のテンプレート (見た目は外側の枠が受け持つ) -->
         <Style x:Key="SegmentBoxStyle" TargetType="TextBox">
             <Setter Property="Width" Value="28" />
             <Setter Property="MinWidth" Value="0" />
@@ -36,7 +36,7 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- 外側の枠（標準の入力欄と同じ見た目。フォーカス中は下線をアクセント色で太く） -->
+    <!-- 外側の枠 (標準の入力欄と同じ見た目。フォーカス中は下線をアクセント色で太く) -->
     <Grid
         x:Name="Frame"
         MinHeight="{ThemeResource TextControlThemeMinHeight}"
@@ -48,7 +48,7 @@
         PointerEntered="OnFramePointerEntered"
         PointerExited="OnFramePointerExited"
         Tapped="OnFrameTapped">
-        <!-- 枠の見た目（通常・ポインタ上・フォーカス中）。色は ThemeResource なので、テーマの切り替えに追従する -->
+        <!-- 枠の見た目 (通常・ポインタ上・フォーカス中)。色は ThemeResource なので、テーマの切り替えに追従する -->
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="CommonStates">
                 <VisualState x:Name="Normal" />
