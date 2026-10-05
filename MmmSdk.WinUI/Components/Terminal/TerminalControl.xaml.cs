@@ -179,7 +179,7 @@ public sealed partial class TerminalControl : UserControl
     /// <summary>WebView2 の初期化失敗の理由を表示する</summary>
     /// <param name="exception">初期化の失敗</param>
     /// <remarks>
-    /// 制約: WebView2 ランタイムが入っていない PC で、どの例外が出るかは、この環境では確かめられていない。COMException 以外が出たときは、未処理例外の受け皿 (ログ・ダイアログ・終了)が受ける。実機で確かめて、受ける例外を直す。
+    /// COMException 以外が出たときは、未処理例外の受け皿 (ログ・ダイアログ・終了)が受ける。
     /// </remarks>
     private void ShowInitializationError(COMException exception)
     {

@@ -2,6 +2,11 @@
 
 シェルを動かして画面に出す部品。ConPTY ([conpty.md](conpty.md))の上に、セッションと、xterm.js で描く画面を載せる。
 
+## 呼び方
+- **ターミナル**: 画面のペインと、その実体 (ConPTY・xterm.js)だけを指す。`MmmSdk.WinUI.Components.Terminal`・`TerminalControl`・`ITerminalSession` はこの意味
+- **シェル**: ターミナルの中で動かす、コマンドを打つ相手 (PowerShell・cmd・WSL)。`ShellInfo`・`ShellKind`・`ShellLocator` はこの意味
+- 同じ語を別の意味に使うと、値や名前が読み間違いやすいため、呼び分ける
+
 ## シェルの決定 (`MmmSdk.Core.Components.Shells`)
 - `ShellInfo(Path, Kind)`: 起動するシェル 1 つ分。種類 (`ShellKind` = PowerShell / Cmd / Wsl)は、起動コマンドの文字列から推測せず、決める側が指定する。`CommandLine` は実行ファイルのフルパスを引用符で囲んだもの、`FileName` はフォルダーを除いた名前 (シェルの中で、そのシェル自身を呼ぶときに使う)
 - `ShellLocator.Default`: 既定のシェル。PATH 上の `pwsh.exe` があればそれ、無ければ Windows PowerShell (システムフォルダー内)
@@ -13,7 +18,7 @@
 - `WslPath.TryToLinux(windowsPath, out linuxPath)`: Windows のパスを、WSL の中から見たパスにする (文字列の変換だけ。パスごとに wslpath を起動すると遅いため)
   - ドライブのパス `D:\work\a.txt` → `/mnt/d/work/a.txt`。WSL の共有 `\\wsl.localhost\Ubuntu\tmp\a.jpg`(旧来の `\\wsl$\...` も)→ `/tmp/a.jpg`
   - そのほかのネットワークのパス (`\\server\share\...`)は、WSL から同じ形では開けないので変換しない (`false`)
-  - 制約: ドライブの割り当て先は WSL の既定の `/mnt/` とする。`/etc/wsl.conf` の `[automount] root` を変えた環境では違うパスになる (この値は WSL の中からしか読めない)。WSL の共有のパスは、ディストリビューション名を見ずに変換する
+  - ドライブの割り当て先は WSL の既定の `/mnt/` とする。`/etc/wsl.conf` の `[automount] root` を変えた環境では違うパスになる (この値は WSL の中からしか読めない)。WSL の共有のパスは、ディストリビューション名を見ずに変換する
 - `ShellCommands.TryConvertPath(shell, windowsPath, out shellPath)`: Windows のパスを、そのシェルの中から見たパスにする (PowerShell・cmd はそのまま、WSL は `WslPath`)。CLI へ渡すパス (添付など)に使う
 - `ShellCommands.TryChangeDirectory(shell, directory, out command)`: 作業ディレクトリを移すコマンドを作る (`directory` は Windows のパス)
   - PowerShell は `Set-Location -LiteralPath '…'`(単一引用符なら `$` や `` ` `` が展開されない)。パス中の単一引用符は 2 つ重ねる。PowerShell は ASCII の `'` のほかに U+2018 / U+2019 / U+201A / U+201B も単一引用符として扱うので、この 4 文字も重ねる (フォルダー名に使える文字。重ねないと、文字列が途中で閉じて、残りがコマンドとして実行される)
@@ -40,7 +45,7 @@
 - C# ↔ JS は JSON メッセージ (C# → JS: `output` / `submit` / `focus`。JS → C#: `ready` / `input` / `resize` / `written`)。ページは `terminal.js`
 - 出力は細切れに届くので、UI スレッドへ渡す前にまとめる。xterm.js の書き込み待ちがあふれて出力が捨てられないよう、描画の受け取り (`written`)が返っていない文字数が 1M 文字を超えたら、受け取りが返るまで送らない
 - シェルが終了したあとは、何かキーを押すと再起動する (押されたキーは捨てる。終了待ちの間のキーも捨てて、二重に起動し直さない)
-- WebView2 を初期化できなかったとき (ランタイムが無い・起動できない。`COMException`)は、画面の場所に理由を文字で出す (ほかの機能は使い続けられる)。制約: WebView2 ランタイムが無い PC で、どの例外が出るかは、この環境では確かめられていない (`COMException` 以外は、未処理例外の受け皿が受ける)。実機で確かめて、受ける例外を直す
+- WebView2 を初期化できなかったとき (ランタイムが無い・起動できない。`COMException`)は、画面の場所に理由を文字で出す (ほかの機能は使い続けられる)。`COMException` 以外の例外は、未処理例外の受け皿が受ける
 - シェルの起動に失敗したとき (`Win32Exception`・`COMException`・`InvalidOperationException`)は、端末に赤字で理由を出す
 
 ## アプリでの使い方

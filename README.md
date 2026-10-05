@@ -494,6 +494,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 
 | ファイル | 内容 |
 | --- | --- |
+| [docs/architecture.md](docs/architecture.md) | フォルダの層・プロジェクトの分け方・CsWin32 の決定の理由 |
 | [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア |
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止 |

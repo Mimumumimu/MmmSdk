@@ -3,7 +3,7 @@
 ターミナル画面の土台になる汎用部品 (`MmmSdk.WinUI.Components.Terminal`)。端末の描画・キー入力の解釈は持たない。呼び出し側は、出力 (端末のエスケープシーケンスを含む UTF-8 のバイト列)を端末のエミュレーターに渡す。
 
 ## 置き場所
-- セッション・画面 (`TerminalControl`)と同じ `Components/Terminal/` フォルダーに置く (アプリの決定 0010 で、ターミナル = ConPTY・xterm.js の実体と呼んでいる)。この文書は、その土台の ConPTY だけを詳しく書く (シェル・セッション・画面は [terminal.md](terminal.md))
+- セッション・画面 (`TerminalControl`)と同じ `Components/Terminal/` フォルダーに置く (「ターミナル」は ConPTY・xterm.js の実体を指す呼び方。[terminal.md](terminal.md) の「呼び方」)。この文書は、その土台の ConPTY だけを詳しく書く (シェル・セッション・画面は [terminal.md](terminal.md))
 - 画面 (UI)は持たないが、Windows の API を呼ぶので、Windows に依存しない `MmmSdk.Core` ではなく `MmmSdk.WinUI` に置く
 - Win32 の宣言は CsWin32 が生成する (`NativeMethods.txt`)。宣言は internal で、公開するのは `PseudoConsole` だけ
 

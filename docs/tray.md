@@ -23,5 +23,5 @@
   - 枠 (外周・影)は Windows が描くので、uxtheme の非公開序数 135 / 136 でシステムのダーク設定に従わせている (Windows 10 1903 / ビルド 18362 以上でだけ呼ぶ。序数の意味が違う 1809 や、見つからない環境ではライトのまま。uxtheme は読み込み済みのものを取り、アドレスは 1 度だけ引く)
 
 ## 例外
-- `WndProc` は `[UnmanagedCallersOnly]` なので、例外が抜けるとログも残らず落ちる。中で `try/catch` して、`FatalErrorHandler.Report`(ログ → ダイアログ → 終了)に渡す。`TrayIcon` はコンストラクターで `FatalErrorHandler` を受け取り、異常終了の直前 (`BeforeExit`)に、トレイからアイコンを外す (UI スレッドとは限らないので、ウィンドウは壊さずアイコンの登録だけ外す。このスレッドでの外し方は、まだ実機で確かめていない)
+- `WndProc` は `[UnmanagedCallersOnly]` なので、例外が抜けるとログも残らず落ちる。中で `try/catch` して、`FatalErrorHandler.Report`(ログ → ダイアログ → 終了)に渡す。`TrayIcon` はコンストラクターで `FatalErrorHandler` を受け取り、異常終了の直前 (`BeforeExit`)に、トレイからアイコンを外す (UI スレッドとは限らないので、ウィンドウは壊さずアイコンの登録だけ外す)
 - メニューのコマンドは、`Forget()` で走らせる。処理の中で受けなかった例外は、`TrayIcon` では受けず (広い `catch` でバグを隠さない)、安全網 (ログ → ダイアログ → 終了)が受ける。予測できる失敗 (パスが開けないなど)は、各 `ITrayMenuSource` の処理の中で受けて知らせる (トレイは、それを提供する機能が `TrayIcon` を知らなくてよいよう、通知の API を渡さない。アプリは `INotificationDialogService` などで知らせる)
