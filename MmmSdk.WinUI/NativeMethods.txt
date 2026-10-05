@@ -90,5 +90,14 @@ UpdateProcThreadAttribute
 // メッセージボックス
 MessageBox
 
+// 資格情報マネージャー (秘密の保存)
+CredDelete
+CredFree
+CredRead
+CredWrite
+CRED_PERSIST
+CRED_TYPE
+WIN32_ERROR
+
 // uxtheme の非公開 API (序数指定)を呼ぶための読み込み
 GetProcAddress

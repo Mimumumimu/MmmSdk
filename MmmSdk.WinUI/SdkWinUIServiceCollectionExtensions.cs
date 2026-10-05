@@ -1,8 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
+using MmmSdk.Core.Components.Secrets;
 using MmmSdk.WinUI.Components.Attachments;
 using MmmSdk.WinUI.Components.Clipboards;
 using MmmSdk.WinUI.Components.Dialogs;
 using MmmSdk.WinUI.Components.Notifications;
+using MmmSdk.WinUI.Components.Secrets;
 using MmmSdk.WinUI.Components.Tray;
 
 namespace MmmSdk.WinUI;
@@ -10,7 +12,7 @@ namespace MmmSdk.WinUI;
 /// <summary>MmmSdk.WinUI の DI 登録</summary>
 public static class SdkWinUIServiceCollectionExtensions
 {
-    /// <summary>SDK の WinUI 依存のサービス (通知ダイアログ・確認ダイアログ・ファイル/フォルダー選択・画像の変換・クリップボード)を登録する</summary>
+    /// <summary>SDK の WinUI 依存のサービス (通知ダイアログ・確認ダイアログ・ファイル/フォルダー選択・画像の変換・クリップボード・秘密の保存)を登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
     /// <remarks>
@@ -31,6 +33,7 @@ public static class SdkWinUIServiceCollectionExtensions
         services.AddSingleton<IFolderPickerService, FolderPickerService>();
         services.AddSingleton<IImageConverter, ImageConverter>();
         services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<ISecretStore, CredentialSecretStore>();
         return services;
     }
 

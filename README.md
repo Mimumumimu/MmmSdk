@@ -47,6 +47,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Storage` | JSON ファイルの読み書き (`IJsonFileStore` / `JsonFileStore`)・共通の書式 (`ReadableJsonOptions`)・読み込み結果 (`DataLoadResult`)・読み書きの失敗 (`DataFileException`) |
 | `MmmSdk.Core.Components.Settings` | 汎用設定ストア (`ISettingsStore`・拡張メソッド `SettingsStoreExtensions`)。JSON での実装は `MmmSdk.Core.Components.Settings.Json`(`JsonSettingsStore`) |
 | `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元 (`IWindowPositionService` / `WindowPositionService` / `WindowPosition`)と、画面との位置関係の計算 (`ScreenGeometry`。見えているか・作業領域に収める) |
+| `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を設定ファイルとは別の場所に保存する口 (`ISecretStore` / `SecretStoreException`) |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理 (`IPathOpener` / `PathOpener` / `PathOpenException`)と種類の判定 (`PathTarget`) |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
 | `MmmSdk.Core.Components.Shells` | シェルの決定 (`ShellInfo` / `ShellKind` / `ShellLocator`)と、シェル別のコマンド作り・パスの変換 (`ShellCommands`)、WSL のパス (`WslPath`)・ディストリビューション (`WslDistribution`) |
@@ -54,7 +55,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
-| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`) |
+| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
 
 #### MmmSdk.WinUI
@@ -64,6 +65,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Notifications` | 通知ダイアログ (`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`) |
 | `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost`。実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService`。複数選択・保存先の選択を含む)・同じ名前のファイルがあるときの確認 (`AskFileConflictAsync`) |
 | `MmmSdk.WinUI.Components.Clipboards` | クリップボードのテキストの読み書き (`IClipboardService` / `ClipboardService`) |
+| `MmmSdk.WinUI.Components.Secrets` | 秘密を Windows の資格情報マネージャーに保存する (`CredentialSecretStore`。`ISecretStore` の実装) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
@@ -124,7 +126,7 @@ services.AddMmmSdkWinUI();
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`(すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる) |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`(Singleton)。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`(すべて Singleton)、`NotificationWindow`・`NotificationWindowViewModel`(Transient) |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISecretStore`(すべて Singleton)、`NotificationWindow`・`NotificationWindowViewModel`(Transient) |
 
 ## 使い方
 
@@ -259,6 +261,11 @@ var choice = await dialogs.AskFileConflictAsync("置換またはスキップ", "
 // クリップボードのテキスト (UI 型に触れずに使える)
 clipboard.SetText("テキスト");
 var text = await clipboard.GetTextAsync();         // テキストが無ければ null
+
+// 秘密 (API キーなど)。Windows の資格情報マネージャーに、名前ごとに 1 件保存する (設定ファイルには書かない)
+secrets.Set("MyApp.ServiceKey", apiKey);           // 同じ名前があれば上書き。書けなければ SecretStoreException
+var key = secrets.Get("MyApp.ServiceKey");         // 無ければ null
+secrets.Remove("MyApp.ServiceKey");                // 消したら true。もともと無ければ false
 ```
 
 アプリ固有のウィンドウを擬似モーダルで開くときは、ウィンドウに `PseudoModal` を付け、`IDialogHost.ShowModalAsync` で開きます (親は `Owner`)。
@@ -495,7 +502,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | ファイル | 内容 |
 | --- | --- |
 | [docs/architecture.md](docs/architecture.md) | フォルダの層・プロジェクトの分け方・CsWin32 の決定の理由 |
-| [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア |
+| [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア・秘密の保存 |
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |

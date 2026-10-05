@@ -44,6 +44,17 @@
 - ファイルが無い・空・壊れているときは空として扱う (壊れていたときは上の手順で退避してから。`RecoveryMessage`)。ロック・権限で読めなかったときは `LoadError` に残し、空として扱って保存は試みる
 - 機能ごとの設定はキーの接頭辞 (`Reminder.` / `WindowPosition.` 等)で衝突を避ける
 
+## 秘密の保存 (`ISecretStore` / `CredentialSecretStore`)
+API キーなどの秘密を、設定ファイル (`AppSettings.json`)ではなく、OS の保管庫に保存する。設定ファイルは手で開いて見られ、フォルダーごと人に渡ることもあるため。
+
+- インターフェース (`ISecretStore`。`MmmSdk.Core.Components.Secrets`)は、名前ごとに 1 件の文字列を `Get`(無ければ null)・`Set`(同じ名前は上書き)・`Remove`(消したら true、もともと無ければ false)する。いずれも同期 (保管庫はローカルで、速い)。失敗は `SecretStoreException`(メッセージはそのまま画面に出せる。`DataFileException` と同じ扱い)
+- 実装 (`CredentialSecretStore`。`MmmSdk.WinUI.Components.Secrets`。`AddMmmSdkWinUI` が Singleton で登録する)は、Windows の資格情報マネージャーの汎用資格情報を使う。Win32 は CsWin32 (`CredRead` / `CredWrite` / `CredDelete` / `CredFree`)で、Win32 の宣言は SDK の 1 か所に置く方針どおり。Core ではなく WinUI に置くのは、P/Invoke を使うため ([architecture.md](architecture.md))
+  - 名前 (ターゲット名)とユーザー名には、渡された名前をそのまま使う。値は UTF-16 で保存する
+  - 保存先は今の Windows ユーザーの、この PC の中だけ (`CRED_PERSIST_LOCAL_MACHINE`。ほかの PC に同期しない)
+  - 1 件の大きさに OS の上限がある (`CRED_MAX_CREDENTIAL_BLOB_SIZE`。5 × 512 バイト。UTF-16 で 1280 文字)。超えると `SecretStoreException`
+- 名前はアプリごとに決め、ほかのアプリの項目と衝突しないようにする (例: `MmmTool.Backlog`)。決めたら変えない (変えると、保存済みの値を読めなくなる)
+- 決定の理由: OS の保管庫に任せれば、暗号化の方式や鍵の管理を自前で持たずに済み、NuGet の追加も要らない。インターフェースを Core に置くので、アプリの Core のサービスが、UI や Windows に依存せずに使える (保管庫の差し替えにも対応する)
+
 ## 読み込み結果の記録 (`LoadStatus`)
 保存ファイルを読むサービスが 1 つ持つ。`LoadError`(読めなかった)と `RecoveryMessage`(壊れたファイルを退避した)を覚え、画面に出す。
 
