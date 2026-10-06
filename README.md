@@ -58,7 +58,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
-| `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>()` で呼ぶ)・機能の登録 (`FeatureInfo` / `AddFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`。状態の保存と切り替えはホストが持つ) |
+| `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>()` で呼ぶ)・機能の登録 (`FeatureInfo` / `AddFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知。ホストが `AddFeatureService()` で登録する。保存が無い機能はオン)・`FeatureChangeResult` |
 | `MmmSdk.Core.Components.Hosting` | アプリの名前・データのフォルダー・アイコンのパス (`AppEnvironment`)。ホストが 1 つ登録し、機能が DI から受け取る |
 | `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
@@ -139,6 +139,7 @@ services.AddMmmSdkWinUI();
 | メソッド | 登録するもの |
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`(すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる) |
+| `AddFeatureService()` | `FeatureService`・`IFeatureStatus`(Singleton。機能のオン・オフの管理。ホストが 1 回だけ呼ぶ。`ISettingsStore` を先に登録しておく) |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`(Singleton)。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
 | `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISecretStore`・`ISpeechService`(すべて Singleton)、`NotificationWindow`・`NotificationWindowViewModel`(Transient) |
 

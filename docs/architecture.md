@@ -41,9 +41,11 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 
 ## 機能 (プラグイン)がホストへ入る口 (`Features` / `Pages` / `Hosting` / `Tray`)
 - アプリの機能を、機能ごとのライブラリ (プラグイン)に分けられるよう、機能がホスト (exe)へ入るための型を SDK に置く。機能はホストを参照できないため、機能もホストも SDK のこれらの型を参照する
-- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>()` で呼ぶ)・機能の登録 `FeatureInfo` / `AddFeature`・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`(状態の保存と切り替えはホストが持つ)
+- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>()` で呼ぶ)・機能の登録 `FeatureInfo` / `AddFeature`・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`・オン・オフの管理 `FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知。ホストが `AddFeatureService()` で登録する。保存が無い機能はオン。切り替えの確認・画面への反映はホストが持つ)・`FeatureChangeResult`
 - `MmmSdk.Core.Components.Hosting`: `AppEnvironment`(アプリの名前・データのフォルダー・アイコンのパス。ホストが 1 つ登録し、機能が DI から受け取る)
 - `MmmSdk.WinUI.Components.Pages`: サイドバーのページ `NavigationPage` / `NavigationItem` / `NavigationArea` / `AddNavigationPage`・設定の部品 `SettingsSection` / `AddSettingsSection`・ページの後始末 `IReleasablePage`・ホストが作ったページを調べる口 `IPageCache`
 - `MmmSdk.WinUI.Components.Tray`: トレイメニューの項目の登録 `AddTrayMenuSource`(機能がオフの間は項目を出さない包みを内部に持つ)
 - 登録の拡張メソッドの型引数には、トリミング・AOT 対応のため `DynamicallyAccessedMembers(PublicConstructors)` を付ける (Core の `IsAotCompatible` の宣言に合わせる)
 - 最終形にどう近づくか: 機能とホストの境界をここに 1 か所に持つので、機能の追加・削除はホストの 1 行で済み、実行時に DLL を読み込むローダーを足しても、機能側は作り直さない
+- 機能のオン・オフの管理 `FeatureService`・`FeatureChangeResult` も SDK に置く (以前はホスト (アプリの Shell)が持つとしていた)。設定ストア・機能の登録・起動時の準備だけで動き、UI にも特定の機能にも依存しないため、アプリごとに同じ管理を書き直さずに済む。ホストが持つのは、切り替えの結果を画面へ反映すること (サイドバー・ページのキャッシュ・設定の画面)と、オフにする前の確認の画面。保存するキー (`Feature.<キー>.Enabled`)は変えていないので、保存済みの状態はそのまま使われる
+- 最終形にどう近づくか: 共通の部品はすべて SDK に集まる形に近づく。オン・オフの管理の部分をアプリから SDK へ移し、別のアプリが機能 (プラグイン)を載せるとき、`AddFeatureService()` を呼ぶだけで同じ管理を使える

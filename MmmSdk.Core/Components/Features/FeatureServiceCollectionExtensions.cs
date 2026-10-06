@@ -6,6 +6,16 @@ namespace MmmSdk.Core.Components.Features;
 /// <summary>機能 (プラグイン)が、ホストへ自分を登録するための拡張メソッド (UI に依存しないもの)</summary>
 public static class FeatureServiceCollectionExtensions
 {
+    /// <summary>機能のオン・オフの管理 (<see cref="FeatureService"/>)と、機能が状態を調べる口 (<see cref="IFeatureStatus"/>)を登録する</summary>
+    /// <param name="services">登録先のサービスコレクション</param>
+    /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
+    /// <remarks>ホストが 1 回だけ呼ぶ。<see cref="Settings.ISettingsStore"/> を先に登録しておくこと。</remarks>
+    public static IServiceCollection AddFeatureService(this IServiceCollection services)
+    {
+        services.AddSingleton<FeatureService>();
+        return services.AddSingleton<IFeatureStatus>(provider => provider.GetRequiredService<FeatureService>());
+    }
+
     /// <summary>設定でオン・オフを切り替えられる機能として登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>

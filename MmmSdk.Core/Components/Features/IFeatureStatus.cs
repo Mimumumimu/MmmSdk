@@ -1,7 +1,7 @@
 namespace MmmSdk.Core.Components.Features;
 
 /// <summary>機能のオン・オフの状態を調べる口</summary>
-/// <remarks>機能 (プラグイン)が、自分のキーの状態を調べるために使う。状態の保存と切り替えはホスト側が持つ。</remarks>
+/// <remarks>機能 (プラグイン)が、自分のキーの状態を調べるために使う。状態の保存と切り替えは <see cref="FeatureService"/> が行う。</remarks>
 public interface IFeatureStatus
 {
     /// <summary>機能がオンか調べる</summary>
