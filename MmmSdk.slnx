@@ -10,6 +10,9 @@
   <Project Path="MmmSdk.Core/MmmSdk.Core.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="MmmSdk.Db.SqlServer/MmmSdk.Db.SqlServer.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="MmmSdk.WinUI/MmmSdk.WinUI.csproj">
     <Platform Project="x64" />
   </Project>

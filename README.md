@@ -1,7 +1,7 @@
 # MmmSdk
 
 MmmSdk は、複数の WinUI 3 デスクトップアプリ ([MmmTool](https://github.com/Mimumumimu/MmmTool) など)で共有する汎用部品のライブラリです。
-JSON ファイルへの保存、アプリ共通の設定ストア、ウィンドウ位置の保存、パスを開く処理、デスクトップ通知のダイアログ、確認ダイアログ・ファイル/フォルダー選択・擬似モーダル、多重起動の防止を提供します。
+JSON ファイルへの保存、アプリ共通の設定ストア、ウィンドウ位置の保存、パスを開く処理、デスクトップ通知のダイアログ、確認ダイアログ・ファイル/フォルダー選択・擬似モーダル、多重起動の防止、SQL Server への接続を提供します。
 
 アプリ固有のもの (データ構造・業務ロジック・画面)は含みません。アプリ側が SDK を参照し、SDK はアプリを参照しません。
 
@@ -23,6 +23,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - タスクトレイのアイコンと右クリックメニュー (Win32 を直接使う。メニューは自前描画でダーク/ライト対応)
 - 時刻の入力欄 (`TimeInputBox`)・押せる領域 (`LinkArea`)・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理 (コントロールのテンプレート内の要素に触るため)
+- SQL Server への接続 (通信の暗号化は常に必須。SQL 認証・Windows 認証。接続の失敗は、原因ごとに画面に出せるメッセージの例外にする。別プロジェクトなので、使わないアプリには DLL が入らない)
 
 ## 構成
 
@@ -30,8 +31,9 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.Core` | `net10.0`(WinUI に依存しない。トリミング・AOT 互換の分析を有効にしている。`Paths`(`PathOpener` / `PathTarget`)だけは Windows 前提) |
 | `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`(WinUI 3) |
+| `MmmSdk.Db.SqlServer` | `net10.0`(SQL Server への接続。外部のドライバー `Microsoft.Data.SqlClient` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト) |
 
-プロジェクトの直下は、「Components / Controls / Utilities」の 3 つの層に分けています。名前空間はフォルダーと同じです。
+プロジェクトは、UI の有無 (`Core` / `WinUI`)と、依存先の違い (外部のドライバーを持つ部品は `MmmSdk.Db.<製品名>` に分ける)で分けています。プロジェクトの直下は、「Components / Controls / Utilities」の 3 つの層に分けています。名前空間はフォルダーと同じです。
 
 | 層 | 入れるもの | 探し方 |
 | --- | --- | --- |
@@ -77,11 +79,18 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
+#### MmmSdk.Db.SqlServer
+
+| 名前空間 | 内容 |
+| --- | --- |
+| `MmmSdk.Db.SqlServer.Components.Connections` | SQL Server への接続 (`SqlServerConnectionFactory`)・接続の設定 (`SqlServerConnectionOptions` / `SqlServerAuthentication`)・接続の失敗 (`SqlServerConnectionException`)。詳しくは [docs/db-sqlserver.md](docs/db-sqlserver.md) |
+
 ## 技術スタック
 
 - .NET 10
 - WinUI 3 (Windows App SDK 2.5)… `MmmSdk.WinUI` のみ
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
+- Microsoft.Data.SqlClient … `MmmSdk.Db.SqlServer` のみ
 - WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0 (ターミナル描画。MIT。`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所)
 - Microsoft.Extensions.DependencyInjection.Abstractions (DI 登録用の拡張メソッド)
 - System.Text.Json (ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する)
