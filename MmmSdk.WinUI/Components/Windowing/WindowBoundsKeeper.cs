@@ -11,7 +11,7 @@ namespace MmmSdk.WinUI.Components.Windowing;
 /// <summary>ウィンドウの位置と大きさを覚えて、次の起動で復元する</summary>
 /// <remarks>
 /// 作ったときに、保存した位置と大きさを復元する。保存が無い、または今のモニター構成で十分に見えない (画面外になる)ときは、
-/// 既定の大きさ (論理サイズ。DPI に合わせる)にして、位置は Windows に任せる。
+/// 既定の大きさ (論理サイズ。DPI に合わせる)にして、位置は指定した初期位置 (<see cref="DefaultWindowPlacement"/>。既定は Windows に任せる)にする。
 /// 位置・大きさが変わったら、動かし終わるのを待ってから (<see cref="SaveDelay"/>)保存する。
 /// 最小化・最大化・非表示の間は保存しない (最小化の座標や、最大化の大きさを、復元の対象にしないため)。
 /// UI スレッドで <see cref="Attach"/> する。ウィンドウに結び付いて動き、ウィンドウが閉じたら自分で後始末する (呼び出し側が持ち続けたり、破棄したりしなくてよい)。
@@ -20,6 +20,9 @@ public sealed class WindowBoundsKeeper
 {
     /// <summary>復元する位置を「十分に見える」とみなす、ウィンドウ面積に対する見えている割合</summary>
     private const double VisibleRatio = 0.5;
+
+    /// <summary>初期位置を作業領域の端から離す余白 (DIP)</summary>
+    private const double ScreenMarginDip = 16;
 
     /// <summary>位置・大きさが変わってから保存するまでの待ち時間 (動かしている間は保存しない)</summary>
     private static readonly TimeSpan SaveDelay = TimeSpan.FromSeconds(1);
@@ -45,9 +48,11 @@ public sealed class WindowBoundsKeeper
     /// <param name="key">ウィンドウを区別するキー</param>
     /// <param name="defaultWidthDip">保存が無いときの幅 (論理サイズ。DIP)</param>
     /// <param name="defaultHeightDip">保存が無いときの高さ (論理サイズ。DIP)</param>
+    /// <param name="defaultPlacement">保存が無いときの初期位置</param>
     /// <remarks>戻り値は無い。ウィンドウのイベントの購読で生き続け、ウィンドウが閉じたら止まる。</remarks>
-    public static void Attach(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip)
-        => _ = new WindowBoundsKeeper(window, positions, key, defaultWidthDip, defaultHeightDip);
+    public static void Attach(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip,
+        DefaultWindowPlacement defaultPlacement = DefaultWindowPlacement.System)
+        => _ = new WindowBoundsKeeper(window, positions, key, defaultWidthDip, defaultHeightDip, defaultPlacement);
 
     /// <summary>位置と大きさを復元して、変更の監視を始める</summary>
     /// <param name="window">対象のウィンドウ</param>
@@ -55,13 +60,15 @@ public sealed class WindowBoundsKeeper
     /// <param name="key">ウィンドウを区別するキー</param>
     /// <param name="defaultWidthDip">保存が無いときの幅 (論理サイズ。DIP)</param>
     /// <param name="defaultHeightDip">保存が無いときの高さ (論理サイズ。DIP)</param>
-    private WindowBoundsKeeper(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip)
+    /// <param name="defaultPlacement">保存が無いときの初期位置</param>
+    private WindowBoundsKeeper(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip,
+        DefaultWindowPlacement defaultPlacement)
     {
         _window = window;
         _positions = positions;
         _key = key;
 
-        Restore(defaultWidthDip, defaultHeightDip);
+        Restore(defaultWidthDip, defaultHeightDip, defaultPlacement);
 
         _timer = window.DispatcherQueue.CreateTimer();
         _timer.Interval = SaveDelay;
@@ -89,7 +96,8 @@ public sealed class WindowBoundsKeeper
     /// <summary>保存した位置と大きさを復元する。使えなければ既定の大きさにする</summary>
     /// <param name="defaultWidthDip">既定の幅 (DIP)</param>
     /// <param name="defaultHeightDip">既定の高さ (DIP)</param>
-    private void Restore(double defaultWidthDip, double defaultHeightDip)
+    /// <param name="defaultPlacement">既定の初期位置</param>
+    private void Restore(double defaultWidthDip, double defaultHeightDip, DefaultWindowPlacement defaultPlacement)
     {
         if (_positions.LoadBounds(_key) is { Width: > 0, Height: > 0 } saved
             && WindowPlacement.IsVisibleEnough(new RectInt32(saved.X, saved.Y, saved.Width, saved.Height), VisibleRatio))
@@ -98,8 +106,23 @@ public sealed class WindowBoundsKeeper
             return;
         }
 
+        var appWindow = _window.AppWindow;
+        var workArea = DisplayArea.Primary.WorkArea;
+        if (defaultPlacement == DefaultWindowPlacement.PrimaryBottomRight)
+        {
+            // 倍率は置くモニターのものを使うため、先に主モニターへ移す
+            appWindow.Move(new PointInt32(workArea.X, workArea.Y));
+        }
+
         var scale = _window.GetDpiScale();
-        _window.AppWindow.Resize(new SizeInt32((int)Math.Round(defaultWidthDip * scale), (int)Math.Round(defaultHeightDip * scale)));
+        appWindow.Resize(new SizeInt32((int)Math.Round(defaultWidthDip * scale), (int)Math.Round(defaultHeightDip * scale)));
+
+        if (defaultPlacement == DefaultWindowPlacement.PrimaryBottomRight)
+        {
+            var margin = (int)Math.Round(ScreenMarginDip * scale);
+            var position = new PointInt32(workArea.X + workArea.Width - appWindow.Size.Width - margin, workArea.Y + workArea.Height - appWindow.Size.Height - margin);
+            appWindow.Move(WindowPlacement.ClampToWorkArea(position, appWindow.Size, workArea));
+        }
     }
 
     /// <summary>位置・大きさが変わったら、保存を遅らせて待つ (動かしている間は、待ち直す)</summary>

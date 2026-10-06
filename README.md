@@ -209,7 +209,7 @@ var visible = ScreenGeometry.IsVisibleEnough(windowRect, workAreas, 0.5);
 WindowBoundsKeeper.Attach(this, positions, "MainWindow", defaultWidthDip: 1280, defaultHeightDip: 720);
 ```
 
-保存が無い・画面外のときは既定の大きさ (DIP を DPI に合わせる)で出します。変更は 1 秒まとめて保存し、最小化・最大化・非表示の間は保存しません。
+保存が無い・画面外のときは既定の大きさ (DIP を DPI に合わせる)で出します。位置は、既定では Windows に任せます。`defaultPlacement: DefaultWindowPlacement.PrimaryBottomRight` を渡すと、主モニターの作業領域の右下 (端から 16 DIP)に出します。変更は 1 秒まとめて保存し、最小化・最大化・非表示の間は保存しません。
 
 ### パスを開く (`IPathOpener` / `PathTarget`)
 
