@@ -48,6 +48,8 @@ public sealed partial class TerminalControl : UserControl
     private bool _webViewInitialized;
     /// <summary>xterm.js の準備ができたか</summary>
     private bool _webViewReady;
+    /// <summary>閉じたか (<see cref="Close"/>)</summary>
+    private bool _closed;
 
     /// <summary>xterm.js 側の現在の端末の列数。</summary>
     /// <remarks>再起動時に使う。</remarks>
@@ -121,11 +123,35 @@ public sealed partial class TerminalControl : UserControl
         }
     }
 
+    /// <summary>端末を閉じる (WebView2 のプロセスを解放する)</summary>
+    /// <remarks>
+    /// 画面から取り除いて、もう使わないときに呼ぶ (タブを閉じる・ページを捨てるなど)。呼ばないと、WebView2 のプロセスが、アプリを終了するまで残る。
+    /// セッションを外し、WebView2 を閉じる。シェル (セッション)は終了しない (セッションの <see cref="IDisposable.Dispose"/> で終了する)。
+    /// 閉じたあとは再利用できない。何度呼んでもよい。UI スレッドから呼ぶ。
+    /// </remarks>
+    public void Close()
+    {
+        if (_closed)
+        {
+            return;
+        }
+        _closed = true;
+
+        Session = null;
+        _webViewReady = false;
+        WebView.Close();
+    }
+
     /// <summary>読み込み時に WebView を初期化して、xterm.js のページを開く</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">イベントの情報</param>
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        if (_closed)
+        {
+            return;
+        }
+
         if (_webViewInitialized)
         {
             // ページを再表示したとき
@@ -145,6 +171,11 @@ public sealed partial class TerminalControl : UserControl
         {
             // WebView2 ランタイムが無い・起動できないとき。ターミナルだけが使えないので、他の機能は使えるよう、ここに理由を出す
             ShowInitializationError(ex);
+            return;
+        }
+        // 初期化の待ちの間に閉じられたときは、何もしない (閉じた WebView2 には、CoreWebView2 が無い)
+        if (_closed)
+        {
             return;
         }
         var core = WebView.CoreWebView2;
