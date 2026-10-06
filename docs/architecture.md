@@ -37,3 +37,13 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
   - `POINT` は .NET では `System.Drawing.Point` に割り当てられる。`NIN_KEYSELECT` は定義がないので、`TrayIcon` に定数 (`NIN_SELECT | 1`)で持つ
   - ウィンドウプロシージャのコールバックは `[UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]` で、CsWin32 の `WNDPROC` に合わせる
 - 移行は 4 段階で行った (すべて済み。各段階で Debug / Release のビルドと publish を警告 0 で通した): 単純な宣言 → ウィンドウ・トレイ・メニュー → GDI → アプリ側の宣言を SDK へ
+
+
+## 機能 (プラグイン)がホストへ入る口 (`Features` / `Pages` / `Hosting` / `Tray`)
+- アプリの機能を、機能ごとのライブラリ (プラグイン)に分けられるよう、機能がホスト (exe)へ入るための型を SDK に置く。機能はホストを参照できないため、機能もホストも SDK のこれらの型を参照する
+- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>()` で呼ぶ)・機能の登録 `FeatureInfo` / `AddFeature`・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`(状態の保存と切り替えはホストが持つ)
+- `MmmSdk.Core.Components.Hosting`: `AppEnvironment`(アプリの名前・データのフォルダー・アイコンのパス。ホストが 1 つ登録し、機能が DI から受け取る)
+- `MmmSdk.WinUI.Components.Pages`: サイドバーのページ `NavigationPage` / `NavigationItem` / `NavigationArea` / `AddNavigationPage`・設定の部品 `SettingsSection` / `AddSettingsSection`・ページの後始末 `IReleasablePage`・ホストが作ったページを調べる口 `IPageCache`
+- `MmmSdk.WinUI.Components.Tray`: トレイメニューの項目の登録 `AddTrayMenuSource`(機能がオフの間は項目を出さない包みを内部に持つ)
+- 登録の拡張メソッドの型引数には、トリミング・AOT 対応のため `DynamicallyAccessedMembers(PublicConstructors)` を付ける (Core の `IsAotCompatible` の宣言に合わせる)
+- 最終形にどう近づくか: 機能とホストの境界をここに 1 か所に持つので、機能の追加・削除はホストの 1 行で済み、実行時に DLL を読み込むローダーを足しても、機能側は作り直さない
