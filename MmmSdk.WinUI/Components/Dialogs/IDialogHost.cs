@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace MmmSdk.WinUI.Components.Dialogs;
 
@@ -17,6 +18,16 @@ public interface IDialogHost
     /// </remarks>
     /// <exception cref="InvalidOperationException">親にできるウィンドウが 1 つも登録されていない。</exception>
     Window Owner { get; }
+
+    /// <summary>ダイアログを、今の親の上に載せる (開く前に呼ぶ)</summary>
+    /// <param name="dialog">開く前のダイアログ</param>
+    /// <remarks>
+    /// 親の画面 (<c>XamlRoot</c>)と、親のテーマ (ライト・ダーク)を渡す。<c>ContentDialog</c> は親のテーマを引き継がないため、渡さないと、
+    /// 背景・タイトルと、中身の部品とでテーマが食い違い、ダークモードで読めなくなる。ダイアログは必ず、これを通して開く
+    /// (<c>Owner.Content.XamlRoot</c> を直接代入しない)。
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">親にできるウィンドウが 1 つも登録されていない。</exception>
+    void Attach(ContentDialog dialog);
 
     /// <summary>普通のウィンドウを、ダイアログの親の候補にする</summary>
     /// <param name="window">親の候補にするウィンドウ</param>

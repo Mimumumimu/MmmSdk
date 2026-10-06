@@ -10,7 +10,7 @@ namespace MmmSdk.WinUI.Components.Dialogs;
 /// 親にするのは、見えているウィンドウだけ (× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えない)。見えているものが無いときだけ、隠れたウィンドウを返す (<see cref="Owner"/>)。
 /// 確認ダイアログは、同時に 1 つしか開けない (<c>ContentDialog</c> は、同じ画面に 2 つ同時に開くと例外になる)ので、順番に開く。
 /// モーダルウィンドウは開いている間だけ覚えておき、その上で開くダイアログの親にする (一覧の上に入力画面・確認を重ねるため)。
-/// アプリ固有の画面は、アプリ側のサービスが <see cref="IDialogHost"/> の <see cref="Owner"/> と <see cref="ShowModalAsync"/> を使って開く (具象型ではなく、<see cref="IDialogHost"/> / <see cref="IDialogService"/> に依存する)。UI スレッドから呼ぶ。
+/// アプリ固有の画面は、アプリ側のサービスが <see cref="IDialogHost"/> の <see cref="Owner"/> と <see cref="ShowModalAsync"/> (ウィンドウ)、<see cref="Attach"/> (<c>ContentDialog</c>。親の画面とテーマを渡す)を使って開く (具象型ではなく、<see cref="IDialogHost"/> / <see cref="IDialogService"/> に依存する)。UI スレッドから呼ぶ。
 /// </remarks>
 public sealed class DialogService : IDialogService, IDialogHost
 {
@@ -48,6 +48,18 @@ public sealed class DialogService : IDialogService, IDialogHost
     }
 
     /// <inheritdoc />
+    public void Attach(ContentDialog dialog)
+    {
+        // Owner は計算するプロパティなので、1 回だけ読む (2 回読むと別のウィンドウを返しうる)
+        var content = Owner.Content;
+        dialog.XamlRoot = content.XamlRoot;
+        if (content is FrameworkElement element)
+        {
+            dialog.RequestedTheme = element.ActualTheme;
+        }
+    }
+
+    /// <inheritdoc />
     public void TrackWindow(Window window)
     {
         _tracked.Add(window);
@@ -76,8 +88,6 @@ public sealed class DialogService : IDialogService, IDialogHost
         {
             var dialog = new ContentDialog
             {
-                // 待っている間に親が変わることがあるので、順番が来てから決める
-                XamlRoot = Owner.Content.XamlRoot,
                 // コードで作るときは既定のスタイルが当たらないため、明示する (付けないと旧来の見た目になる)
                 Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
                 Title = title,
@@ -88,6 +98,8 @@ public sealed class DialogService : IDialogService, IDialogHost
                 // キャンセルを既定にすると、キャンセルが強調色になり、主な操作に見えてしまうため、どちらも強調しない
                 DefaultButton = ContentDialogButton.None,
             };
+            // 待っている間に親が変わることがあるので、順番が来てから決める
+            Attach(dialog);
             return await dialog.ShowAsync() == ContentDialogResult.Primary;
         }
         finally
@@ -111,12 +123,12 @@ public sealed class DialogService : IDialogService, IDialogHost
             var choice = FileConflictChoice.Cancel;
             var dialog = new ContentDialog
             {
-                XamlRoot = Owner.Content.XamlRoot,
                 Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
                 Title = title,
                 CloseButtonText = closeText,
                 DefaultButton = ContentDialogButton.None,
             };
+            Attach(dialog);
 
             // 選択肢のボタンを押したら、選択を覚えてダイアログを閉じる
             Button CreateOption(string glyph, string text, FileConflictChoice value)

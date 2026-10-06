@@ -295,7 +295,7 @@ var key = secrets.Get("MyApp.ServiceKey");         // 無ければ null
 secrets.Remove("MyApp.ServiceKey");                // 消したら true。もともと無ければ false
 ```
 
-アプリ固有のウィンドウを擬似モーダルで開くときは、ウィンドウに `PseudoModal` を付け、`IDialogHost.ShowModalAsync` で開きます (親は `Owner`)。
+アプリ固有のウィンドウを擬似モーダルで開くときは、ウィンドウに `PseudoModal` を付け、`IDialogHost.ShowModalAsync` で開きます (親は `Owner`)。アプリ固有の `ContentDialog` は、開く前に `IDialogHost.Attach(dialog)` を呼びます (親の画面と、ライト・ダークのテーマを渡します。`XamlRoot` を直接代入すると、ダークモードで背景と中身のテーマが食い違います)。
 
 ```csharp
 var modal = new PseudoModal(window);                       // ウィンドウのコンストラクターで作る
