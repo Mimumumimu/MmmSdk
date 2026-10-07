@@ -12,9 +12,6 @@ namespace MmmSdk.Db.SqlServer.Components.Connections;
 /// </remarks>
 public sealed class SqlServerConnectionFactory
 {
-    /// <summary>証明書の検証の失敗 (信頼されていない機関が発行した証明書)のエラー番号</summary>
-    private const int UntrustedCertificate = -2146893019;
-
     private readonly string _connectionString;
     private readonly SqlServerAuthentication _authentication;
 
@@ -80,7 +77,7 @@ public sealed class SqlServerConnectionFactory
     /// <returns>原因ごとのメッセージ。分類できないときは、元のメッセージつき</returns>
     private string Describe(SqlException ex) => ex.Number switch
     {
-        UntrustedCertificate => "サーバーの証明書を信頼できません。自己署名の証明書のサーバーに接続するときは、証明書を信頼する設定にしてください。",
+        SqlServerConnectionException.UntrustedCertificateNumber => "サーバーの証明書を信頼できません。自己署名の証明書のサーバーに接続するときは、証明書を信頼する設定にしてください。",
         18456 => _authentication == SqlServerAuthentication.Windows
             ? "Windows 認証に失敗しました。このアカウントに、サーバーへのログインがあるか確認してください。"
             : "ログインできません。ユーザー名とパスワードを確認してください。",

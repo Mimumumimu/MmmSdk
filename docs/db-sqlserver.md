@@ -57,10 +57,13 @@ catch (SqlServerConnectionException ex)
 | サーバーに届かない | -1・2・40・53・10060・10061 | サーバーに接続できません。サーバー名・ポートと、ネットワーク (ファイアウォール・VPN)を確認してください。 |
 | そのほか | | データベースに接続できません (元のメッセージ)。 |
 
+証明書の検証の失敗のときだけ、検証を省いて接続し直したい (呼ぶ側が決める)ときは、メッセージの文字ではなく、`SqlServerConnectionException.IsUntrustedCertificate` で見分ける。
+
 ## 決定の理由
 - 独立したプロジェクト (`MmmSdk.Db.SqlServer`)にする: `MmmSdk.Core` はトリミング・AOT 対応を宣言していて、SqlClient (リフレクションを使う)を混ぜると、その宣言が合わなくなる。別のプロジェクトなら、SQL Server を使わないアプリには SqlClient の DLL が入らない。ほかの DB のドライバーも、同じ形で `MmmSdk.Db.<製品名>` として並べられる ([architecture.md](architecture.md))
 - `Microsoft.Data.SqlClient` を使う: Microsoft の現行の推奨ドライバーで、`System.Data.SqlClient` は非推奨。暗号化が既定で必須なので、安全な設定がそのまま既定になる
 - 暗号化を常に必須にし、`TrustServerCertificate` だけを設定にする: 暗号化を切る設定を持たせると、安全でない接続が簡単に作れてしまう。自己署名の証明書のサーバーは、証明書の信頼だけを切り替えれば足りる
+- 原因の種類を、プロパティ (`IsUntrustedCertificate`)で渡す: アプリが、エラー番号 (SQL Server 内部の数値)や、メッセージの文字を調べずに済むようにする。接続の失敗の知識を、この部品に集める (ほかの原因で処理を分けるときも、同じ形でプロパティを足す)
 - 失敗を `SqlServerConnectionException` にする: 画面に出す文言を、呼ぶ側 (アプリ)が、エラー番号を調べずに使えるようにする。`DataFileException`・`SecretStoreException` と同じ形 (メッセージはそのまま画面に出せる)。分類できない失敗は、元のメッセージつきで渡し、隠さない
 - ファクトリのインターフェースは持たない: 保存先の差し替えは、アプリの Repository のインターフェースで行う。ファクトリは SQL Server 専用の実装の部品で、差し替える対象ではない
 - 表・スキーマ・SQL を持たない: アプリ固有の知識は、アプリ側に置く (SDK はアプリを知らない)
