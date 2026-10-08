@@ -12,7 +12,7 @@
 - UI スレッドで作り、UI スレッドで破棄する。トレイはアプリに 1 つ (ウィンドウプロシージャが static のため)
 
 ## メニュー
-- 項目は `ITrayMenuSource` を DI に登録した順に、区切り線で分けて並べ、末尾に `TrayIconOptions.ExitText`(終了。文言はアプリが渡す)。メニューは開くたびに作る (`GetItems` を呼ぶ)
+- 項目は `ITrayMenuSource` を、`AddTrayMenuSource` で登録した機能の並び順の値 (`AddFeaturePlugin` の `order`。小さいほど先。値が大きいほど下で、メニューが開く位置のカーソルに近い)の順に、区切り線で分けて並べ (直接 DI に登録した元は値 0)、末尾に `TrayIconOptions.ExitText`(終了。文言はアプリが渡す)。メニューは開くたびに作る (`GetItems` を呼ぶ)
 - `TrayMenuItem`: `Command`(クリックで処理)/ `Submenu` / `Disabled`(押せない)/ `Separator`。項目の処理の予測できる失敗は、処理の中で受けて、その機能のやり方で知らせる (受けなかった失敗は、バグとして安全網へ)
 - 項目はオーナードロー (`TrayMenuRenderer`。internal)
   - フォントは BIZ UDゴシック 12pt (無ければ Yu Gothic UI → Segoe UI。有無は `EnumFontFamiliesEx` で調べる)。メニューを出すモニターの DPI に合わせる

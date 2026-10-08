@@ -45,7 +45,7 @@ public static class SdkWinUIServiceCollectionExtensions
     /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
     /// <remarks>
     /// トレイを使うアプリだけが呼ぶ (<see cref="AddMmmSdkWinUI"/> には含まれない)。
-    /// <see cref="TrayIcon"/> は Singleton。メニューの項目は、<see cref="ITrayMenuSource"/> を Singleton で登録した順に並ぶ。
+    /// <see cref="TrayIcon"/> は Singleton。メニューの項目は、<see cref="ITrayMenuSource"/> を <c>AddTrayMenuSource</c> で登録した機能の並び順の値の順に並ぶ (直接登録した元は値 0 で、登録順)。
     /// <see cref="TrayIcon"/> は UI スレッドで解決すること (UI スレッドのディスパッチャーを覚えるため)。
     /// </remarks>
     public static IServiceCollection AddMmmSdkTray(this IServiceCollection services, TrayIconOptions options)

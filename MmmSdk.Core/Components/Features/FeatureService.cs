@@ -21,8 +21,8 @@ public sealed class FeatureService(
     ISettingsStore settings,
     IServiceProvider services) : IFeatureStatus
 {
-    /// <summary>オン・オフを切り替えられる機能 (登録順)</summary>
-    public IReadOnlyList<FeatureInfo> Features { get; } = [.. features];
+    /// <summary>オン・オフを切り替えられる機能 (並び順の値の順。同じ値は登録順)</summary>
+    public IReadOnlyList<FeatureInfo> Features { get; } = [.. features.OrderBy(f => f.Order)];
 
     /// <summary>機能のオン・オフが切り替わったとき (引数は、切り替わった機能のキー)</summary>
     public event EventHandler<string>? Changed;

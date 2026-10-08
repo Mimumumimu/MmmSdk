@@ -24,10 +24,10 @@ public static class FeatureServiceCollectionExtensions
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 機能の <c>Add&lt;機能&gt;()</c> の中で、ページ・トレイメニュー・起動時の準備などの登録に、同じキーを渡す。
-    /// 設定ページの「機能」の一覧に、登録順に並ぶ。
+    /// 設定ページの「機能」の一覧に、機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)で並ぶ。
     /// </remarks>
     public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName, bool defaultEnabled = true)
-        => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled));
+        => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled, FeatureRegistrationScope.CurrentOrder));
 
     /// <summary>起動時の準備を登録する</summary>
     /// <typeparam name="TTask">起動時の準備の型</typeparam>
@@ -45,12 +45,20 @@ public static class FeatureServiceCollectionExtensions
     /// <summary>機能 (プラグイン)を、入口から登録する</summary>
     /// <typeparam name="TPlugin">機能の入口の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
+    /// <param name="order">機能の並び順の値 (小さいほど先。サイドバー・トレイメニュー・設定の機能の一覧・設定の部品の並びに使う)</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
-    /// <remarks>登録した順に、サイドバー・トレイメニュー・起動時の準備が並ぶ。</remarks>
-    public static IServiceCollection AddFeaturePlugin<TPlugin>(this IServiceCollection services)
+    /// <remarks>
+    /// 画面の並びは <paramref name="order"/> で決まり、登録の順には依らない (同じ値は登録順)。
+    /// 起動時の準備だけは、順序に依存するものがあるので、登録した順に実行する。
+    /// </remarks>
+    public static IServiceCollection AddFeaturePlugin<TPlugin>(this IServiceCollection services, int order)
         where TPlugin : IFeaturePlugin, new()
     {
-        new TPlugin().Register(services);
+        using (FeatureRegistrationScope.Begin(order))
+        {
+            new TPlugin().Register(services);
+        }
+
         return services;
     }
 }
