@@ -1,7 +1,7 @@
 namespace MmmSdk.WinUI.Components.Tray;
 
 /// <summary>
-/// トレイメニューに項目を出す機能 (リンク・リマインダー等)。DI に登録した順に、区切り線で分けて並ぶ。
+/// トレイメニューに項目を出す機能 (リンク・リマインダー等)。機能の並び順の値の順に、区切り線で分けて並ぶ (<c>AddTrayMenuSource</c>)。
 /// </summary>
 public interface ITrayMenuSource
 {

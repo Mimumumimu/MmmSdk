@@ -6,7 +6,9 @@ namespace MmmSdk.WinUI.Components.Dialogs;
 
 /// <summary>ダイアログの親を決めて、ダイアログ・モーダルウィンドウを開く</summary>
 /// <remarks>
-/// いちばん手前のモーダルウィンドウの上に表示する。無ければ、最後に操作した普通のウィンドウ (<see cref="TrackWindow"/> で登録したもの)の上に表示する。
+/// 最後に操作した (アクティブになった)ウィンドウの上に表示する。対象は、<see cref="TrackWindow"/> で登録した普通のウィンドウと、開いているモーダルウィンドウ (<see cref="ShowModalAsync"/>)。
+/// 操作したウィンドウの上に出すので、別のウィンドウでモーダルが開いていても、操作したほうの上に出る (メイン画面の一覧から開いた入力画面が、リマインダーのメイン画面から開いた一覧の上に出ない)。
+/// まだアクティブになったことがないとき (開く直前のモーダルなど)は、いちばん手前のモーダルウィンドウ、無ければ登録した普通のウィンドウの順に選ぶ。
 /// 親にするのは、見えているウィンドウだけ (× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えない)。見えているものが無いときだけ、隠れたウィンドウを返す (<see cref="Owner"/>)。
 /// 確認ダイアログは、同時に 1 つしか開けない (<c>ContentDialog</c> は、同じ画面に 2 つ同時に開くと例外になる)ので、順番に開く。
 /// モーダルウィンドウは開いている間だけ覚えておき、その上で開くダイアログの親にする (一覧の上に入力画面・確認を重ねるため)。
@@ -20,7 +22,7 @@ public sealed class DialogService : IDialogService, IDialogHost
     /// <summary>親の候補にした普通のウィンドウ (登録順。閉じられたら外す)</summary>
     private readonly List<Window> _tracked = [];
 
-    /// <summary>最後に操作した普通のウィンドウ。無い・閉じられたら null</summary>
+    /// <summary>最後に操作した (アクティブになった)ウィンドウ (普通のウィンドウ・モーダルウィンドウ)。無い・閉じられたら null</summary>
     private Window? _lastActive;
 
     /// <summary>確認ダイアログを順番に開くためのロック</summary>
@@ -31,13 +33,13 @@ public sealed class DialogService : IDialogService, IDialogHost
     {
         get
         {
-            if (_modals.Count > 0)
-            {
-                return _modals[^1];
-            }
             if (_lastActive is { } last && last.AppWindow.IsVisible)
             {
                 return last;
+            }
+            if (_modals.Count > 0)
+            {
+                return _modals[^1];
             }
 
             return _tracked.FirstOrDefault(window => window.AppWindow.IsVisible)
@@ -63,6 +65,15 @@ public sealed class DialogService : IDialogService, IDialogHost
     public void TrackWindow(Window window)
     {
         _tracked.Add(window);
+        WatchActivation(window);
+        window.Closed += (_, _) => _tracked.Remove(window);
+    }
+
+    /// <summary>ウィンドウがアクティブになったら、最後に操作したウィンドウとして覚える</summary>
+    /// <param name="window">見張るウィンドウ</param>
+    /// <remarks>閉じられたら、覚えているのがそのウィンドウのときだけ忘れる。</remarks>
+    private void WatchActivation(Window window)
+    {
         window.Activated += (_, args) =>
         {
             if (args.WindowActivationState != WindowActivationState.Deactivated)
@@ -72,7 +83,6 @@ public sealed class DialogService : IDialogService, IDialogHost
         };
         window.Closed += (_, _) =>
         {
-            _tracked.Remove(window);
             if (_lastActive == window)
             {
                 _lastActive = null;
@@ -184,10 +194,24 @@ public sealed class DialogService : IDialogService, IDialogHost
     }
 
     /// <inheritdoc />
+    public void CloseAll(Window? keep)
+    {
+        // 閉じる処理の中で、覚えている一覧が変わる (閉じた結果を待っていた処理が続く)ので、写しを取ってから閉じる
+        foreach (var window in _modals.Reverse<Window>().Concat(_tracked.Reverse<Window>()).Distinct().ToList())
+        {
+            if (window != keep)
+            {
+                window.Close();
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<T> ShowModalAsync<T>(Window window, Func<Window, Task<T>> show)
     {
         var owner = Owner;
         _modals.Add(window);
+        WatchActivation(window);
         try
         {
             return await show(owner);

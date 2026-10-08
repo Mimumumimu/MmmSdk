@@ -289,6 +289,11 @@ public sealed class TrayIcon : IDisposable
 
     #region メニュー
 
+    /// <summary>メニューの項目の元の並び順の値を取得する</summary>
+    /// <param name="source">メニューの項目の元</param>
+    /// <returns>並び順の値 (登録で付いたもの。付いていない元は 0)</returns>
+    private static int SourceOrder(ITrayMenuSource source) => source is RegisteredTrayMenuSource registered ? registered.Order : 0;
+
     /// <summary>右クリックメニューを出し、選ばれた項目の処理を行う。</summary>
     /// <param name="x">メニューを出す位置の X (画面座標)</param>
     /// <param name="y">メニューを出す位置の Y (画面座標)</param>
@@ -304,7 +309,7 @@ public sealed class TrayIcon : IDisposable
             _commands.Clear();
             var nextId = 1;
 
-            foreach (var section in _sources.Select(source => source.GetItems()).Where(items => items.Count > 0))
+            foreach (var section in _sources.OrderBy(SourceOrder).Select(source => source.GetItems()).Where(items => items.Count > 0))
             {
                 AppendItems(menu, section, ref nextId);
                 renderer.AppendSeparator(menu);
