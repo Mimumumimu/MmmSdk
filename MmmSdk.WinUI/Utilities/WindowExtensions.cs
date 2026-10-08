@@ -76,6 +76,31 @@ public static class WindowExtensions
         window.AppWindow.ResizeClient(new SizeInt32((int)w, (int)h));
     }
 
+    /// <summary>ウィンドウの高さを、中身の高さにちょうど合わせる (幅は変えない)</summary>
+    /// <param name="window">対象のウィンドウ</param>
+    /// <param name="content">中身の最上位の要素 (ウィンドウの内容。画面に載っていること)</param>
+    /// <param name="width">幅 (DIP)。中身の高さを測るときの幅</param>
+    /// <returns>大きさを変えたとき true。測れなかったとき (まだ画面に載る前・閉じたあと)は false で、何もしない</returns>
+    /// <remarks>
+    /// 中身が出入りする画面 (お知らせ・入力欄の切り替え)で、出入りのあとに測り直すために使う。
+    /// 測り直しを順番待ちに回すと、閉じたあとに実行されることがある (閉じたウィンドウは <see cref="Window.AppWindow"/> が無く、載る前は <c>XamlRoot</c> が無い)ので、測れないときは何もしない。
+    /// 呼び出し側が、大きさを変えたあとに、位置を置き直す。
+    /// </remarks>
+    public static bool ResizeToContentHeight(this Window window, FrameworkElement content, double width)
+    {
+        if (window.AppWindow is not { } appWindow || content.XamlRoot is not { } xamlRoot)
+        {
+            return false;
+        }
+
+        content.Measure(new Windows.Foundation.Size(width, double.PositiveInfinity));
+        var scale = xamlRoot.RasterizationScale;
+        // ResizeClient は、タイトルバーを自分で描いていても、タイトルバーの高さを上に足した大きさにする。中身だけの高さにするため、その分を引く
+        var height = content.DesiredSize.Height - appWindow.TitleBar.Height / scale;
+        window.ResizeClientDip(width, height, scale, roundUp: true);
+        return true;
+    }
+
     /// <summary>指定した範囲の中央に置く (作業領域からはみ出す分は内側へ寄せる)</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="bounds">中央に合わせる範囲 (物理ピクセル。親ウィンドウや作業領域)</param>
