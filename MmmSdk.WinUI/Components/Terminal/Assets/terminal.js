@@ -86,13 +86,84 @@
         }, POLL_MS);
     };
 
+    // Kiro などの TUI は、本物のカーソルを隠し、入力位置を反転表示の 1 マス (偽のカーソル)で描く。
+    // 本物のカーソルは描き終えた行の末尾に置きっぱなしになり、IME の変換候補がそこに出てしまう。
+    // そこで、カーソルが隠れていて反転表示のマスが 1 つ (全角なら 2 マス)だけのときは、
+    // 本物のカーソルをそのマスへ移す。次の出力を書く前に元の位置へ戻す (アプリの相対移動を狂わせないため)
+    let cursorHidden = false;
+    for (const final of ["h", "l"]) {
+        term.parser.registerCsiHandler({ prefix: "?", final }, params => {
+            if (params.includes(25)) {
+                cursorHidden = final === "l";
+            }
+            return false;
+        });
+    }
+
+    /** 偽のカーソルへ移す前の、本物のカーソルの位置 (移していないときは null) */
+    let parkedFrom = null;
+    let pendingWrites = 0;
+    const scanCell = term.buffer.active.getNullCell();
+
+    /** 反転表示のマスが 1 つ (全角は 2 マス)だけのとき、その位置を返す。そうでなければ null */
+    const findFakeCursor = () => {
+        const buffer = term.buffer.active;
+        let found = null;
+        let count = 0;
+        for (let y = 0; y < term.rows; y++) {
+            const line = buffer.getLine(buffer.baseY + y);
+            if (!line) {
+                continue;
+            }
+            for (let x = 0; x < term.cols; x++) {
+                const cell = line.getCell(x, scanCell);
+                if (cell && cell.getWidth() > 0 && cell.isInverse() !== 0) {
+                    if (++count > 2) {
+                        return null;
+                    }
+                    found ??= { x, y };
+                }
+            }
+        }
+        return found;
+    };
+
+    const moveCursorToFakeCursor = () => {
+        if (!cursorHidden || parkedFrom) {
+            return;
+        }
+        const fake = findFakeCursor();
+        const buffer = term.buffer.active;
+        if (!fake || (fake.x === buffer.cursorX && fake.y === buffer.cursorY)) {
+            return;
+        }
+        parkedFrom = { x: buffer.cursorX, y: buffer.cursorY };
+        term.write(`\x1b[${fake.y + 1};${fake.x + 1}H`);
+    };
+
+    const restoreCursor = () => {
+        if (!parkedFrom) {
+            return;
+        }
+        const { x, y } = parkedFrom;
+        parkedFrom = null;
+        term.write(`\x1b[${y + 1};${Math.min(x, term.cols - 1) + 1}H`);
+    };
+
     host.addEventListener("message", e => {
         const message = e.data;
         switch (message.type) {
             case "output":
                 lastOutputAt = performance.now();
+                restoreCursor();
+                pendingWrites++;
                 // 描画が終わったら、その文字数をホストへ返す (ホストは未返却が多いと出力を送らず待つ)
-                term.write(message.data, () => host.postMessage({ type: "written", length: message.data.length }));
+                term.write(message.data, () => {
+                    host.postMessage({ type: "written", length: message.data.length });
+                    if (--pendingWrites === 0) {
+                        moveCursorToFakeCursor();
+                    }
+                });
                 break;
             case "focus":
                 term.focus();
