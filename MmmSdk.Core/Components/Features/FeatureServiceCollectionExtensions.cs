@@ -20,13 +20,14 @@ public static class FeatureServiceCollectionExtensions
     /// <param name="services">登録先のサービスコレクション</param>
     /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
+    /// <param name="defaultEnabled">保存が無いとき (初回起動)のオン・オフ</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 機能の <c>Add&lt;機能&gt;()</c> の中で、ページ・トレイメニュー・起動時の準備などの登録に、同じキーを渡す。
     /// 設定ページの「機能」の一覧に、登録順に並ぶ。
     /// </remarks>
-    public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName)
-        => services.AddSingleton(new FeatureInfo(featureKey, displayName));
+    public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName, bool defaultEnabled = true)
+        => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled));
 
     /// <summary>起動時の準備を登録する</summary>
     /// <typeparam name="TTask">起動時の準備の型</typeparam>

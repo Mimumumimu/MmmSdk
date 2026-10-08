@@ -10,7 +10,7 @@ namespace MmmSdk.Core.Components.Features;
 /// <param name="settings">汎用設定ストア</param>
 /// <param name="services">起動時の準備を作る DI のサービスプロバイダー</param>
 /// <remarks>
-/// 状態は設定ストアに、機能のキーごとに保存する。保存が無い機能はオン (機能を足しても、移行は要らない)。
+/// 状態は設定ストアに、機能のキーごとに保存する。保存が無い機能は、登録の初期値 (既定はオン)。
 /// 切り替えはすぐ反映する。画面 (サイドバー・メニュー・設定の画面など)は、<see cref="Changed"/> または <see cref="IsEnabled"/> で見る。
 /// 機能の登録 (<see cref="FeatureServiceCollectionExtensions.AddFeature"/> 等)は各機能が行い、このクラスは特定の機能を知らない。
 /// </remarks>
@@ -29,9 +29,9 @@ public sealed class FeatureService(
 
     /// <summary>機能がオンか</summary>
     /// <param name="featureKey">機能のキー。null (オフにできない機能)なら常にオン</param>
-    /// <returns>オンなら true。保存が無いときもオン</returns>
+    /// <returns>オンなら true。保存が無いときは、登録の初期値 (<see cref="FeatureInfo.DefaultEnabled"/>)</returns>
     public bool IsEnabled(string? featureKey)
-        => featureKey is null || settings.Get(SettingKey(featureKey), true);
+        => featureKey is null || settings.Get(SettingKey(featureKey), Features.FirstOrDefault(f => f.Key == featureKey)?.DefaultEnabled ?? true);
 
     /// <summary>オンの機能の起動時の準備を、登録順に実行する</summary>
     /// <returns>準備の完了を表すタスク</returns>
