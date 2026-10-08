@@ -48,6 +48,7 @@
 - ウィンドウを親の上に出し、閉じるまで親を操作できなくする。`OverlappedPresenter.IsModal` では親を操作できてしまったため、Win32 のモーダルと同じく `EnableWindow` で親を無効にしている
 - `SetOwner`(表示の前)で親と表示倍率を取り、オーナー設定 (親より常に手前・一緒に最小化)をする。`Show` で親を無効にして表示、`CenterOnOwner` で親の中央へ (作業領域からはみ出す分は内側へ寄せる)
 - 親を戻すのは、コードから閉じる (`Close`)・× / Alt+F4 (`AppWindow.Closing`)・閉じたあと (`Closed`)のどれでも。何度戻してもよい (無効のまま閉じると、別のアプリが前面に来るため、消える前に戻す)。閉じたあとは親を前面に出す
+- 中身が出入りする画面 (お知らせ・入力欄の切り替え)は、出入りのあとに、`Window.ResizeToContentHeight(content, width)` (`MmmSdk.WinUI.Utilities.WindowExtensions`)で、高さを中身に合わせて測り直し、`true` のときに `CenterOnOwner` で置き直す。測り直しを順番待ちに回すと、閉じたあと・画面に載る前に実行されることがある (閉じたウィンドウは `AppWindow` が、載る前は `XamlRoot` が無い)ので、測れないときは何もせず `false` を返す
 
 ## SingleInstanceGuard (多重起動の防止)
 
