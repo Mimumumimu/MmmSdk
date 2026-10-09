@@ -79,7 +79,7 @@
         const pastedAt = performance.now();
         tempLog = [];
         tempLog.start = pastedAt;
-        tempLogAdd(`paste ${text.length} chars`);
+        tempLogAdd(`paste ${text.length} chars, ${text.split("\n").length} lines`);
         term.paste(text);
 
         const timer = setInterval(() => {
@@ -170,7 +170,7 @@
         switch (message.type) {
             case "output":
                 lastOutputAt = performance.now();
-                tempLogAdd(`output ${message.data.length} chars`); // TEMP-LOG
+                tempLogAdd(`output ${message.data.length} chars${message.data.includes("[Pasted text") ? " [PASTED-TEXT]" : ""}`); // TEMP-LOG (文字は書かず、印だけ)
                 restoreCursor();
                 pendingWrites++;
                 // 描画が終わったら、その文字数をホストへ返す (ホストは未返却が多いと出力を送らず待つ)
