@@ -247,6 +247,13 @@ public sealed partial class TerminalControl : UserControl
                 _rows = message.GetProperty("rows").GetInt32();
                 Session?.Resize(_columns, _rows);
                 break;
+            case "debug": // TEMP-LOG: 送信のタイミングの調査用
+                var submitLog = $"[TerminalSubmitLog {DateTime.Now:yyyy-MM-dd HH:mm:ss}]\n{message.GetProperty("data").GetString()}\n";
+                System.Diagnostics.Debug.WriteLine(submitLog);
+                var submitLogFolder = Path.Combine(Path.GetTempPath(), "MmmTool");
+                Directory.CreateDirectory(submitLogFolder);
+                File.AppendAllText(Path.Combine(submitLogFolder, "terminal-submit.log"), submitLog);
+                break;
             case "written":
                 _unconfirmedChars = Math.Max(0, _unconfirmedChars - message.GetProperty("length").GetInt32());
                 FlushOutput();

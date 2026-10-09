@@ -71,8 +71,15 @@
     // テキストを貼り付けとして入力 (CLI が対応していればブラケットペースト)し、Enter で確定する。
     // CLI は貼り付けの処理中に届いた Enter を本文の一部 (改行)として扱うことがあるため、
     // 貼り付けへの反応 (画面の書き換え)が落ち着くのを待ってから Enter を送る
+    // TEMP-LOG: 送信のタイミングの調査用 (原因が分かったら、TEMP-LOG の行をすべて消す)
+    let tempLog = null;
+    const tempLogAdd = text => tempLog?.push(`${Math.round(performance.now() - tempLog.start)}ms ${text}`);
+
     const submit = text => {
         const pastedAt = performance.now();
+        tempLog = [];
+        tempLog.start = pastedAt;
+        tempLogAdd(`paste ${text.length} chars`);
         term.paste(text);
 
         const timer = setInterval(() => {
@@ -81,7 +88,15 @@
             const quiet = lastOutputAt > pastedAt && now - lastOutputAt >= QUIET_MS;
             if ((elapsed >= MIN_WAIT_MS && quiet) || elapsed >= MAX_WAIT_MS) {
                 clearInterval(timer);
+                tempLogAdd(`ENTER (quiet=${quiet})`);
                 host.postMessage({ type: "input", data: "\r" });
+                const log = tempLog;
+                setTimeout(() => {
+                    host.postMessage({ type: "debug", data: log.join("\n") });
+                    if (tempLog === log) {
+                        tempLog = null;
+                    }
+                }, 3000);
             }
         }, POLL_MS);
     };
@@ -155,6 +170,7 @@
         switch (message.type) {
             case "output":
                 lastOutputAt = performance.now();
+                tempLogAdd(`output ${message.data.length} chars`); // TEMP-LOG
                 restoreCursor();
                 pendingWrites++;
                 // 描画が終わったら、その文字数をホストへ返す (ホストは未返却が多いと出力を送らず待つ)
