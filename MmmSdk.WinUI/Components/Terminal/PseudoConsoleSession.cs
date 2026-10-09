@@ -46,7 +46,7 @@ public sealed class PseudoConsoleSession : ITerminalSession
     public event EventHandler? Exited;
 
     /// <inheritdoc />
-    public event EventHandler<string>? SubmitRequested;
+    public event EventHandler<SubmitRequest>? SubmitRequested;
 
     /// <inheritdoc />
     public void Start(int columns, int rows)
@@ -99,11 +99,11 @@ public sealed class PseudoConsoleSession : ITerminalSession
     }
 
     /// <inheritdoc />
-    public void Submit(string text)
+    public void Submit(string text, string? readyMarker = null)
     {
         if (SubmitRequested is { } handler)
         {
-            handler(this, text);
+            handler(this, new SubmitRequest(text, readyMarker));
         }
         else
         {

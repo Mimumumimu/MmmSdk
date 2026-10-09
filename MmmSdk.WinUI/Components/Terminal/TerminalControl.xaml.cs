@@ -108,17 +108,17 @@ public sealed partial class TerminalControl : UserControl
 
     /// <summary>送信を求められたら、端末に貼り付けとして渡す</summary>
     /// <param name="sender">イベントの送信元</param>
-    /// <param name="text">貼り付けるテキスト</param>
-    private void OnSubmitRequested(object? sender, string text)
+    /// <param name="request">送信の依頼</param>
+    private void OnSubmitRequested(object? sender, SubmitRequest request)
     {
         if (_webViewReady)
         {
-            PostMessage("submit", text);
+            PostMessage("submit", request.Text, request.ReadyMarker);
         }
         else
         {
             // 端末の表示がまだ準備できていなければ、そのまま書き込んで確定する
-            Session?.Write(text);
+            Session?.Write(request.Text);
             Session?.Write("\r");
         }
     }
@@ -444,7 +444,8 @@ public sealed partial class TerminalControl : UserControl
     /// <summary>xterm.js へメッセージを送る</summary>
     /// <param name="type">メッセージの種類</param>
     /// <param name="data">メッセージの内容。無ければ null</param>
-    private void PostMessage(string type, string? data)
+    /// <param name="marker">送信の完了を待つ合図の文字列。無ければ null</param>
+    private void PostMessage(string type, string? data, string? marker = null)
     {
         // トリミング有効の発行でも動くよう、リフレクションを使わずに JSON を組み立てる
         using var buffer = new MemoryStream();
@@ -455,6 +456,10 @@ public sealed partial class TerminalControl : UserControl
             if (data is not null)
             {
                 writer.WriteString("data", data);
+            }
+            if (marker is not null)
+            {
+                writer.WriteString("marker", marker);
             }
             writer.WriteEndObject();
         }

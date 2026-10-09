@@ -70,13 +70,20 @@
 
     // テキストを貼り付けとして入力 (CLI が対応していればブラケットペースト)し、Enter で確定する。
     // CLI は貼り付けの処理中に届いた Enter を本文の一部 (改行)として扱うことがあるため、
-    // 貼り付けへの反応 (画面の書き換え)が落ち着くのを待ってから Enter を送る
+    // 貼り付けへの反応 (画面の書き換え)が落ち着くのを待ってから Enter を送る。
+    // 合図の文字列 (marker)が渡されたときは、それが出力に現れるまで (MAX_WAIT_MS まで)待つ
     // TEMP-LOG: 送信のタイミングの調査用 (原因が分かったら、TEMP-LOG の行をすべて消す)
     let tempLog = null;
     const tempLogAdd = text => tempLog?.push(`${Math.round(performance.now() - tempLog.start)}ms ${text}`);
 
-    const submit = text => {
+    /** 送信の完了を待っている合図の文字列と、それが出力に現れたか (待っていなければ null) */
+    let pendingMarker = null;
+    let markerSeen = false;
+
+    const submit = (text, marker) => {
         const pastedAt = performance.now();
+        pendingMarker = marker ?? null;
+        markerSeen = false;
         tempLog = [];
         tempLog.start = pastedAt;
         tempLogAdd(`paste ${text.length} chars, ${text.split("\n").length} lines`);
@@ -86,8 +93,10 @@
             const now = performance.now();
             const elapsed = now - pastedAt;
             const quiet = lastOutputAt > pastedAt && now - lastOutputAt >= QUIET_MS;
-            if ((elapsed >= MIN_WAIT_MS && quiet) || elapsed >= MAX_WAIT_MS) {
+            const ready = pendingMarker === null || markerSeen;
+            if ((elapsed >= MIN_WAIT_MS && quiet && ready) || elapsed >= MAX_WAIT_MS) {
                 clearInterval(timer);
+                pendingMarker = null;
                 tempLogAdd(`ENTER (quiet=${quiet})`);
                 host.postMessage({ type: "input", data: "\r" });
                 const log = tempLog;
@@ -170,6 +179,9 @@
         switch (message.type) {
             case "output":
                 lastOutputAt = performance.now();
+                if (pendingMarker !== null && message.data.includes(pendingMarker)) {
+                    markerSeen = true;
+                }
                 tempLogAdd(`output ${message.data.length} chars${message.data.includes("[Pasted text") ? " [PASTED-TEXT]" : ""}`); // TEMP-LOG (文字は書かず、印だけ)
                 restoreCursor();
                 pendingWrites++;
@@ -185,7 +197,7 @@
                 term.focus();
                 break;
             case "submit":
-                submit(message.data);
+                submit(message.data, message.marker);
                 break;
         }
     });
