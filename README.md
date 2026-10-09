@@ -71,6 +71,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost`。実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService`。複数選択・保存先の選択を含む)・同じ名前のファイルがあるときの確認 (`AskFileConflictAsync`) |
 | `MmmSdk.WinUI.Components.Clipboards` | クリップボードのテキストの読み書き (`IClipboardService` / `ClipboardService`) |
 | `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService`。Windows 標準の音声合成を使う) |
+| `MmmSdk.WinUI.Components.Audio` | 無音を流し続けて、音声機器が休止するのを防ぐ (`IAudioKeepAlive` / `AudioKeepAlive`。`AudioGraph` を使う) |
 | `MmmSdk.WinUI.Components.Secrets` | 秘密を Windows の資格情報マネージャーに保存する (`CredentialSecretStore`。`ISecretStore` の実装) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
 | `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`) |
@@ -266,6 +267,19 @@ speech.SpeakAsync("会議の時間です。").Forget();  // 待たずに走ら�
 - 読み上げ中に呼ぶと、前の読み上げを止めて新しいほうを読みます (重なりません)
 - 日本語の音声が入っていない PC では、何も読まずに戻ります
 - システムのメディア操作 (音量キーの表示・再生キー)には出ません
+
+### 音声機器を眠らせない無音の出力 (`IAudioKeepAlive`)
+
+光デジタル出力など、無音が続くと信号を止める機器で、読み上げの頭が切れるのを防ぎます。
+
+```csharp
+await keepAlive.StartAsync();   // 無音を流し始める (出力機器が無いときは false。機器が現れたら自動で始まる)
+await keepAlive.StopAsync();    // 止める
+```
+
+- 出力ノードだけの `AudioGraph` で、アプリのコールバックは無く、CPU をほぼ使いません
+- 流している間は、既定の出力機器が変わったら、流し直します
+- 流れるのはデジタルのゼロです。ゼロだけで止まる機器では効かないことがあります ([docs/audio.md](docs/audio.md))
 
 ### 確認ダイアログ・ファイル/フォルダー選択・擬似モーダル (`MmmSdk.WinUI.Components.Dialogs`)
 
@@ -540,6 +554,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止 |
 | [docs/speech.md](docs/speech.md) | 読み上げ (Windows 標準の音声合成)の仕組みと決定の理由 |
+| [docs/audio.md](docs/audio.md) | 音声機器を眠らせない無音の出力 (`AudioGraph`)の仕組みと決定の理由 |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
