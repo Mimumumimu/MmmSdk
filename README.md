@@ -79,7 +79,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域) |
-| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`) |
+| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
 #### MmmSdk.Db.SqlServer
@@ -500,6 +500,12 @@ tray.ShowNotification("タイトル", "本文", isError: false);   // バルー�
 ```csharp
 ImeControl.TurnOn();    // 日本語を打つ欄にフォーカスが来たとき
 ImeControl.TurnOff();   // 英数字を打つ欄にフォーカスが来たとき
+```
+
+高さを固定した複数行の `TextBox` は、末尾で Enter を押したときなどに、キャレットは動くのに表示がスクロールされないことがあります。`textBox.KeepCaretVisible()` (`TextBoxExtensions`)を、画面を作るときに 1 回呼ぶと、キャレットが表示の外に出たときだけ、見える位置までスクロールします (縦方向だけ。折り返す入力欄向け)。
+
+```csharp
+InputBox.KeepCaretVisible();
 ```
 
 ### 添付ファイルの一時保存 (`AttachmentStore`)
