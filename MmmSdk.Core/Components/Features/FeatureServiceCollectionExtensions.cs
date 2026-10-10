@@ -24,10 +24,22 @@ public static class FeatureServiceCollectionExtensions
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 機能の <c>Add&lt;機能&gt;()</c> の中で、ページ・トレイメニュー・起動時の準備などの登録に、同じキーを渡す。
-    /// 設定ページの「機能」の一覧に、機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)で並ぶ。
+    /// 設定ページの「機能」の一覧に並ぶ (利用者が決めた並びが無いときは、機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)の順)。
     /// </remarks>
     public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName, bool defaultEnabled = true)
         => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled, FeatureRegistrationScope.CurrentOrder));
+
+    /// <summary>オフにできない機能として登録する (設定ページの「機能」の一覧に、スイッチなしで出し、並び順だけ使う)</summary>
+    /// <param name="services">登録先のサービスコレクション</param>
+    /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>
+    /// <param name="displayName">設定ページに出す機能の名前</param>
+    /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
+    /// <remarks>
+    /// 常にオンなので、起動時の準備・トレイメニューの登録には、キーを渡さなくてよい。
+    /// サイドバーのページ・設定の部品の登録には、並び順を使うために同じキーを渡す。
+    /// </remarks>
+    public static IServiceCollection AddAlwaysOnFeature(this IServiceCollection services, string featureKey, string displayName)
+        => services.AddSingleton(new FeatureInfo(featureKey, displayName, true, FeatureRegistrationScope.CurrentOrder, false));
 
     /// <summary>起動時の準備を登録する</summary>
     /// <typeparam name="TTask">起動時の準備の型</typeparam>

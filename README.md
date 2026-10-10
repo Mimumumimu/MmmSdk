@@ -58,7 +58,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
-| `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知。ホストが `AddFeatureService()` で登録する。保存が無い機能はオン)・`FeatureChangeResult` |
+| `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`。オフにできない機能は `AddAlwaysOnFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存 (`SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値)・`FeatureChangeResult` |
 | `MmmSdk.Core.Components.Hosting` | アプリの名前・データのフォルダー・アイコンのパス (`AppEnvironment`)。ホストが 1 つ登録し、機能が DI から受け取る |
 | `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
