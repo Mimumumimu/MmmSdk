@@ -266,6 +266,7 @@ speech.SpeakAsync("会議の時間です。").Forget();  // 待たずに走ら�
 
 - 読み上げ中に呼ぶと、前の読み上げを止めて新しいほうを読みます (重なりません)
 - 日本語の音声が入っていない PC では、何も読まずに戻ります
+- 音量は `await speech.SetVolumePercentAsync(50);`(0〜100。既定 50)で保存します。設定ストア (`ISettingsStore`)の `Speech.VolumePercent` に入り、読み上げのたびに使われます。アプリの再生音量で、Windows の音量とは別です。読み込めなかった設定ファイルには保存せず `false` を返します (`IsVolumeReadOnly`)。現在の値は `VolumePercent`
 - システムのメディア操作 (音量キーの表示・再生キー)には出ません
 
 ### 音声機器を眠らせない無音の出力 (`IAudioKeepAlive`)
