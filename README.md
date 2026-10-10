@@ -21,7 +21,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - ターミナル (ConPTY でシェルを動かし、WebView2 上の xterm.js で描く画面)と、既定のシェルの決定 (PowerShell 7 → Windows PowerShell)・シェル別のコマンド作り
 - ConPTY (Windows 擬似コンソール)にプロセスをつないで起動する部品 (ターミナルの土台)
 - タスクトレイのアイコンと右クリックメニュー (Win32 を直接使う。メニューは自前描画でダーク/ライト対応)
-- 時刻の入力欄 (`TimeInputBox`)・押せる領域 (`LinkArea`)・IME のオン/オフ、添付ファイルの一時保存先の管理
+- 時刻の入力欄 (`TimeInputBox`)・押せる領域 (`LinkArea`)・木構造の表 (`TreeGridView`)・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理 (コントロールのテンプレート内の要素に触るため)
 - SQL Server への接続 (通信の暗号化は常に必須。SQL 認証・Windows 認証。接続の失敗は、原因ごとに画面に出せるメッセージの例外にする。別プロジェクトなので、使わないアプリには DLL が入らない)
 
@@ -79,7 +79,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
-| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域) |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
@@ -558,7 +558,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
-| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存・添付の画像 |
+| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・`TreeGridView`・IME・添付の一時保存・添付の画像 |
 
 ## バージョン
 

@@ -13,6 +13,25 @@
 - `Hour` / `Minute` に外から範囲外の値 (負の値・24 時など)が来たら、範囲内に収め直す (表示と値がずれないため)
 - 決めた理由: `TimePicker` はドラムの「適用」と画面の「OK」が両方目立って押し間違えやすい。`NumberBox` を 2 つ並べると、▲▼ と ✕ でごちゃごちゃする
 
+## TreeGridView (`MmmSdk.WinUI.Controls`)
+木構造の列と、普通の入力列を持つ表。WinUI 3 に、木構造と列を持つ表が標準で無く、Community Toolkit の `DataGrid` も WinUI 3 に移植されていないため、自前で持つ。業務の型は知らない (行は `ITreeGridRow`、列の見た目は `DataTemplate`)。
+
+- **行**: 使う側が、見えている行を 1 つの一覧にならして `ItemsSource` に渡す (`ITreeGridRow`: `Level`(字下げの段)・`HasChildren`・`IsExpanded`)。開閉の状態と、開閉に合わせた行の増減は、使う側が持つ。表は、字下げ (`IndentWidth`)と開閉ボタンを描き、押されたことを `RowToggleRequested` で知らせるだけ。行の値が変わったら `INotifyPropertyChanged` を発火する (字下げ・開閉ボタンを描き直す)。一覧が増減を通知する (`ObservableCollection`)なら、差分だけが反映される。行を動かす通知 (`Move`)は使わず、外して入れ直す
+- **列** (`TreeGridColumn`): `Key`・`Header`・`Width`(固定の幅)・`IsFrozen`(固定)・`IsTree`(木構造の列。表に 1 つだけ)・`IsVisible`・`HeaderBackground`・`CellTemplate`(セルの見た目。行がデータとして渡る)。コードで並べて `RefreshColumns()` を呼ぶ。列の表示・非表示・見出し・幅を変えたときも呼ぶ。固定の列は、固定でない列より前に出る。幅だけを変えたときは `RefreshColumnWidths()` を呼ぶ (セルを作り直さないので、入力中のフォーカスが外れない)
+- **固定**: 固定の列は、横にスクロールしても左に残り、見出しの行は、縦にスクロールしても上に残る。スクロールのたびにコードは動かさず、スクロールの位置を表すコンポジションの値 (`ElementCompositionPreview.GetScrollViewerManipulationPropertySet`)から、要素を逆向きに動かす式 (`-scroll.Translation.X`・`-scroll.Translation.Y`)を設定する。固定の部分は不透明にして、動くセルを隠す
+- **仮想化**: 行の高さは固定 (`RowHeight`。既定 36)。`ItemsRepeater` が、見えている行だけを作り、使い回す (`TreeGridRowPresenter`)。使い回すとき、セルは作り直さず、行 (`ContentControl.Content`)だけを差し替える。列を変えたときだけ、セルを作り直す
+- **選択**: 行の中を押した (右クリックを含む)・行の中にフォーカスが入った行が `SelectedRow` になる (`SelectedRowChanged`)。選んだ行は、背景を薄くし、左端に細い線を出す。`ListView` の選択は使わない (入力欄のキー操作 (↑↓)を、行の移動に取られないため)
+- **右クリック**: `RowContextFlyout`(行・行の中)・`BlankContextFlyout`(行のない所と見出し)。入力欄 (`TextBox`)は、自分の既定のメニューを出すので、セルの入力欄にも `ContextFlyout` に同じものを付けること。メニューを開くとき、`TreeGridView.GetRow(flyout.Target)` で、右クリックした行が分かる
+- **表示と入力**: セルは、普段は `CellTemplate` (表示用。文字だけ)を出し、入力するときだけ `EditTemplate` (入力用)に切り替わる。切り替わるのは、左クリック・Tab でそのセルに移ったとき・`FocusCell`。右クリックでは切り替わらない (入力欄が、右クリックでフォーカスを取るのを避けるため)。`EditTemplate` が null の列は、入力できない。`ITreeGridRow.CanEdit(columnKey)` が false のセル (計算値など)も入力に入らない。入力が終わったら `TreeGridView.EndEdit(element)` を呼ぶ (確定・プルダウンやカレンダーを閉じたとき)。フォーカスがセルの外に出たときは自動で戻る (開いたプルダウン・カレンダーがあるときは、戻さない)。行を使い回すときは、必ず表示用に戻す。1 つの行で入力用になるセルは、1 つだけ
+- **行の色**: `ITreeGridRow.RowTint` (半透明の色)を返すと、その行の固定・スクロールの両方の部分に、色を重ねる (選んだ行の背景は、その上に重なる)
+- **集計の行**: `ITreeGridRow.IsSummary` が true の行は、スクロールする部分の背景を、固定の部分と同じ色 (暗い色)にし、入力欄が並ぶ行と見分ける
+- **クリックの受け方**: セルの部品の空いた所は、クリックが通り抜けるので、行の全体を透明な面にし、クリックされた位置から、入力できるセルを探して切り替える (文字の上でも、空いた所でも、同じセルになる)。入力中のセルの外 (同じ行の入力できないセル・ほかの行・行のない所)を押したときは、入力中のセルを閉じる (入力できないセルは、クリックでフォーカスを取らないので、フォーカスの移動には頼らず、押下で閉じる)
+- **クリックで選ぶ列**: `TreeGridColumn.IsInvokable` を true にした列は、クリックされたとき、入力欄に切り替えず、`CellInvoked` (行・列のキー・セル)で知らせる。使う側が、セルの下に、メニューなどの選択の入れ物を出す (`EditTemplate` は持たない)
+- `FocusCell(row, columnKey)`: 行のそのセルを入力用に切り替え、入力欄にフォーカスを移す (見える所までスクロールする)。行を作って配置し終えてから移すので、少し遅れて動く
+- セルの `DataTemplate` の注意: 入力欄は、**値の変更のイベント (`SelectionChanged`・`DateChanged` など)で保存しない** (行の使い回しの差し替えで、起きる)。フォーカスが外れたとき・Enter などの確定の操作で、行の今の値と比べて保存する。セルの中の要素の `x:Name` は、行のプロパティと同じ名前にしない (`x:Bind` が、どちらを指すか決められず、XAML のコンパイルが失敗する)
+- 決めた理由: `ListView` に列を持たせると、固定の列と横スクロールを、行ごとに合わせる必要があり、選択とキー操作も入力と競合する。1 つの `ScrollViewer`(縦横)に、見出しと `ItemsRepeater` を入れ、固定の部分だけを式で逆向きに動かすと、行・列がずれず、仮想化も効く。木構造の開閉は、行の一覧を使う側が作るので、データの形 (入れ子・平らな一覧・DB)に依らない
+- 制限: キーボードの Tab は、画面に出ている (作られている)行の中だけを移る。列の幅は、利用者が変えられない。行の高さは、すべて同じ
+
 ## LinkArea (`MmmSdk.WinUI.Controls`)
 押すとリンクを開く領域 (`Grid` 派生)。`IsLinkEnabled` のときだけ、マウスを乗せると手の形のカーソルと背景で押せることを示す。押したときの処理は `Tapped` で受ける側が行う。
 
