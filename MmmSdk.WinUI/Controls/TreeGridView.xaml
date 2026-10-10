@@ -7,11 +7,37 @@
     IsTabStop="False">
 
     <UserControl.Resources>
+    <ResourceDictionary>
+        <!--
+            固定の列 (表の面と同じ色。横にスクロールしたセルを隠すため、不透明)・見出し・集計の行の背景と、選んだ行の色。
+            明るい表示で、標準の灰色 (#F3F3F3)を、入力できるセルの背景に使うと、入力できないように見える。
+            そこで、入力できる行の固定の列は、表の面と同じ色 (灰色にしない)にする。集計の行は、使う側が色を渡せる (SummaryBackground)
+        -->
+        <ResourceDictionary.ThemeDictionaries>
+            <ResourceDictionary x:Key="Default">
+                <SolidColorBrush x:Key="TreeGridPanelBackgroundBrush" Color="#202020" />
+                <SolidColorBrush x:Key="TreeGridHeaderBackgroundBrush" Color="#202020" />
+                <SolidColorBrush x:Key="TreeGridSummaryBackgroundBrush" Color="#202020" />
+                <SolidColorBrush x:Key="TreeGridSelectionBrush" Color="#0FFFFFFF" />
+            </ResourceDictionary>
+            <ResourceDictionary x:Key="Light">
+                <SolidColorBrush x:Key="TreeGridPanelBackgroundBrush" Color="#FCFCFC" />
+                <SolidColorBrush x:Key="TreeGridHeaderBackgroundBrush" Color="#F3F3F3" />
+                <SolidColorBrush x:Key="TreeGridSummaryBackgroundBrush" Color="#F3F3F3" />
+                <SolidColorBrush x:Key="TreeGridSelectionBrush" Color="#0F000000" />
+            </ResourceDictionary>
+        </ResourceDictionary.ThemeDictionaries>
+
         <!-- 固定の列の背景。横にスクロールしたセルを隠すため、不透明にする -->
         <Style x:Key="FrozenPanelStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}" />
+            <Setter Property="Background" Value="{ThemeResource TreeGridPanelBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+
+        <!-- 集計の行の背景 (固定の列・スクロールする列の両方) -->
+        <Style x:Key="SummaryPanelStyle" TargetType="Border" BasedOn="{StaticResource FrozenPanelStyle}">
+            <Setter Property="Background" Value="{ThemeResource TreeGridSummaryBackgroundBrush}" />
         </Style>
 
         <!-- スクロールする列の背景 -->
@@ -22,7 +48,7 @@
 
         <!-- 選んだ行の背景 (行の下の色に重ねる) -->
         <Style x:Key="SelectionOverlayStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+            <Setter Property="Background" Value="{ThemeResource TreeGridSelectionBrush}" />
             <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
 
@@ -38,7 +64,7 @@
 
         <!-- 見出し行 -->
         <Style x:Key="HeaderPanelStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}" />
+            <Setter Property="Background" Value="{ThemeResource TreeGridHeaderBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
         </Style>
@@ -61,12 +87,14 @@
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+    </ResourceDictionary>
     </UserControl.Resources>
 
     <ScrollViewer
         x:Name="Scroller"
         AllowFocusOnInteraction="False"
         HorizontalScrollBarVisibility="Auto"
+        TabFocusNavigation="Once"
         VerticalScrollBarVisibility="Auto"
         ZoomMode="Disabled">
         <Grid x:Name="ContentGrid" HorizontalAlignment="Left" VerticalAlignment="Top">
@@ -76,7 +104,7 @@
             </Grid.RowDefinitions>
 
             <!-- 見出し (縦にスクロールしても上に残す。中身はコードで作る) -->
-            <Grid x:Name="HeaderHost" Canvas.ZIndex="10" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" />
+            <Grid x:Name="HeaderHost" Canvas.ZIndex="10" Background="{ThemeResource TreeGridHeaderBackgroundBrush}" />
 
             <ItemsRepeater
                 x:Name="Repeater"

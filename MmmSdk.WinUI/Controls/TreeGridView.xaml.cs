@@ -63,6 +63,10 @@ public sealed partial class TreeGridView : UserControl
     /// <summary>行の右クリックのメニュー (行・行の中の入力欄で開く)</summary>
     public FlyoutBase? RowContextFlyout { get; set; }
 
+    /// <summary>直近の右クリック (押下)で当たった、入力できるセルの列のキー (無ければ null)</summary>
+    /// <remarks>行のメニューを開くときに、押した所の列に合わせて項目を変えるために使う。キーボードでメニューを開いたときは null。</remarks>
+    public string? ContextColumnKey { get; internal set; }
+
     /// <summary>行のない所の右クリックのメニュー</summary>
     public FlyoutBase? BlankContextFlyout
     {
@@ -100,6 +104,54 @@ public sealed partial class TreeGridView : UserControl
     /// <summary>クリックで選ぶ列 (<see cref="TreeGridColumn.IsInvokable"/>)のセルが、クリックされた</summary>
     public event EventHandler<TreeGridCellEventArgs>? CellInvoked;
 
+    /// <summary>入力できる行の、固定の列の背景 (null なら、既定の色)</summary>
+    /// <remarks>
+    /// 固定の列を、スクロールする列と、背景の色で区別したいときに使う (例: 初回だけ入力する列を、薄い色にする)。
+    /// 横にスクロールしたセルを隠すので、不透明な色にすること。
+    /// </remarks>
+    public Microsoft.UI.Xaml.Media.Brush? FrozenBackground
+    {
+        get => (Microsoft.UI.Xaml.Media.Brush?)GetValue(FrozenBackgroundProperty);
+        set => SetValue(FrozenBackgroundProperty, value);
+    }
+
+    /// <summary><see cref="FrozenBackground"/> の依存関係プロパティ</summary>
+    public static readonly DependencyProperty FrozenBackgroundProperty = DependencyProperty.Register(
+        nameof(FrozenBackground),
+        typeof(Microsoft.UI.Xaml.Media.Brush),
+        typeof(TreeGridView),
+        new PropertyMetadata(null, (d, _) =>
+        {
+            foreach (var presenter in ((TreeGridView)d)._presenters)
+            {
+                presenter.UpdateSummary();
+            }
+        }));
+
+    /// <summary>集計の行の背景 (null なら、既定の色)</summary>
+    /// <remarks>使う側のテーマの色を渡すときに使う (<c>{ThemeResource ...}</c>で渡すと、テーマの切り替えにも追従する)。</remarks>
+    public Microsoft.UI.Xaml.Media.Brush? SummaryBackground
+    {
+        get => (Microsoft.UI.Xaml.Media.Brush?)GetValue(SummaryBackgroundProperty);
+        set => SetValue(SummaryBackgroundProperty, value);
+    }
+
+    /// <summary><see cref="SummaryBackground"/> の依存関係プロパティ</summary>
+    public static readonly DependencyProperty SummaryBackgroundProperty = DependencyProperty.Register(
+        nameof(SummaryBackground),
+        typeof(Microsoft.UI.Xaml.Media.Brush),
+        typeof(TreeGridView),
+        new PropertyMetadata(null, (d, _) =>
+        {
+            foreach (var presenter in ((TreeGridView)d)._presenters)
+            {
+                presenter.UpdateSummary();
+            }
+        }));
+
+    /// <summary>入力中のセルで Esc が押され、入力が取りやめられた (入力欄を、元の値に戻すために使う)</summary>
+    public event EventHandler<TreeGridCellEventArgs>? EditCanceled;
+
     /// <summary>選んだ行が変わった</summary>
     public event EventHandler? SelectedRowChanged;
 
@@ -125,6 +177,27 @@ public sealed partial class TreeGridView : UserControl
                 presenter.EndEditIfOutside(e.OriginalSource as DependencyObject);
             }
         }), handledEventsToo: true);
+
+        // Tab・Shift+Tab は、入力中のセルから、次・前の入力できるセルへ移す
+        Scroller.AddHandler(KeyDownEvent, new Microsoft.UI.Xaml.Input.KeyEventHandler(OnScrollerKeyDown), handledEventsToo: false);
+        Scroller.GotFocus += (_, e) =>
+        {
+            // セルの外 (開閉ボタンなど)にフォーカスが来たら、「今のセル」を外す (枠が、前のセルと二重に残らないように)
+            var inCell = false;
+            for (var current = e.OriginalSource as DependencyObject; current is not null; current = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current))
+            {
+                if (current is TreeGridRowPresenter presenter)
+                {
+                    inCell = presenter.GetFocusedColumnKey(e.OriginalSource as DependencyObject) is not null;
+                    break;
+                }
+            }
+            if (!inCell && CursorCell is not null)
+            {
+                CursorCell = null;
+                RefreshFrames();
+            }
+        };
         Loaded += (_, _) =>
         {
             AttachHeaderAnimations();
@@ -133,6 +206,164 @@ public sealed partial class TreeGridView : UserControl
                 presenter.TryAnchor();
             }
         };
+    }
+
+    /// <summary>今のセル (フォーカスの枠を出すセル)</summary>
+    internal FrameworkElement? CursorCell { get; private set; }
+
+    /// <summary>今のセルを切り替えて、枠を直す</summary>
+    /// <param name="cell">フォーカスの来たセル</param>
+    /// <remarks>ポップアップ (メニューなど)は、開くのが少し遅れるので、遅れても枠を直す。</remarks>
+    internal void SetCursor(FrameworkElement cell)
+    {
+        CursorCell = cell;
+        RefreshFrames();
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, RefreshFrames);
+    }
+
+    /// <summary>すべての行のセルの枠を直す</summary>
+    private void RefreshFrames()
+    {
+        foreach (var presenter in _presenters)
+        {
+            presenter.RefreshFrames();
+        }
+    }
+
+    /// <summary>Tab・Shift+Tab・矢印キーで、今のセルを移す (Esc は、入力の取りやめ)</summary>
+    /// <param name="sender">イベントの送信元</param>
+    /// <param name="e">キー入力の情報</param>
+    /// <remarks>
+    /// XAML の標準の移動に任せると、表全体が 1 つの止まる所になって Tab でセルの間を移れず、矢印キーは、見えないセルに移る。
+    /// そこで、すべてのセル (入力できないセルも)を、行と列の並びで、自分で移す。移ったセルは、フォーカスと枠だけで、入力は始めない。
+    /// Tab は、入力中でも同じ (入力は、フォーカスが外れて確定する)。矢印キーは、セルそのものにフォーカスがあるときだけ (入力欄の中では、文字のカーソルを動かす)。
+    /// Tab で、表の最後・最初のセルから先へは移らず、そのまま表の外へ出る。
+    /// </remarks>
+    private void OnScrollerKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            // Esc は、どのセルでも同じ: 入力を取りやめて (元の値に戻して)、セルに戻る
+            foreach (var presenter in _presenters)
+            {
+                if (presenter.TryCancelEdit(e.OriginalSource as DependencyObject))
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+            return;
+        }
+
+        if (e.Key is not (Windows.System.VirtualKey.Tab or Windows.System.VirtualKey.Left or Windows.System.VirtualKey.Right or Windows.System.VirtualKey.Up or Windows.System.VirtualKey.Down)
+            || Repeater.ItemsSource is not IList rows)
+        {
+            return;
+        }
+
+        for (var current = e.OriginalSource as DependencyObject; current is not null; current = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current))
+        {
+            if (current is not TreeGridRowPresenter { Row: { } row } presenter)
+            {
+                continue;
+            }
+
+            var key = presenter.GetFocusedColumnKey(e.OriginalSource as DependencyObject);
+            var column = _visibleColumns.FindIndex(c => c.Key == key);
+            var rowIndex = rows.IndexOf(row);
+            if (key is null || column < 0 || rowIndex < 0)
+            {
+                return;
+            }
+
+            var count = _visibleColumns.Count;
+            int target;
+            if (e.Key == Windows.System.VirtualKey.Tab)
+            {
+                var shift = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+                target = (rowIndex * count) + column + (shift ? -1 : 1);
+                if (target < 0 || target >= rows.Count * count)
+                {
+                    return;
+                }
+            }
+            else if (presenter.IsCellItself(e.OriginalSource as DependencyObject))
+            {
+                var (rowStep, columnStep) = e.Key switch
+                {
+                    Windows.System.VirtualKey.Left => (0, -1),
+                    Windows.System.VirtualKey.Right => (0, 1),
+                    Windows.System.VirtualKey.Up => (-1, 0),
+                    _ => (1, 0),
+                };
+                var nextRow = rowIndex + rowStep;
+                var nextColumn = column + columnStep;
+                e.Handled = true;
+                if (nextRow < 0 || nextRow >= rows.Count || nextColumn < 0 || nextColumn >= count)
+                {
+                    return;
+                }
+                target = (nextRow * count) + nextColumn;
+            }
+            else
+            {
+                return;
+            }
+
+            e.Handled = true;
+            if (rows[target / count] is ITreeGridRow targetRow)
+            {
+                FocusCell(targetRow, _visibleColumns[target % count].Key, false);
+            }
+            return;
+        }
+    }
+
+    /// <summary>セルが見える位置になるよう、スクロールする</summary>
+    /// <param name="cell">セル</param>
+    /// <param name="isFrozen">固定の列のセルか (横には動かさない)</param>
+    /// <remarks>
+    /// 固定の列は、見かけの位置だけをずらしているので、並び上は、スクロールする列の左端に重なる。
+    /// そのため、<c>StartBringIntoView</c> では、固定の列の下に隠れたセルを、見えているものとして扱ってしまう。
+    /// そこで、固定の列の幅と、見出しの高さを除いた範囲に、セルが入るように、位置を決める。
+    /// </remarks>
+    internal void RevealCell(FrameworkElement cell, bool isFrozen)
+    {
+        if (cell.ActualWidth <= 0)
+        {
+            return;
+        }
+
+        var bounds = cell.TransformToVisual(ContentGrid).TransformBounds(new Windows.Foundation.Rect(0, 0, cell.ActualWidth, cell.ActualHeight));
+        var frozenWidth = _visibleColumns.Where(c => c.IsFrozen).Sum(c => c.Width);
+
+        double? x = null;
+        if (!isFrozen)
+        {
+            if (bounds.Left < Scroller.HorizontalOffset + frozenWidth)
+            {
+                x = bounds.Left - frozenWidth;
+            }
+            else if (bounds.Right > Scroller.HorizontalOffset + Scroller.ViewportWidth)
+            {
+                x = bounds.Right - Scroller.ViewportWidth;
+            }
+        }
+
+        double? y = null;
+        if (bounds.Top < Scroller.VerticalOffset + HeaderHeight)
+        {
+            y = bounds.Top - HeaderHeight;
+        }
+        else if (bounds.Bottom > Scroller.VerticalOffset + Scroller.ViewportHeight)
+        {
+            y = bounds.Bottom - Scroller.ViewportHeight;
+        }
+
+        if (x is not null || y is not null)
+        {
+            Scroller.ChangeView(x, y, null, true);
+        }
     }
 
     /// <summary>列の変更 (追加・表示・非表示・幅)を、表に反映する</summary>
@@ -186,7 +417,13 @@ public sealed partial class TreeGridView : UserControl
     /// <param name="row">行</param>
     /// <param name="columnKey">列のキー (<see cref="TreeGridColumn.Key"/>)</param>
     /// <remarks>行を作って配置し終えてから移すので、少し遅れて動く。</remarks>
-    public void FocusCell(ITreeGridRow row, string columnKey)
+    public void FocusCell(ITreeGridRow row, string columnKey) => FocusCell(row, columnKey, true);
+
+    /// <summary>セルにフォーカスを移す</summary>
+    /// <param name="row">行</param>
+    /// <param name="columnKey">列のキー</param>
+    /// <param name="edit">入力も始めるなら true。フォーカスだけ移す (枠が出るだけ)なら false</param>
+    private void FocusCell(ITreeGridRow row, string columnKey, bool edit)
     {
         var index = (Repeater.ItemsSource as IList)?.IndexOf(row) ?? -1;
         if (index < 0)
@@ -199,7 +436,7 @@ public sealed partial class TreeGridView : UserControl
         {
             if (Repeater.TryGetElement(index) is TreeGridRowPresenter presenter)
             {
-                presenter.FocusCell(columnKey);
+                presenter.FocusCell(columnKey, edit);
             }
         });
     }
@@ -230,6 +467,13 @@ public sealed partial class TreeGridView : UserControl
     /// <param name="cell">セル</param>
     internal void RaiseCellInvoked(ITreeGridRow row, string columnKey, FrameworkElement cell)
         => CellInvoked?.Invoke(this, new TreeGridCellEventArgs(row, columnKey, cell));
+
+    /// <summary>入力が取りやめられたことを知らせる</summary>
+    /// <param name="row">行</param>
+    /// <param name="columnKey">列のキー</param>
+    /// <param name="cell">セル</param>
+    internal void RaiseEditCanceled(ITreeGridRow row, string columnKey, FrameworkElement cell)
+        => EditCanceled?.Invoke(this, new TreeGridCellEventArgs(row, columnKey, cell));
 
     /// <summary>行の開閉ボタンが押されたことを知らせる</summary>
     /// <param name="row">押された行</param>
