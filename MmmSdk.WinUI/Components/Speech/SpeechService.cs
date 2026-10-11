@@ -1,3 +1,4 @@
+using MmmSdk.Core.Components.Settings;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Media.SpeechSynthesis;
@@ -7,12 +8,19 @@ namespace MmmSdk.WinUI.Components.Speech;
 /// <summary>
 /// Windows 標準の音声合成で、テキストを日本語の音声で読み上げる。アプリ全体で 1 つ。
 /// </summary>
+/// <param name="settings">汎用設定ストア (音量の保存)</param>
 /// <remarks>
 /// 合成器と再生器は 1 つを使い回す。新しく読むときは前の読み上げを差し替える (合成の途中で次の依頼が来たら、前の合成結果は捨てる)。
 /// 声は、OS の既定の音声が日本語ならそれを、そうでなければ入っている日本語の音声の先頭を使う。
 /// </remarks>
-public sealed class SpeechService : ISpeechService, IDisposable
+public sealed class SpeechService(ISettingsStore settings) : ISpeechService, IDisposable
 {
+    /// <summary>音量 (%)の設定キー</summary>
+    private const string VolumeKey = "Speech.VolumePercent";
+
+    /// <summary>音量 (%)の既定値</summary>
+    private const int DefaultVolumePercent = 50;
+
     /// <summary>日本語の音声の言語タグの先頭</summary>
     private const string JapanesePrefix = "ja";
 
@@ -36,6 +44,20 @@ public sealed class SpeechService : ISpeechService, IDisposable
     private bool _disposed;
 
     /// <inheritdoc />
+    public int VolumePercent => Math.Clamp(settings.Get(VolumeKey, DefaultVolumePercent), 0, 100);
+
+    /// <inheritdoc />
+    public bool IsVolumeReadOnly => settings.IsReadOnly;
+
+    /// <inheritdoc />
+    public async Task<bool> SetVolumePercentAsync(int percent)
+    {
+        var clamped = Math.Clamp(percent, 0, 100);
+        _player.Volume = clamped / 100.0;
+        return await settings.SetAsync(VolumeKey, clamped);
+    }
+
+    /// <inheritdoc />
     public async Task SpeakAsync(string text)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -54,6 +76,7 @@ public sealed class SpeechService : ISpeechService, IDisposable
         }
 
         var source = MediaSource.CreateFromStream(stream, stream.ContentType);
+        _player.Volume = VolumePercent / 100.0;
         _player.Source = source;
         ReleaseCurrent();
         (_currentSource, _currentStream) = (source, stream);

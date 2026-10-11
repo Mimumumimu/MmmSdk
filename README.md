@@ -21,7 +21,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - ターミナル (ConPTY でシェルを動かし、WebView2 上の xterm.js で描く画面)と、既定のシェルの決定 (PowerShell 7 → Windows PowerShell)・シェル別のコマンド作り
 - ConPTY (Windows 擬似コンソール)にプロセスをつないで起動する部品 (ターミナルの土台)
 - タスクトレイのアイコンと右クリックメニュー (Win32 を直接使う。メニューは自前描画でダーク/ライト対応)
-- 時刻の入力欄 (`TimeInputBox`)・押せる領域 (`LinkArea`)・IME のオン/オフ、添付ファイルの一時保存先の管理
+- 時刻の入力欄 (`TimeInputBox`)・押せる領域 (`LinkArea`)・木構造の表 (`TreeGridView`)・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理 (コントロールのテンプレート内の要素に触るため)
 - SQL Server への接続 (通信の暗号化は常に必須。SQL 認証・Windows 認証。接続の失敗は、原因ごとに画面に出せるメッセージの例外にする。別プロジェクトなので、使わないアプリには DLL が入らない)
 
@@ -31,6 +31,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.Core` | `net10.0`(WinUI に依存しない。トリミング・AOT 互換の分析を有効にしている。`Paths`(`PathOpener` / `PathTarget`)だけは Windows 前提) |
 | `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`(WinUI 3) |
+| `MmmSdk.Db.Sqlite` | `net10.0`(SQLite のデータベースファイルを開いて版を上げる。外部のドライバー `Microsoft.Data.Sqlite` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト) |
 | `MmmSdk.Db.SqlServer` | `net10.0`(SQL Server への接続。外部のドライバー `Microsoft.Data.SqlClient` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト) |
 
 プロジェクトは、UI の有無 (`Core` / `WinUI`)と、依存先の違い (外部のドライバーを持つ部品は `MmmSdk.Db.<製品名>` に分ける)で分けています。プロジェクトの直下は、「Components / Controls / Utilities」の 3 つの層に分けています。名前空間はフォルダーと同じです。
@@ -58,7 +59,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
-| `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知。ホストが `AddFeatureService()` で登録する。保存が無い機能はオン)・`FeatureChangeResult` |
+| `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`。オフにできない機能は `AddAlwaysOnFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存 (`SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値)・`FeatureChangeResult` |
 | `MmmSdk.Core.Components.Hosting` | アプリの名前・データのフォルダー・アイコンのパス (`AppEnvironment`)。ホストが 1 つ登録し、機能が DI から受け取る |
 | `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
@@ -79,9 +80,15 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
-| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域) |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
+
+#### MmmSdk.Db.Sqlite
+
+| 名前空間 | 内容 |
+| --- | --- |
+| `MmmSdk.Db.Sqlite.Components.Connections` | SQLite のデータベースファイルを開いて処理を実行する入口 (`SqliteDatabase`)・設定 (`SqliteDatabaseOptions`)・版を上げるスクリプト (`SqliteMigration`)。壊れたファイルは退避して作り直す。詳しくは [docs/db-sqlite.md](docs/db-sqlite.md) |
 
 #### MmmSdk.Db.SqlServer
 
@@ -95,6 +102,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - WinUI 3 (Windows App SDK 2.5)… `MmmSdk.WinUI` のみ
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
 - Microsoft.Data.SqlClient … `MmmSdk.Db.SqlServer` のみ
+- Microsoft.Data.Sqlite … `MmmSdk.Db.Sqlite` のみ
 - WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0 (ターミナル描画。MIT。`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所)
 - Microsoft.Extensions.DependencyInjection.Abstractions (DI 登録用の拡張メソッド)
 - System.Text.Json (ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する)
@@ -266,6 +274,7 @@ speech.SpeakAsync("会議の時間です。").Forget();  // 待たずに走ら�
 
 - 読み上げ中に呼ぶと、前の読み上げを止めて新しいほうを読みます (重なりません)
 - 日本語の音声が入っていない PC では、何も読まずに戻ります
+- 音量は `await speech.SetVolumePercentAsync(50);`(0〜100。既定 50)で保存します。設定ストア (`ISettingsStore`)の `Speech.VolumePercent` に入り、読み上げのたびに使われます。アプリの再生音量で、Windows の音量とは別です。読み込めなかった設定ファイルには保存せず `false` を返します (`IsVolumeReadOnly`)。現在の値は `VolumePercent`
 - システムのメディア操作 (音量キーの表示・再生キー)には出ません
 
 ### 音声機器を眠らせない無音の出力 (`IAudioKeepAlive`)
@@ -558,7 +567,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
-| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・IME・添付の一時保存・添付の画像 |
+| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・`TreeGridView`・IME・添付の一時保存・添付の画像 |
 
 ## バージョン
 

@@ -31,7 +31,7 @@ public interface ITerminalSession : IDisposable
 
     /// <summary><see cref="Submit"/> が呼ばれた</summary>
     /// <remarks>端末の表示側が貼り付けとして入力する。</remarks>
-    event EventHandler<string>? SubmitRequested;
+    event EventHandler<SubmitRequest>? SubmitRequested;
 
     /// <summary>指定の端末サイズでシェルを起動する。</summary>
     /// <param name="columns">端末の桁数</param>
@@ -51,8 +51,9 @@ public interface ITerminalSession : IDisposable
 
     /// <summary>テキストを貼り付けとして入力し、続けて Enter で確定する。</summary>
     /// <param name="text">入力するテキスト</param>
+    /// <param name="readyMarker">貼り付けの取り込みが終わった合図になる、画面の出力に含まれる文字列。指定すると、出力に現れるまで (最長 2 秒)Enter を送らずに待つ</param>
     /// <remarks>端末の表示側を通すことで、複数行でも CLI が 1 行ずつ実行せずひとまとまりで受け取れる (ブラケットペースト)。</remarks>
-    void Submit(string text);
+    void Submit(string text, string? readyMarker = null);
 
     /// <summary>端末サイズを変更する。</summary>
     /// <param name="columns">端末の桁数</param>

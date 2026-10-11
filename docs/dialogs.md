@@ -24,7 +24,7 @@
 
 ## ファイル/フォルダー選択
 
-- `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null
+- `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null。`PickFolderAsync(startDirectory)` は、最初に開くフォルダを指定できる。ドライブだけの入力 (`D:`)は `D:\` として、無いフォルダは存在する一番近い親として開く (ピッカーはフルパスでない値で例外になるため)。指定が使えないときは、ピッカーの既定の場所。選ばれたフォルダは、末尾を `\` にそろえて返す (`D:\` のようにすでに `\` で終わるものは、そのまま。ドライブだけの `D:` が、シェルで「そのドライブで最後にいたフォルダ」と解釈されるのを防ぐため、表記を 1 つにする)
 - `IFilePickerService.PickFilesAsync`: 複数のファイルを選べる。選ばれたパスの一覧を返し、キャンセルなら空
 - `IFilePickerService.PickSaveFileAsync(suggestedFileName)`: 保存先を選ぶ (名前を付けて保存)。最初に入れておくファイル名を渡す。保存の種類は、そのファイル名の拡張子 1 つだけ (拡張子が無いときは、拡張子なしを表す `.`)。同じ名前のファイルがあるときの上書きの確認は、ダイアログが出す。キャンセルなら null
 - Windows App SDK のピッカー。アンパッケージでも、親のウィンドウ ID (`IDialogHost.Owner`)を渡すだけで使える
