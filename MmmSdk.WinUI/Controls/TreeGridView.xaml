@@ -40,10 +40,16 @@
             <Setter Property="Background" Value="{ThemeResource TreeGridSummaryBackgroundBrush}" />
         </Style>
 
-        <!-- スクロールする列の背景 -->
+        <!-- 入力できる行のスクロールする列の背景。固定の列・見出しと同じ系統の、テーマごとの色 (見出しと、入力できるセルの色が、テーマによって食い違わないようにする) -->
         <Style x:Key="ScrollPanelStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource TreeGridPanelBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+
+        <!-- 集計の行の中で、入力できる行と同じ色にする列 (KeepsBaseBackground)の背景。境界線は付けない (集計の行の境界線と重ねないため) -->
+        <Style x:Key="ScrollBackingStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource TreeGridPanelBackgroundBrush}" />
         </Style>
 
         <!-- 選んだ行の背景 (行の下の色に重ねる) -->

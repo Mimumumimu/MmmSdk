@@ -238,6 +238,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         _scrollPanel.Style = (Style)_owner.Resources[summary ? "SummaryPanelStyle" : "ScrollPanelStyle"];
         foreach (var (_, backing, _) in _scrollBackings)
         {
+            backing.ClearValue(FrameworkElement.StyleProperty);
             backing.Background = null;
         }
 
@@ -248,7 +249,16 @@ public sealed partial class TreeGridRowPresenter : Grid
             _scrollPanel.Background = null;
             foreach (var (column, backing, _) in _scrollBackings)
             {
-                backing.Background = column.KeepsBaseBackground ? null : custom;
+                if (column.KeepsBaseBackground)
+                {
+                    // 入力できる行のスクロールする列と同じ色 (テーマごとの、表の面の色)にする
+                    backing.ClearValue(Border.BackgroundProperty);
+                    backing.Style = (Style)_owner.Resources["ScrollBackingStyle"];
+                }
+                else
+                {
+                    backing.Background = custom;
+                }
             }
         }
         else if (!summary && _owner.FrozenBackground is { } frozen)
