@@ -40,6 +40,13 @@ public sealed class TreeGridColumn
     /// <summary>セルの見た目 (行の値が、データとして渡る)</summary>
     public DataTemplate? CellTemplate { get; set; }
 
+    /// <summary>集計の行でも、このセルの背景に集計の行の色と行の色 (<see cref="ITreeGridRow.RowTint"/>)を付けず、表の面の色のままにするか</summary>
+    /// <remarks>
+    /// 集計の行でも入力できるセルを、入力できる行のセルと同じ見た目にするために使う。スクロールする列だけで使える (固定の列は、固定の部分の背景が不透明なため)。
+    /// 使う側が <see cref="TreeGridView.SummaryBackground"/> を渡しているときだけ働く。
+    /// </remarks>
+    public bool KeepsBaseBackground { get; set; }
+
     /// <summary>クリックされたとき、入力欄に切り替えず、<see cref="TreeGridView.CellInvoked"/> で知らせる列か</summary>
     /// <remarks>メニューやカレンダーなど、使う側が、セルの下に選択の入れ物を出す列に使う (その列は <see cref="EditTemplate"/> を持たない)。</remarks>
     public bool IsInvokable { get; set; }

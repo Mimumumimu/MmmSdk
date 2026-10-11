@@ -31,8 +31,8 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>行の色 (固定の部分)</summary>
     private readonly Border _frozenTint = new() { IsHitTestVisible = false };
 
-    /// <summary>行の色 (スクロールする部分)</summary>
-    private readonly Border _scrollTint = new() { IsHitTestVisible = false };
+    /// <summary>スクロールする列ごとの、集計の行の背景と行の色 (列ごとに分けて、一部の列だけ表の面の色のままにできるようにする)</summary>
+    private readonly List<(TreeGridColumn Column, Border Backing, Border Tint)> _scrollBackings = [];
 
     /// <summary>選んだ行の背景 (固定の部分)</summary>
     private readonly Border _frozenOverlay = new();
@@ -101,7 +101,6 @@ public sealed partial class TreeGridRowPresenter : Grid
     public TreeGridRowPresenter()
     {
         _frozenGrid.Children.Add(_frozenTint);
-        _scrollGrid.Children.Add(_scrollTint);
         _frozenGrid.Children.Add(_frozenOverlay);
         _scrollGrid.Children.Add(_scrollOverlay);
         _frozenPanel.Child = _frozenGrid;
@@ -185,7 +184,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         {
             _row.PropertyChanged -= OnRowPropertyChanged;
         }
-        ResetEdit();
+        ResetEdit(raiseEnding: false);
 
         // 使い回しの待機中に、列の幅が変わっていたことがあるので、結び付けるたびに、今の幅に合わせる
         UpdateWidths();
@@ -214,7 +213,10 @@ public sealed partial class TreeGridRowPresenter : Grid
     {
         Microsoft.UI.Xaml.Media.Brush? brush = _row?.RowTint is { } color ? new SolidColorBrush(color) : null;
         _frozenTint.Background = brush;
-        _scrollTint.Background = brush;
+        foreach (var (column, _, tint) in _scrollBackings)
+        {
+            tint.Background = column.KeepsBaseBackground ? null : brush;
+        }
     }
 
     /// <summary>行の背景を直す (集計の行は、固定の部分・スクロールする部分とも、集計の行の背景。入力できる行は、固定の部分だけ、固定の列の背景)</summary>
@@ -234,10 +236,20 @@ public sealed partial class TreeGridRowPresenter : Grid
         _scrollPanel.ClearValue(Border.BackgroundProperty);
         _frozenPanel.Style = (Style)_owner.Resources[summary ? "SummaryPanelStyle" : "FrozenPanelStyle"];
         _scrollPanel.Style = (Style)_owner.Resources[summary ? "SummaryPanelStyle" : "ScrollPanelStyle"];
+        foreach (var (_, backing, _) in _scrollBackings)
+        {
+            backing.Background = null;
+        }
+
         if (summary && _owner.SummaryBackground is { } custom)
         {
             _frozenPanel.Background = custom;
-            _scrollPanel.Background = custom;
+            // スクロールする部分は、列ごとの背景にする (表の面の色のままにする列を、除くため)
+            _scrollPanel.Background = null;
+            foreach (var (column, backing, _) in _scrollBackings)
+            {
+                backing.Background = column.KeepsBaseBackground ? null : custom;
+            }
         }
         else if (!summary && _owner.FrozenBackground is { } frozen)
         {
@@ -248,7 +260,7 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>行との結び付きを外す (使い回しに戻すとき)</summary>
     internal void Unbind()
     {
-        ResetEdit();
+        ResetEdit(raiseEnding: false);
         if (_row is not null)
         {
             _row.PropertyChanged -= OnRowPropertyChanged;
@@ -272,6 +284,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         _frozenGrid.ColumnDefinitions.Clear();
         _scrollGrid.Children.Clear();
         _scrollGrid.ColumnDefinitions.Clear();
+        _scrollBackings.Clear();
         _cells.Clear();
         _frames.Clear();
 
@@ -282,7 +295,6 @@ public sealed partial class TreeGridRowPresenter : Grid
         _selectionBar.Style = (Style)_owner.Resources["SelectionBarStyle"];
         _toggle.Style = (Style)_owner.Resources["ToggleButtonStyle"];
         _frozenGrid.Children.Add(_frozenTint);
-        _scrollGrid.Children.Add(_scrollTint);
         _frozenGrid.Children.Add(_frozenOverlay);
         _scrollGrid.Children.Add(_scrollOverlay);
 
@@ -293,6 +305,14 @@ public sealed partial class TreeGridRowPresenter : Grid
             var grid = column.IsFrozen ? _frozenGrid : _scrollGrid;
             var index = grid.ColumnDefinitions.Count;
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(column.Width) });
+            if (!column.IsFrozen)
+            {
+                var tint = new Border { IsHitTestVisible = false };
+                var backing = new Border { IsHitTestVisible = false, Child = tint };
+                Grid.SetColumn(backing, index);
+                grid.Children.Add(backing);
+                _scrollBackings.Add((column, backing, tint));
+            }
 
             var cell = new ContentControl
             {
@@ -334,7 +354,6 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
 
         Grid.SetColumnSpan(_frozenTint, Math.Max(1, _frozenGrid.ColumnDefinitions.Count));
-        Grid.SetColumnSpan(_scrollTint, Math.Max(1, _scrollGrid.ColumnDefinitions.Count));
         Grid.SetColumnSpan(_frozenOverlay, Math.Max(1, _frozenGrid.ColumnDefinitions.Count));
         Grid.SetColumnSpan(_scrollOverlay, Math.Max(1, _scrollGrid.ColumnDefinitions.Count));
         _frozenGrid.Children.Add(_selectionBar);
@@ -574,7 +593,7 @@ public sealed partial class TreeGridRowPresenter : Grid
 
     /// <summary>入力中のセルの外が押されたら、入力を終えて、表示用に戻す</summary>
     /// <param name="source">押された要素</param>
-    /// <remarks>戻す前に、フォーカスをセルへ移すので、入力した値は確定する。</remarks>
+    /// <remarks>戻す前に、<see cref="TreeGridView.EditEnding"/> で、使う側が入力した値を確定する。</remarks>
     internal void EndEditIfOutside(DependencyObject? source)
     {
         if (_editing is { } editing && !IsInside(editing.Cell, source))
@@ -669,12 +688,13 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
 
         _owner.RaiseEditCanceled(_row, editing.Column.Key, editing.Cell);
-        EndEditLater();
+        EndEditLater(raiseEnding: false);
         return true;
     }
 
     /// <summary>入力用の見た目を、表示用に戻す (使う側の確定が済んでから)</summary>
-    internal void EndEditLater() => DispatcherQueue.TryEnqueue(ResetEdit);
+    /// <param name="raiseEnding">戻す直前に、使う側へ知らせるか (Esc の取りやめでは知らせない)</param>
+    internal void EndEditLater(bool raiseEnding = true) => DispatcherQueue.TryEnqueue(() => ResetEdit(raiseEnding));
 
     /// <summary>フォーカスがセルの外に出ていて、開いたままのプルダウン・日付の選択も無ければ、表示用に戻す</summary>
     /// <param name="cell">フォーカスが外れたセル</param>
@@ -694,11 +714,14 @@ public sealed partial class TreeGridRowPresenter : Grid
     }
 
     /// <summary>入力用の見た目を、すぐ表示用に戻す</summary>
+    /// <param name="raiseEnding">戻す直前に、使う側へ知らせるか (<see cref="TreeGridView.EditEnding"/>。行の使い回し・Esc の取りやめでは知らせない)</param>
     /// <remarks>
     /// フォーカスのある入力欄を、フォーカスごと消すと、フォーカスが、画面の最初の要素 (表の 1 行目のセル)に飛び、行の選択まで 1 行目に移る。
     /// そこで、入力欄にフォーカスがあるときは、先にセル自身へ移してから、入力用の見た目を外す。
+    /// 入力欄を外すと、フォーカスが外れた通知 (<c>LostFocus</c>)は、入力欄から行をたどれない状態で届くか、届かないことがあるので、
+    /// 外す前に <see cref="TreeGridView.EditEnding"/> で、使う側に確定させる。
     /// </remarks>
-    private void ResetEdit()
+    private void ResetEdit(bool raiseEnding = true)
     {
         if (_editing is not { } editing)
         {
@@ -706,6 +729,10 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
 
         _editing = null;
+        if (raiseEnding && _row is not null)
+        {
+            _owner?.RaiseEditEnding(_row, editing.Column.Key, editing.Cell);
+        }
         var hadFocus = IsInside(editing.Cell, FocusManager.GetFocusedElement(XamlRoot) as DependencyObject);
         editing.Cell.IsTabStop = true;
         if (hadFocus)

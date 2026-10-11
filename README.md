@@ -31,6 +31,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.Core` | `net10.0`(WinUI に依存しない。トリミング・AOT 互換の分析を有効にしている。`Paths`(`PathOpener` / `PathTarget`)だけは Windows 前提) |
 | `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`(WinUI 3) |
+| `MmmSdk.Db.Sqlite` | `net10.0`(SQLite のデータベースファイルを開いて版を上げる。外部のドライバー `Microsoft.Data.Sqlite` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト) |
 | `MmmSdk.Db.SqlServer` | `net10.0`(SQL Server への接続。外部のドライバー `Microsoft.Data.SqlClient` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト) |
 
 プロジェクトは、UI の有無 (`Core` / `WinUI`)と、依存先の違い (外部のドライバーを持つ部品は `MmmSdk.Db.<製品名>` に分ける)で分けています。プロジェクトの直下は、「Components / Controls / Utilities」の 3 つの層に分けています。名前空間はフォルダーと同じです。
@@ -83,6 +84,12 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront`・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
+#### MmmSdk.Db.Sqlite
+
+| 名前空間 | 内容 |
+| --- | --- |
+| `MmmSdk.Db.Sqlite.Components.Connections` | SQLite のデータベースファイルを開いて処理を実行する入口 (`SqliteDatabase`)・設定 (`SqliteDatabaseOptions`)・版を上げるスクリプト (`SqliteMigration`)。壊れたファイルは退避して作り直す。詳しくは [docs/db-sqlite.md](docs/db-sqlite.md) |
+
 #### MmmSdk.Db.SqlServer
 
 | 名前空間 | 内容 |
@@ -95,6 +102,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - WinUI 3 (Windows App SDK 2.5)… `MmmSdk.WinUI` のみ
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
 - Microsoft.Data.SqlClient … `MmmSdk.Db.SqlServer` のみ
+- Microsoft.Data.Sqlite … `MmmSdk.Db.Sqlite` のみ
 - WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0 (ターミナル描画。MIT。`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所)
 - Microsoft.Extensions.DependencyInjection.Abstractions (DI 登録用の拡張メソッド)
 - System.Text.Json (ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する)

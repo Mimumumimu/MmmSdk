@@ -152,6 +152,14 @@ public sealed partial class TreeGridView : UserControl
     /// <summary>入力中のセルで Esc が押され、入力が取りやめられた (入力欄を、元の値に戻すために使う)</summary>
     public event EventHandler<TreeGridCellEventArgs>? EditCanceled;
 
+    /// <summary>入力中のセルが、取りやめ以外の理由 (ほかのセルのクリック・表の外のクリックなど)で、表示用に戻される直前</summary>
+    /// <remarks>
+    /// 使う側は、入力欄がまだ表の中にあるこの時点で、入力した値を確定する。
+    /// フォーカスが外れた通知 (<c>LostFocus</c>)は、入力欄を外したあとに届く・届かないことがあり、そのときは、入力欄から行をたどれず、確定できないため。
+    /// Esc で取りやめるときは起きない (<see cref="EditCanceled"/>)。
+    /// </remarks>
+    public event EventHandler<TreeGridCellEventArgs>? EditEnding;
+
     /// <summary>選んだ行が変わった</summary>
     public event EventHandler? SelectedRowChanged;
 
@@ -474,6 +482,13 @@ public sealed partial class TreeGridView : UserControl
     /// <param name="cell">セル</param>
     internal void RaiseEditCanceled(ITreeGridRow row, string columnKey, FrameworkElement cell)
         => EditCanceled?.Invoke(this, new TreeGridCellEventArgs(row, columnKey, cell));
+
+    /// <summary>入力中のセルが、表示用に戻される直前であることを知らせる</summary>
+    /// <param name="row">行</param>
+    /// <param name="columnKey">列のキー</param>
+    /// <param name="cell">セル</param>
+    internal void RaiseEditEnding(ITreeGridRow row, string columnKey, FrameworkElement cell)
+        => EditEnding?.Invoke(this, new TreeGridCellEventArgs(row, columnKey, cell));
 
     /// <summary>行の開閉ボタンが押されたことを知らせる</summary>
     /// <param name="row">押された行</param>
