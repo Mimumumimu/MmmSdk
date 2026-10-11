@@ -66,7 +66,19 @@
     const MIN_WAIT_MS = 150;
     const QUIET_MS = 200;
     const MAX_WAIT_MS = 2000;
+    // 合図の文字列を待っている間の上限 (合図が出ないまま、MAX_WAIT_MS まで待たないため。CLI は貼り付けの取り込みを 0.3 秒ほどで終える)
+    const MARKER_MAX_WAIT_MS = 1000;
     const POLL_MS = 30;
+    // 合図の探索に使う、貼り付け後の出力の最大の文字数 (後ろから数える)
+    const MARKER_BUFFER_CHARS = 20000;
+
+    // 出力から、制御文字 (色・カーソル移動などのエスケープシーケンス)と空白を除く。
+    // CLI は、文字の途中に制御文字を挟んで描くことがあるので、合図の探索は、この形に直した文字列どうしで比べる
+    const normalizeOutput = text => text
+        .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+        .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
+        .replace(/\x1b[@-Z\\-_]/g, "")
+        .replace(/\s+/g, "");
 
     // テキストを貼り付けとして入力 (CLI が対応していればブラケットペースト)し、Enter で確定する。
     // CLI は貼り付けの処理中に届いた Enter を本文の一部 (改行)として扱うことがあるため、
@@ -79,14 +91,24 @@
     /** 送信の完了を待っている合図の文字列と、それが出力に現れたか (待っていなければ null) */
     let pendingMarker = null;
     let markerSeen = false;
+    /** 合図の探索に使う、貼り付け後の出力 (合図を待っている間だけ貯める) */
+    let markerBuffer = "";
+
+    // TEMP-LOG: Enter のあとの出力の文字数 (Enter が受け付けられたかの目安。受け付けられると、返事の描画が続く)
+    let enterSent = false;
+    let afterEnterChars = 0;
+    const ACCEPTED_MIN_CHARS = 500;
 
     const submit = (text, marker) => {
         const pastedAt = performance.now();
         pendingMarker = marker ?? null;
         markerSeen = false;
+        markerBuffer = "";
+        enterSent = false;
+        afterEnterChars = 0;
         tempLog = [];
         tempLog.start = pastedAt;
-        tempLogAdd(`paste ${text.length} chars, ${text.split("\n").length} lines`);
+        tempLogAdd(`paste ${text.length} chars, ${text.split("\n").length} lines${pendingMarker === null ? "" : ", waiting marker"}`);
         term.paste(text);
 
         const timer = setInterval(() => {
@@ -94,16 +116,22 @@
             const elapsed = now - pastedAt;
             const quiet = lastOutputAt > pastedAt && now - lastOutputAt >= QUIET_MS;
             const ready = pendingMarker === null || markerSeen;
-            if ((elapsed >= MIN_WAIT_MS && quiet && ready) || elapsed >= MAX_WAIT_MS) {
+            // 合図を待っている間 (まだ出ていない)は、短い上限で打ち切る
+            const limit = pendingMarker !== null && !markerSeen ? MARKER_MAX_WAIT_MS : MAX_WAIT_MS;
+            if ((elapsed >= MIN_WAIT_MS && quiet && ready) || elapsed >= limit) {
                 clearInterval(timer);
+                tempLogAdd(`ENTER (quiet=${quiet}, marker=${pendingMarker === null ? "not needed" : markerSeen ? "seen" : "NOT seen (timeout)"})`);
                 pendingMarker = null;
-                tempLogAdd(`ENTER (quiet=${quiet})`);
+                markerBuffer = "";
                 host.postMessage({ type: "input", data: "\r" });
+                enterSent = true;
                 const log = tempLog;
                 setTimeout(() => {
+                    log.push(`RESULT: ${afterEnterChars} chars after Enter -> ${afterEnterChars >= ACCEPTED_MIN_CHARS ? "accepted" : "NOT accepted (suspect)"}`);
                     host.postMessage({ type: "debug", data: log.join("\n") });
                     if (tempLog === log) {
                         tempLog = null;
+                        enterSent = false;
                     }
                 }, 3000);
             }
@@ -179,8 +207,16 @@
         switch (message.type) {
             case "output":
                 lastOutputAt = performance.now();
-                if (pendingMarker !== null && message.data.includes(pendingMarker)) {
-                    markerSeen = true;
+                if (pendingMarker !== null && !markerSeen) {
+                    // 出力のかたまりの境目や制御文字で合図が分かれても見つかるよう、貼り付け後の出力をつなげて、制御文字と空白を除いて探す
+                    markerBuffer = (markerBuffer + message.data).slice(-MARKER_BUFFER_CHARS);
+                    markerSeen = normalizeOutput(markerBuffer).includes(normalizeOutput(pendingMarker));
+                    if (markerSeen) {
+                        tempLogAdd("marker seen"); // TEMP-LOG
+                    }
+                }
+                if (enterSent) {
+                    afterEnterChars += message.data.length; // TEMP-LOG
                 }
                 tempLogAdd(`output ${message.data.length} chars${message.data.includes("[Pasted text") ? " [PASTED-TEXT]" : ""}`); // TEMP-LOG (文字は書かず、印だけ)
                 restoreCursor();
