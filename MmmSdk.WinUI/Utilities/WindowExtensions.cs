@@ -1,6 +1,7 @@
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using MmmSdk.WinUI.Interop;
 using Windows.Graphics;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -18,9 +19,14 @@ public static class WindowExtensions
 
     /// <summary>トレイ・最小化・非表示から確実に戻して、前面に出す</summary>
     /// <param name="window">対象のウィンドウ</param>
-    /// <remarks>復元 (最小化しているとき)→ 表示 → 前面化の順に行う。別のアプリが前面にあると、Windows の制限で前面にならないことがある (<see cref="SetForeground"/>)。</remarks>
+    /// <remarks>
+    /// 別の仮想デスクトップ (Win+Tab のデスクトップ)にあるときは、いま見ているデスクトップへ移してから、復元 (最小化しているとき)→ 表示 → 前面化の順に行う。
+    /// 移さずに前面にすると、Windows がウィンドウのあるデスクトップへ切り替えてしまうため。
+    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある (<see cref="SetForeground"/>)。
+    /// </remarks>
     public static void BringToFront(this Window window)
     {
+        NativeMethods.MoveToCurrentVirtualDesktop((nint)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id));
         if (window.AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
         {
             presenter.Restore();

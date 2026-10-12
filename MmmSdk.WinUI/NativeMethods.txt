@@ -5,12 +5,19 @@ EnableWindow
 GetCursorPos
 GetDpiForWindow
 GetSystemMetrics
+GetForegroundWindow
 GetWindowLongPtr
 HWND_TOPMOST
 SetForegroundWindow
 SetWindowLongPtr
 SetWindowPos
 WINDOW_EX_STYLE
+
+// 仮想デスクトップ (Win+Tab のデスクトップ)
+CLSCTX
+CoCreateInstance
+IVirtualDesktopManager
+VirtualDesktopManager
 
 // IME
 GetFocus
