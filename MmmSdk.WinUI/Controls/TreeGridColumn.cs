@@ -10,7 +10,7 @@ namespace MmmSdk.WinUI.Controls;
 /// </remarks>
 public sealed class TreeGridColumn
 {
-    /// <summary>列を区別するキー (<see cref="TreeGridView.FocusCell"/> で使う)</summary>
+    /// <summary>列を区別するキー (<see cref="TreeGridView.FocusCell(ITreeGridRow, string)"/> で使う)</summary>
     public string Key { get; set; } = "";
 
     /// <summary>見出し</summary>
@@ -56,7 +56,7 @@ public sealed class TreeGridColumn
 
     /// <summary>入力するときのセルの見た目 (null なら、入力できない列)</summary>
     /// <remarks>
-    /// 左クリック・キーボードでセルに移ったとき・<see cref="TreeGridView.FocusCell"/> で、<see cref="CellTemplate"/> からこちらに切り替わり、入力欄にフォーカスが入る。
+    /// 左クリック・キーボードでセルに移ったとき・<see cref="TreeGridView.FocusCell(ITreeGridRow, string)"/> で、<see cref="CellTemplate"/> からこちらに切り替わり、入力欄にフォーカスが入る。
     /// 右クリックでは切り替わらない (メニューだけを出すため)。入力が終わったら、使う側が <see cref="TreeGridView.EndEdit"/> を呼ぶか、フォーカスが外れると、表示用に戻る。
     /// </remarks>
     public DataTemplate? EditTemplate { get; set; }
