@@ -67,6 +67,10 @@ public sealed partial class TreeGridView : UserControl
     /// <remarks>行のメニューを開くときに、押した所の列に合わせて項目を変えるために使う。キーボードでメニューを開いたときは null。</remarks>
     public string? ContextColumnKey { get; internal set; }
 
+    /// <summary>直近の右クリック (押下)で当たった、入力できるセルそのもの (無ければ null)</summary>
+    /// <remarks>行のメニューの項目から、押した所のセルの下に入れ物を出すために使う (行のメニューの対象は行全体なので、行の左端の下に出てしまうのを防ぐ)。キーボードでメニューを開いたときは null。</remarks>
+    public FrameworkElement? ContextCell { get; internal set; }
+
     /// <summary>行のない所の右クリックのメニュー</summary>
     public FlyoutBase? BlankContextFlyout
     {
