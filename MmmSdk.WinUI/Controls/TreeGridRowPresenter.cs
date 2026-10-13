@@ -138,7 +138,9 @@ public sealed partial class TreeGridRowPresenter : Grid
             if (_owner is not null)
             {
                 var point = e.GetCurrentPoint(this);
-                _owner.ContextColumnKey = point.Properties.IsRightButtonPressed ? FindEditableCellAt(point.Position)?.Column.Key : null;
+                var contextCell = point.Properties.IsRightButtonPressed ? FindEditableCellAt(point.Position) : null;
+                _owner.ContextColumnKey = contextCell?.Column.Key;
+                _owner.ContextCell = contextCell?.Cell;
 
                 // 入力に入らないセル (集計の行・備考のボタンなど)は、押した時点で、セルにフォーカスを移す。
                 // 備考のボタンが開く入れ物を閉じたとき、フォーカスは、開く前の場所に戻るので、先にそのセルへ移しておく
@@ -156,6 +158,7 @@ public sealed partial class TreeGridRowPresenter : Grid
             if (_owner is not null)
             {
                 _owner.ContextColumnKey = null;
+                _owner.ContextCell = null;
             }
         }), handledEventsToo: true);
         // キーボードのフォーカスだけ、行を選ぶ (表の空いた所を押したときに、XAML が最初の要素へ移すフォーカスでは、選ばない)
