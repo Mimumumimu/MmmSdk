@@ -453,6 +453,16 @@ public sealed partial class TreeGridView : UserControl
         });
     }
 
+    /// <summary>行のセルを返す (セルの下に、吹き出しなどを出す位置を知るため)</summary>
+    /// <param name="row">行</param>
+    /// <param name="columnKey">列のキー (<see cref="TreeGridColumn.Key"/>)</param>
+    /// <returns>セル。行が画面の外で作られていないとき、列が表示されていないときは null</returns>
+    public FrameworkElement? FindCell(ITreeGridRow row, string columnKey)
+    {
+        var index = (Repeater.ItemsSource as IList)?.IndexOf(row) ?? -1;
+        return index >= 0 && Repeater.TryGetElement(index) is TreeGridRowPresenter presenter ? presenter.FindCell(columnKey) : null;
+    }
+
     /// <summary>要素が属する行を返す (行の中の入力欄・メニューの対象から、行を知るため)</summary>
     /// <param name="element">行の中の要素 (行の表示部品そのものでもよい)</param>
     /// <returns>属する行。行の外なら null</returns>

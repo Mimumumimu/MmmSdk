@@ -471,6 +471,21 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
+    /// <summary>列のキーのセルを返す</summary>
+    /// <param name="columnKey">列のキー</param>
+    /// <returns>セル。その列が無いか、表示していなければ null</returns>
+    internal FrameworkElement? FindCell(string columnKey)
+    {
+        foreach (var (column, cell) in _cells)
+        {
+            if (column.Key == columnKey)
+            {
+                return cell;
+            }
+        }
+        return null;
+    }
+
     /// <summary>セルに、フォーカスの枠・キー操作の仕組みを付ける</summary>
     /// <param name="column">列</param>
     /// <param name="cell">セル</param>
