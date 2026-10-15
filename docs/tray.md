@@ -1,6 +1,6 @@
 # タスクトレイ
 
-アプリから移した汎用部品 (`MmmSdk.WinUI.Components.Tray`)。アプリ名・文言・アイコンは `TrayIconOptions` で受け取り、アプリ固有の知識は持たない。
+タスクトレイの汎用部品 (`MmmSdk.WinUI.Components.Tray`)。アプリ名・文言・アイコンは `TrayIconOptions` で受け取り、アプリ固有の知識は持たない。
 
 ## TrayIcon
 - `Shell_NotifyIcon` を直接呼ぶ (`NOTIFYICON_VERSION_4`。P/Invoke は CsWin32 が生成する)。WinForms には依存しない
@@ -17,8 +17,7 @@
 - 項目はオーナードロー (`TrayMenuRenderer`。internal)
   - フォントは BIZ UDゴシック 12pt (無ければ Yu Gothic UI → Segoe UI。有無は `EnumFontFamiliesEx` で調べる)。メニューを出すモニターの DPI に合わせる
   - 配色はレジストリの `AppsUseLightTheme` でダーク / ライトを切り替える (Windows 11 風の色)
-  - チェック欄の余白は `MNS_NOCHECK` で無くし、代わりに文字の左を 36px あける。区切り線は文字の書き出し位置から右端まで
-  - 行は詰め気味 (上下 4px・区切り線の行 7px)
+  - チェック欄の余白は `MNS_NOCHECK` で無くし、代わりに文字の左をあける。区切り線は文字の書き出し位置から右端まで。行は詰め気味にする (寸法は `TrayMenuRenderer`)
   - サブメニューの矢印は Segoe Fluent Icons (無ければ MDL2)で自分で描き、`ExcludeClipRect` で標準の矢印を止める
   - 枠 (外周・影)は Windows が描くので、uxtheme の非公開序数 135 / 136 でシステムのダーク設定に従わせている (Windows 10 1903 / ビルド 18362 以上でだけ呼ぶ。序数の意味が違う 1809 や、見つからない環境ではライトのまま。uxtheme は読み込み済みのものを取り、アドレスは 1 度だけ引く)
 

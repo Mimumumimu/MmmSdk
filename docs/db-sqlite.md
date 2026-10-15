@@ -1,6 +1,6 @@
 # SQLite のデータベースファイル
 
-`MmmSdk.Db.Sqlite`(`net10.0`)の設計。SQLite のデータベースファイルを開いて、版を上げる汎用の部品で、表・SQL・業務の知識は持たない。外部のドライバー `Microsoft.Data.Sqlite` を参照する。
+`MmmSdk.Db.Sqlite`(`net10.0`)の設計。SQLite のデータベースファイルを開いて、版を上げる汎用の部品で、表・SQL・業務の知識は持たない。外部のドライバー `Microsoft.Data.Sqlite` を参照する。独立したプロジェクトにするのは、`MmmSdk.Core` がトリミング・AOT 対応を宣言していて、`Microsoft.Data.Sqlite` が含むネイティブ DLL (`e_sqlite3.dll`)がその宣言と合わないため (ドライバーを使わないアプリには、その DLL が入らない。[architecture.md](architecture.md) の「依存先の違い」。`MmmSdk.Db.SqlServer` と同じ理由)。
 
 ## 型
 名前空間は `MmmSdk.Db.Sqlite.Components.Connections`。
@@ -33,10 +33,3 @@ await database.RunInTransactionAsync(async (connection, transaction) =>
 - **接続**: 処理のたびに開いて閉じる。接続プールは使わない(閉じた接続がファイルを掴んだままにならず、退避やバックアップのコピーが妨げられない)。ジャーナルは既定の方式(`DELETE`)で、ファイルが 1 つのまま残る
 - **書き込み**: `RunInTransactionAsync` は書き込みの許可を最初に取る(`BEGIN IMMEDIATE`)。読んでから書く処理の途中で、ほかの書き込みに割り込まれない。ロックは `BusyTimeoutSeconds` まで待つ
 - 外部キーは使わない(SQLite は既定でも無効のまま)
-
-## 決定の理由
-### `MmmSdk.Core` ではなく、独立したプロジェクトにする
-`MmmSdk.Core` はトリミング・AOT 対応を宣言している。`Microsoft.Data.Sqlite` はネイティブ DLL(`e_sqlite3.dll`)を含み、この宣言と合わない。ドライバーを使わないアプリには、その DLL が入らない([architecture.md](architecture.md) の「依存先の違い」。`MmmSdk.Db.SqlServer` と同じ理由)。
-
-### 接続プールを使わない
-SQLite の接続は、ファイルを開くだけで安い。プールを使うと、閉じた接続がファイルを掴み続け、壊れたファイルの退避(名前の変更)が Windows で失敗する。
