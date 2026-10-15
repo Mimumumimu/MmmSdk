@@ -58,16 +58,18 @@ public static class FeatureServiceCollectionExtensions
     /// <summary>機能 (プラグイン)を、入口から登録する</summary>
     /// <typeparam name="TPlugin">機能の入口の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="order">機能の並び順の値 (小さいほど先。サイドバー・トレイメニュー・設定の機能の一覧・設定の部品の並びに使う)</param>
+    /// <param name="order">機能の並び順の値 (小さいほど先。サイドバー・設定の機能の一覧・設定の部品の並びに使う。<paramref name="trayOrder"/> が null のときは、トレイメニューにも使う)</param>
+    /// <param name="trayOrder">トレイメニューの並び順の値 (小さいほど先。値が大きいほど下で、メニューが開く位置のカーソルに近い)。null なら <paramref name="order"/></param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
-    /// 画面の並びは <paramref name="order"/> で決まり、登録の順には依らない (同じ値は登録順)。
+    /// 画面の並びは <paramref name="order"/> と <paramref name="trayOrder"/> で決まり、登録の順には依らない (同じ値は登録順)。
+    /// トレイメニューは下から開くので、サイドバー (上ほどよく使う)とは向きが逆になる。よく使う機能ほど、トレイの値を大きくする。
     /// 起動時の準備だけは、順序に依存するものがあるので、登録した順に実行する。
     /// </remarks>
-    public static IServiceCollection AddFeaturePlugin<TPlugin>(this IServiceCollection services, int order)
+    public static IServiceCollection AddFeaturePlugin<TPlugin>(this IServiceCollection services, int order, int? trayOrder = null)
         where TPlugin : IFeaturePlugin, new()
     {
-        using (FeatureRegistrationScope.Begin(order))
+        using (FeatureRegistrationScope.Begin(order, trayOrder ?? order))
         {
             new TPlugin().Register(services);
         }
