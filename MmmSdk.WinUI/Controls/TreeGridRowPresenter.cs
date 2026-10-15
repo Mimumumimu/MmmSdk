@@ -34,14 +34,8 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>スクロールする列ごとの、集計の行の背景と行の色 (列ごとに分けて、一部の列だけ表の面の色のままにできるようにする)</summary>
     private readonly List<(TreeGridColumn Column, Border Backing, Border Tint)> _scrollBackings = [];
 
-    /// <summary>選んだ行の背景 (固定の部分)</summary>
-    private readonly Border _frozenOverlay = new();
-
-    /// <summary>選んだ行の背景 (スクロールする部分)</summary>
-    private readonly Border _scrollOverlay = new();
-
-    /// <summary>選んだ行の左端のしるし</summary>
-    private readonly Border _selectionBar = new();
+    /// <summary>選んだ行の枠 (行全体に重ねる。行の背景の色と混ざらない)</summary>
+    private readonly Border _selectionFrame = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed };
 
     /// <summary>セル (表示する列の順)</summary>
     private readonly List<(TreeGridColumn Column, ContentControl Cell)> _cells = [];
@@ -101,8 +95,6 @@ public sealed partial class TreeGridRowPresenter : Grid
     public TreeGridRowPresenter()
     {
         _frozenGrid.Children.Add(_frozenTint);
-        _frozenGrid.Children.Add(_frozenOverlay);
-        _scrollGrid.Children.Add(_scrollOverlay);
         _frozenPanel.Child = _frozenGrid;
         _scrollPanel.Child = _scrollGrid;
         _frozenPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -110,7 +102,9 @@ public sealed partial class TreeGridRowPresenter : Grid
         // 順番 (Tab の順)は、固定の列が先。重なりは、固定の列が上
         Children.Add(_frozenPanel);
         Children.Add(_scrollPanel);
+        Children.Add(_selectionFrame);
         Canvas.SetZIndex(_frozenPanel, 1);
+        Canvas.SetZIndex(_selectionFrame, 2);
 
         _toggleIcon.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons");
         _toggle.Content = _toggleIcon;
@@ -303,13 +297,9 @@ public sealed partial class TreeGridRowPresenter : Grid
 
         _frozenPanel.Style = (Style)_owner.Resources["FrozenPanelStyle"];
         _scrollPanel.Style = (Style)_owner.Resources["ScrollPanelStyle"];
-        _frozenOverlay.Style = (Style)_owner.Resources["SelectionOverlayStyle"];
-        _scrollOverlay.Style = (Style)_owner.Resources["SelectionOverlayStyle"];
-        _selectionBar.Style = (Style)_owner.Resources["SelectionBarStyle"];
+        _selectionFrame.Style = (Style)_owner.Resources["SelectionFrameStyle"];
         _toggle.Style = (Style)_owner.Resources["ToggleButtonStyle"];
         _frozenGrid.Children.Add(_frozenTint);
-        _frozenGrid.Children.Add(_frozenOverlay);
-        _scrollGrid.Children.Add(_scrollOverlay);
 
         var frozenWidth = 0.0;
         var scrollWidth = 0.0;
@@ -367,9 +357,6 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
 
         Grid.SetColumnSpan(_frozenTint, Math.Max(1, _frozenGrid.ColumnDefinitions.Count));
-        Grid.SetColumnSpan(_frozenOverlay, Math.Max(1, _frozenGrid.ColumnDefinitions.Count));
-        Grid.SetColumnSpan(_scrollOverlay, Math.Max(1, _scrollGrid.ColumnDefinitions.Count));
-        _frozenGrid.Children.Add(_selectionBar);
         _frozenPanel.Width = frozenWidth;
         _scrollPanel.Width = scrollWidth;
         _scrollPanel.Margin = new Thickness(frozenWidth, 0, 0, 0);
@@ -436,14 +423,11 @@ public sealed partial class TreeGridRowPresenter : Grid
         _anchored = true;
     }
 
-    /// <summary>選んだ行かどうかに合わせて、背景としるしを直す</summary>
+    /// <summary>選んだ行かどうかに合わせて、選んだ行の枠を出す・消す</summary>
     internal void UpdateSelected()
     {
         var selected = _row is not null && _owner is not null && ReferenceEquals(_owner.SelectedRow, _row);
-        var visibility = selected ? Visibility.Visible : Visibility.Collapsed;
-        _frozenOverlay.Visibility = visibility;
-        _scrollOverlay.Visibility = visibility;
-        _selectionBar.Visibility = visibility;
+        _selectionFrame.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>行のセルにフォーカスを移す</summary>
