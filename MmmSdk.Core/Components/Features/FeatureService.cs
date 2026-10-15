@@ -33,9 +33,15 @@ public sealed class FeatureService(
         {
             var saved = settings.Get(OrderKey, [], FeatureJsonContext.Readable.StringArray);
             return [.. saved.Distinct().Select(key => _registered.FirstOrDefault(f => f.Key == key)).OfType<FeatureInfo>()
-                .Concat(_registered.Where(f => !saved.Contains(f.Key)))];
+                .Concat(_registered.Where(f => !saved.Contains(f.Key)))
+                .Where(IsAvailable)];
         }
     }
+
+    /// <summary>機能が使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)を満たしているか</summary>
+    /// <param name="info">機能の登録情報</param>
+    /// <returns>条件が無い・満たしているとき true</returns>
+    private bool IsAvailable(FeatureInfo info) => info.AvailableWhen?.Invoke(services) ?? true;
 
     /// <summary>機能のオン・オフが切り替わったとき (引数は、切り替わった機能のキー)</summary>
     public event EventHandler<string>? Changed;
@@ -45,7 +51,7 @@ public sealed class FeatureService(
 
     /// <summary>機能がオンか</summary>
     /// <param name="featureKey">機能のキー。null (どの機能にも属さない)・オフにできない機能なら常にオン</param>
-    /// <returns>オンなら true。保存が無いときは、登録の初期値 (<see cref="FeatureInfo.DefaultEnabled"/>)</returns>
+    /// <returns>オンなら true。保存が無いときは、登録の初期値 (<see cref="FeatureInfo.DefaultEnabled"/>)。使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)を満たさない機能は、常に false</returns>
     public bool IsEnabled(string? featureKey)
     {
         if (featureKey is null)
@@ -54,6 +60,11 @@ public sealed class FeatureService(
         }
 
         var info = _registered.FirstOrDefault(f => f.Key == featureKey);
+        if (info is not null && !IsAvailable(info))
+        {
+            return false;
+        }
+
         return info is { CanDisable: false } || settings.Get(SettingKey(featureKey), info?.DefaultEnabled ?? true);
     }
 

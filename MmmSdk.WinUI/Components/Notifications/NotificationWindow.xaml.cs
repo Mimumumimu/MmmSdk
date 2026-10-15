@@ -124,6 +124,10 @@ public sealed partial class NotificationWindow : Window
         // 差し替えで高さが変わると、下や右がはみ出すことがあるため、毎回収める
         AppWindow.Move(KeepInWorkArea(position));
 
+        // 倍率が違うモニターへ移ると、Windows が大きさを倍率の比で変えるため、移したあとの倍率で高さを合わせ直して収め直す
+        FitHeight();
+        AppWindow.Move(KeepInWorkArea(AppWindow.Position));
+
         NativeMethods.ShowTopmostNoActivate(_hwnd);
 
         BlinkStoryboard.Stop();

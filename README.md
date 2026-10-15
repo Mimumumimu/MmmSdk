@@ -49,7 +49,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | 名前空間 | 内容 |
 | --- | --- |
 | `MmmSdk.Core.Components.Storage` | JSON ファイルの読み書き (`IJsonFileStore` / `JsonFileStore`)・共通の書式 (`ReadableJsonOptions`)・読み込み結果 (`DataLoadResult`)・読み書きの失敗 (`DataFileException`) |
-| `MmmSdk.Core.Components.Settings` | 汎用設定ストア (`ISettingsStore`・拡張メソッド `SettingsStoreExtensions`)。JSON での実装は `MmmSdk.Core.Components.Settings.Json`(`JsonSettingsStore`) |
+| `MmmSdk.Core.Components.Settings` | 汎用設定ストア (`ISettingsStore`・拡張メソッド `SettingsStoreExtensions`)と、その先読みの起動時の準備 (`SettingsStoreStartup`。ホストが、各機能の準備より先に `AddStartupTask` で登録する)。JSON での実装は `MmmSdk.Core.Components.Settings.Json`(`JsonSettingsStore`) |
 | `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元 (`IWindowPositionService` / `WindowPositionService` / `WindowPosition`)と、画面との位置関係の計算 (`ScreenGeometry`。見えているか・作業領域に収める) |
 | `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を設定ファイルとは別の場所に保存する口 (`ISecretStore` / `SecretStoreException`) |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理 (`IPathOpener` / `PathOpener` / `PathOpenException`)と種類の判定 (`PathTarget`) |
@@ -75,7 +75,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Audio` | 無音を流し続けて、音声機器が休止するのを防ぐ (`IAudioKeepAlive` / `AudioKeepAlive`。`AudioGraph` を使う) |
 | `MmmSdk.WinUI.Components.Secrets` | 秘密を Windows の資格情報マネージャーに保存する (`CredentialSecretStore`。`ISecretStore` の実装) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
-| `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`) |
+| `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの本体 (`NavigationHost`・`NavigationHostViewModel`・`PageProvider`。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)・機能のトレイメニューの項目の登録 (`AddTrayMenuSource`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |

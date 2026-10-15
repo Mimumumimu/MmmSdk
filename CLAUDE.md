@@ -18,7 +18,7 @@
   - 迷ったら「その型は、ある部品の一部か」で決め、一部ならその部品のフォルダに置く (例: `ReadableJsonOptions` は Storage、`ScreenGeometry` は WindowPositions、`SettingsStoreExtensions` は Settings、`TerminalControl` は Terminal、`ThumbnailImage` は Attachments)
   - Core と WinUI で同じテーマの部品は同じフォルダ名にする。`Interop/` は土台なので層の外。DI 登録 (`Sdk*ServiceCollectionExtensions.cs`)はプロジェクト直下
   - 部品ごとの中身の一覧は [docs/architecture.md](docs/architecture.md) の「部品の一覧」
-- DI は拡張メソッドで登録する：`AddMmmSdkCore(dataDirectory)`(IJsonFileStore・ISettingsStore・IWindowPositionService・IPathOpener。実装の型ではなくインターフェースで受け取る)→ `AddMmmSdkWinUI()`(通知ダイアログ・DialogService・ファイル/フォルダー選択・クリップボード・秘密の保存・読み上げ・無音の出力。Core を先に登録すること)。トレイを使うアプリは別に `AddMmmSdkTray(options)`
+- DI は拡張メソッドで登録する：`AddMmmSdkCore(dataDirectory)`(IJsonFileStore・ISettingsStore・IWindowPositionService・IPathOpener。実装の型ではなくインターフェースで受け取る)→ `AddMmmSdkWinUI()`(通知ダイアログ・DialogService・ファイル/フォルダー選択・クリップボード・秘密の保存・読み上げ・無音の出力。Core を先に登録すること)。トレイを使うアプリは別に `AddMmmSdkTray(options)`、サイドバーを使うアプリは別に `AddNavigationHost()`(`AddFeatureService()` を先に登録すること)
 - ビルドの共通設定はリポジトリ直下の 3 つ。アプリに取り込まれても MSBuild は近いこちらを使うので、アプリの設定とは混ざらない。アプリと共通のパッケージは SDK を先に上げる
   - `Directory.Build.props`: バージョン・Nullable・ImplicitUsings・XML コメントの検査・コードスタイルのビルド時検査・全プロジェクトを x64 専用にする `Platforms` と既定の `Platform` (Core も含めて AnyCPU を使わない)・出力先に x64・win-x64 の段を作らない `AppendPlatformToOutputPath` / `AppendRuntimeIdentifierToOutputPath` (RID の段があると、アプリの VS の「発行」が RID を渡したときだけ出力先が変わり、DLL を見つけられずに失敗する)
   - `Directory.Packages.props`: 中央パッケージ管理 (csproj にバージョンを書かない)

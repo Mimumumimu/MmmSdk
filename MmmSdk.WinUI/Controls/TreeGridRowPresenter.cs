@@ -34,8 +34,12 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>スクロールする列ごとの、集計の行の背景と行の色 (列ごとに分けて、一部の列だけ表の面の色のままにできるようにする)</summary>
     private readonly List<(TreeGridColumn Column, Border Backing, Border Tint)> _scrollBackings = [];
 
-    /// <summary>選んだ行の枠 (行全体に重ねる。行の背景の色と混ざらない)</summary>
-    private readonly Border _selectionFrame = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed };
+    /// <summary>選んだ行の枠 (固定の列の部分。行の背景の色と混ざらない)</summary>
+    /// <remarks>セルのフォーカスの枠より後ろに描くため、行全体ではなく、固定の列・スクロールする列それぞれの Grid の中に置く。</remarks>
+    private readonly Border _frozenSelection = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, -1) };
+
+    /// <summary>選んだ行の枠 (スクロールする列の部分)</summary>
+    private readonly Border _scrollSelection = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, -1) };
 
     /// <summary>セル (表示する列の順)</summary>
     private readonly List<(TreeGridColumn Column, ContentControl Cell)> _cells = [];
@@ -99,9 +103,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         // 順番 (Tab の順)は、固定の列が先。重なりは、固定の列が上
         Children.Add(_frozenPanel);
         Children.Add(_scrollPanel);
-        Children.Add(_selectionFrame);
         Canvas.SetZIndex(_frozenPanel, 1);
-        Canvas.SetZIndex(_selectionFrame, 2);
 
         _toggleIcon.FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Segoe Fluent Icons");
         _toggle.Content = _toggleIcon;
@@ -132,12 +134,18 @@ public sealed partial class TreeGridRowPresenter : Grid
                 _owner.ContextCell = contextCell?.Cell;
 
                 // 入力に入らないセル (集計の行・備考のボタンなど)は、押した時点で、セルにフォーカスを移す。
-                // 備考のボタンが開く入れ物を閉じたとき、フォーカスは、開く前の場所に戻るので、先にそのセルへ移しておく
-                if (point.Properties.IsLeftButtonPressed && FindCellAt(point.Position) is { } pressed
-                    && !(pressed.Column.IsEditable && _row is not null && _row.CanEdit(pressed.Column.Key)))
+                // 備考のボタンが開く入れ物を閉じたとき、フォーカスは、開く前の場所に戻るので、先にそのセルへ移しておく。
+                // 右クリックは、どのセルでも同じように移す (入力は始めない。入力中のセルの中は、入力欄自身のメニューに任せる)
+                if (FindCellAt(point.Position) is { } pressed)
                 {
-                    pressed.Cell.Focus(FocusState.Programmatic);
-                    _owner.SetCursor(pressed.Cell);
+                    var isRight = point.Properties.IsRightButtonPressed;
+                    var canEdit = pressed.Column.IsEditable && _row is not null && _row.CanEdit(pressed.Column.Key);
+                    var isEditingCell = _editing is { } editing && ReferenceEquals(editing.Cell, pressed.Cell);
+                    if ((point.Properties.IsLeftButtonPressed && !canEdit) || (isRight && !isEditingCell))
+                    {
+                        pressed.Cell.Focus(FocusState.Programmatic);
+                        _owner.SetCursor(pressed.Cell);
+                    }
                 }
             }
         }), handledEventsToo: true);
@@ -292,12 +300,16 @@ public sealed partial class TreeGridRowPresenter : Grid
 
         _frozenPanel.Style = (Style)_owner.Resources["FrozenPanelStyle"];
         _scrollPanel.Style = (Style)_owner.Resources["ScrollPanelStyle"];
-        _selectionFrame.Style = (Style)_owner.Resources["SelectionFrameStyle"];
+        _frozenSelection.Style = (Style)_owner.Resources["SelectionFrameStyle"];
+        _scrollSelection.Style = (Style)_owner.Resources["SelectionFrameStyle"];
+        _frozenSelection.Margin = new Thickness(0, 0, 0, -1);
+        _scrollSelection.Margin = new Thickness(0, 0, 0, -1);
         _toggle.Style = (Style)_owner.Resources["ToggleButtonStyle"];
         _frozenGrid.Children.Add(_frozenTint);
 
         var frozenWidth = 0.0;
         var scrollWidth = 0.0;
+        var pendingFrames = new List<(Grid Grid, Border Frame)>();
         foreach (var column in _owner.VisibleColumns)
         {
             var grid = column.IsFrozen ? _frozenGrid : _scrollGrid;
@@ -334,11 +346,13 @@ public sealed partial class TreeGridRowPresenter : Grid
             var frame = new Border
             {
                 BorderThickness = new Thickness(1),
+                // 上端は行の上端に合わせ、下端は行の下線の位置まで 1px はみ出す (行の高さいっぱいにする)
+                Margin = new Thickness(0, 0, 0, -1),
                 IsHitTestVisible = false,
                 Visibility = Visibility.Collapsed,
             };
             Grid.SetColumn(frame, index);
-            grid.Children.Add(frame);
+            pendingFrames.Add((grid, frame));
             _frames[cell] = frame;
 
             if (column.IsFrozen)
@@ -349,6 +363,16 @@ public sealed partial class TreeGridRowPresenter : Grid
             {
                 scrollWidth += column.Width;
             }
+        }
+
+        // 重なりの順: セル・背景 → 選んだ行の紫の線 → セルのフォーカスの枠 (枠が、紫の線より前に出る)
+        Grid.SetColumnSpan(_frozenSelection, Math.Max(1, _frozenGrid.ColumnDefinitions.Count));
+        Grid.SetColumnSpan(_scrollSelection, Math.Max(1, _scrollGrid.ColumnDefinitions.Count));
+        _frozenGrid.Children.Add(_frozenSelection);
+        _scrollGrid.Children.Add(_scrollSelection);
+        foreach (var (grid, frame) in pendingFrames)
+        {
+            grid.Children.Add(frame);
         }
 
         Grid.SetColumnSpan(_frozenTint, Math.Max(1, _frozenGrid.ColumnDefinitions.Count));
@@ -422,7 +446,8 @@ public sealed partial class TreeGridRowPresenter : Grid
     internal void UpdateSelected()
     {
         var selected = _row is not null && _owner is not null && ReferenceEquals(_owner.SelectedRow, _row);
-        _selectionFrame.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+        _frozenSelection.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+        _scrollSelection.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
     }
 
     /// <summary>行のセルにフォーカスを移す</summary>
