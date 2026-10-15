@@ -102,7 +102,11 @@ public sealed class WindowBoundsKeeper
         if (_positions.LoadBounds(_key) is { Width: > 0, Height: > 0 } saved
             && WindowPlacement.IsVisibleEnough(new RectInt32(saved.X, saved.Y, saved.Width, saved.Height), VisibleRatio))
         {
-            _window.AppWindow.MoveAndResize(new RectInt32(saved.X, saved.Y, saved.Width, saved.Height));
+            // 先に位置だけ移す。保存した位置のモニターの倍率が作成時と違うと、移した時点で Windows が大きさを倍率の比で変えるため、
+            // 大きさはそのあとに保存した値で指定し直す (MoveAndResize 1 回だと、倍率が違うモニターで大きさがずれる)
+            var target = new RectInt32(saved.X, saved.Y, saved.Width, saved.Height);
+            _window.AppWindow.Move(new PointInt32(target.X, target.Y));
+            _window.AppWindow.MoveAndResize(target);
             return;
         }
 
