@@ -84,31 +84,17 @@
     // CLI は貼り付けの処理中に届いた Enter を本文の一部 (改行)として扱うことがあるため、
     // 貼り付けへの反応 (画面の書き換え)が落ち着くのを待ってから Enter を送る。
     // 合図の文字列 (marker)が渡されたときは、それが出力に現れるまで (MAX_WAIT_MS まで)待つ
-    // TEMP-LOG: 送信のタイミングの調査用 (原因が分かったら、TEMP-LOG の行をすべて消す)
-    let tempLog = null;
-    const tempLogAdd = text => tempLog?.push(`${Math.round(performance.now() - tempLog.start)}ms ${text}`);
-
     /** 送信の完了を待っている合図の文字列と、それが出力に現れたか (待っていなければ null) */
     let pendingMarker = null;
     let markerSeen = false;
     /** 合図の探索に使う、貼り付け後の出力 (合図を待っている間だけ貯める) */
     let markerBuffer = "";
 
-    // TEMP-LOG: Enter のあとの出力の文字数 (Enter が受け付けられたかの目安。受け付けられると、返事の描画が続く)
-    let enterSent = false;
-    let afterEnterChars = 0;
-    const ACCEPTED_MIN_CHARS = 500;
-
     const submit = (text, marker) => {
         const pastedAt = performance.now();
         pendingMarker = marker ?? null;
         markerSeen = false;
         markerBuffer = "";
-        enterSent = false;
-        afterEnterChars = 0;
-        tempLog = [];
-        tempLog.start = pastedAt;
-        tempLogAdd(`paste ${text.length} chars, ${text.split("\n").length} lines${pendingMarker === null ? "" : ", waiting marker"}`);
         term.paste(text);
 
         const timer = setInterval(() => {
@@ -120,20 +106,9 @@
             const limit = pendingMarker !== null && !markerSeen ? MARKER_MAX_WAIT_MS : MAX_WAIT_MS;
             if ((elapsed >= MIN_WAIT_MS && quiet && ready) || elapsed >= limit) {
                 clearInterval(timer);
-                tempLogAdd(`ENTER (quiet=${quiet}, marker=${pendingMarker === null ? "not needed" : markerSeen ? "seen" : "NOT seen (timeout)"})`);
                 pendingMarker = null;
                 markerBuffer = "";
                 host.postMessage({ type: "input", data: "\r" });
-                enterSent = true;
-                const log = tempLog;
-                setTimeout(() => {
-                    log.push(`RESULT: ${afterEnterChars} chars after Enter -> ${afterEnterChars >= ACCEPTED_MIN_CHARS ? "accepted" : "NOT accepted (suspect)"}`);
-                    host.postMessage({ type: "debug", data: log.join("\n") });
-                    if (tempLog === log) {
-                        tempLog = null;
-                        enterSent = false;
-                    }
-                }, 3000);
             }
         }, POLL_MS);
     };
@@ -211,14 +186,7 @@
                     // 出力のかたまりの境目や制御文字で合図が分かれても見つかるよう、貼り付け後の出力をつなげて、制御文字と空白を除いて探す
                     markerBuffer = (markerBuffer + message.data).slice(-MARKER_BUFFER_CHARS);
                     markerSeen = normalizeOutput(markerBuffer).includes(normalizeOutput(pendingMarker));
-                    if (markerSeen) {
-                        tempLogAdd("marker seen"); // TEMP-LOG
-                    }
                 }
-                if (enterSent) {
-                    afterEnterChars += message.data.length; // TEMP-LOG
-                }
-                tempLogAdd(`output ${message.data.length} chars${message.data.includes("[Pasted text") ? " [PASTED-TEXT]" : ""}`); // TEMP-LOG (文字は書かず、印だけ)
                 restoreCursor();
                 pendingWrites++;
                 // 描画が終わったら、その文字数をホストへ返す (ホストは未返却が多いと出力を送らず待つ)
