@@ -76,9 +76,6 @@ public sealed partial class TreeGridRowPresenter : Grid
         return null;
     }
 
-    /// <summary>薄い色を付けているセル</summary>
-    private ContentControl? _hovered;
-
     /// <summary>入力用の見た目になっているセル (無ければ null。1 行に 1 つだけ)</summary>
     private (TreeGridColumn Column, ContentControl Cell)? _editing;
 
@@ -122,8 +119,6 @@ public sealed partial class TreeGridRowPresenter : Grid
 
         // セルへのクリックは、セルの部品ではなく、行の上の位置で受ける (セルの空いた所も、同じセルのクリックにするため)
         AddHandler(TappedEvent, new TappedEventHandler(OnRowTapped), handledEventsToo: true);
-        PointerMoved += OnRowPointerMoved;
-        PointerExited += (_, _) => SetHover(null);
 
         // 行の選択は、フォーカスではなく、行の中の押下 (右クリックを含む)で決める (入力欄などが処理済みにしても、受ける)
         AddHandler(PointerPressedEvent, new PointerEventHandler((_, e) =>
@@ -577,32 +572,6 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>行の上でポインターが動いたとき、入力できるセルに、触れるとわかる薄い色を付ける</summary>
-    /// <param name="sender">イベントの送信元</param>
-    /// <param name="e">ポインターの情報</param>
-    private void OnRowPointerMoved(object sender, PointerRoutedEventArgs e)
-        => SetHover(_editing is null ? FindEditableCellAt(e.GetCurrentPoint(this).Position)?.Cell : null);
-
-    /// <summary>薄い色を付けるセルを切り替える</summary>
-    /// <param name="cell">色を付けるセル (無ければ null)</param>
-    private void SetHover(ContentControl? cell)
-    {
-        if (ReferenceEquals(cell, _hovered))
-        {
-            return;
-        }
-
-        if (_hovered is not null)
-        {
-            _hovered.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        }
-        _hovered = cell;
-        if (cell is not null)
-        {
-            cell.Background = (Brush)Application.Current.Resources["SubtleFillColorSecondaryBrush"];
-        }
-    }
-
     /// <summary>入力中のセルの外が押されたら、入力を終えて、表示用に戻す</summary>
     /// <param name="source">押された要素</param>
     /// <remarks>戻す前に、<see cref="TreeGridView.EditEnding"/> で、使う側が入力した値を確定する。</remarks>
@@ -658,7 +627,6 @@ public sealed partial class TreeGridRowPresenter : Grid
 
         Activate();
         _editing = (column, cell);
-        SetHover(null);
         cell.IsTabStop = false;
         cell.ContentTemplate = column.EditTemplate;
 
