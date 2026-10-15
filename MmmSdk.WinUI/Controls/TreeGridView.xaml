@@ -18,13 +18,13 @@
                 <SolidColorBrush x:Key="TreeGridPanelBackgroundBrush" Color="#202020" />
                 <SolidColorBrush x:Key="TreeGridHeaderBackgroundBrush" Color="#202020" />
                 <SolidColorBrush x:Key="TreeGridSummaryBackgroundBrush" Color="#202020" />
-                <SolidColorBrush x:Key="TreeGridSelectionBrush" Color="#0FFFFFFF" />
+                <SolidColorBrush x:Key="TreeGridSelectionFrameBrush" Color="#A78BFA" />
             </ResourceDictionary>
             <ResourceDictionary x:Key="Light">
                 <SolidColorBrush x:Key="TreeGridPanelBackgroundBrush" Color="#FCFCFC" />
                 <SolidColorBrush x:Key="TreeGridHeaderBackgroundBrush" Color="#F3F3F3" />
                 <SolidColorBrush x:Key="TreeGridSummaryBackgroundBrush" Color="#F3F3F3" />
-                <SolidColorBrush x:Key="TreeGridSelectionBrush" Color="#0F000000" />
+                <SolidColorBrush x:Key="TreeGridSelectionFrameBrush" Color="#7C3AED" />
             </ResourceDictionary>
         </ResourceDictionary.ThemeDictionaries>
 
@@ -52,19 +52,10 @@
             <Setter Property="Background" Value="{ThemeResource TreeGridPanelBackgroundBrush}" />
         </Style>
 
-        <!-- 選んだ行の背景 (行の下の色に重ねる) -->
-        <Style x:Key="SelectionOverlayStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource TreeGridSelectionBrush}" />
-            <Setter Property="IsHitTestVisible" Value="False" />
-        </Style>
-
-        <!-- 選んだ行の左端のしるし -->
-        <Style x:Key="SelectionBarStyle" TargetType="Border">
-            <Setter Property="Background" Value="{ThemeResource AccentFillColorDefaultBrush}" />
-            <Setter Property="Width" Value="3" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="Margin" Value="0,8" />
-            <Setter Property="CornerRadius" Value="1.5" />
+        <!-- 選んだ行の枠 (行の上下の線。行全体に重ねる。背景の色を変えないので、案件の青・触れない行の灰色と混ざらない) -->
+        <Style x:Key="SelectionFrameStyle" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{ThemeResource TreeGridSelectionFrameBrush}" />
+            <Setter Property="BorderThickness" Value="0,1" />
             <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
 

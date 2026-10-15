@@ -1,6 +1,6 @@
 # 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止
 
-アプリから移した汎用部品。アプリ固有の画面・文言は持たない (`MmmSdk.WinUI.Components.Dialogs` / `MmmSdk.Core.Components.SingleInstance`)。
+アプリ固有の画面・文言を持たない汎用部品 (`MmmSdk.WinUI.Components.Dialogs` / `MmmSdk.Core.Components.SingleInstance`)。
 
 ## DialogService (ダイアログの親の決定)
 
@@ -9,7 +9,7 @@
 - 確認ダイアログ (`ConfirmAsync`)は `SemaphoreSlim(1)` で順番に開く (`ContentDialog` は、同じ画面に 2 つ同時に開くと例外になる)。親は、順番が来てから決める
 - 普通のウィンドウは `TrackWindow` で登録する。アクティブになるたびに「最後に操作したウィンドウ」を更新し、閉じたら候補から外す
 - モーダルウィンドウは `ShowModalAsync` で開く間だけ覚え、アクティブになったら「最後に操作したウィンドウ」にもなる (その上に開くダイアログの親にするため。一覧の上に入力画面・確認を重ねられる)
-- 親は「最後に操作したウィンドウ」を先にする (いちばん手前のモーダルを先にしない)。別のウィンドウでモーダルが開いたまま、もう一方のウィンドウ (アプリのメイン画面など)で操作したとき、操作したほうの上に出すため (旧: いちばん手前のモーダルが先で、メイン画面の一覧から開いた入力画面が、リマインダーのメイン画面から開いた一覧の上に出た)
+- 親は「最後に操作したウィンドウ」を先にする (いちばん手前のモーダルを先にしない)。別のウィンドウでモーダルが開いたまま、もう一方のウィンドウ (アプリのメイン画面など)で操作したとき、操作したほうの上に出すため
 - `ConfirmAsync(title, message, primaryText, closeText)`: 確認ダイアログ。ボタンの文言は、実行・取りやめとも、アプリが言語に合わせて渡す (SDK は日本語を埋め込まない)。取り消しにくい操作の確認用に、既定のボタンを置かない (Enter で誤って実行しない。キャンセルを既定にすると、キャンセルが強調色になって主な操作に見えるので、どちらも強調しない)。コードで作る `ContentDialog` には既定のスタイルが当たらないので、`DefaultContentDialogStyle` を明示している
 - `AskFileConflictAsync(title, message, replaceText, skipText, closeText, decideEachText = null)`: 保存先に同じ名前のファイルがあるときの扱いを聞く。選択肢は縦に並べたボタン (Windows のファイルのコピーの確認と同じ形)で、結果は `FileConflictChoice`(`Replace` / `Skip` / `DecideEach` / `Cancel`)。`decideEachText` を渡したときだけ「ファイルごとに決める」の選択肢が出て、`DecideEach` が返りうる (複数のファイルをまとめて聞くとき)。1 つのファイルについて聞くときは省く。取りやめるボタン・Esc は `Cancel`。置き換えは取り消しにくいので、`ConfirmAsync` と同じく既定のボタンを置かない。既定のボタンが無いと最初の選択肢 (置き換える)にフォーカスが当たり、Enter・Space 1 回で置き換えてしまうので、開いたら取りやめるボタンへフォーカスを移す (`Opened`。強調色は付けない)。文言は、すべてアプリが渡す。`ConfirmAsync` と同じロックで順番に開く
 - 口は 2 つ。確認ダイアログは `IDialogService`、親の決定 (`Owner` / `TrackWindow` / `ShowModalAsync` / `Attach`)は `IDialogHost`。どちらも同じ `DialogService` が実装し、DI では同じインスタンスを返す。ViewModel は `IDialogService`、ウィンドウを開くアプリ側のサービスは `IDialogHost` を受け取る (具象型には依存しない)
@@ -17,7 +17,7 @@
 - `IDialogHost.Attach(dialog)`: 開く前の `ContentDialog` を今の親の上に載せる。親の画面 (`XamlRoot`)と、親のテーマ (`ActualTheme`)を渡す。`ConfirmAsync`・`AskFileConflictAsync` と、アプリ側のダイアログ (DI から作る XAML のダイアログ)は、すべてこれを通して開く
 - UI スレッドから呼ぶ
 
-### 決定の理由: ダイアログに親のテーマを渡す
+### ダイアログに親のテーマを渡す
 - `ContentDialog` は `XamlRoot` を渡しただけでは、親のテーマを引き継がない。背景・タイトル (ダイアログの枠)はライト、`{ThemeResource ...}` を付けた文字・入力欄・一覧の項目はダークと、テーマが食い違い、ダークモードで文字が読めなくなった
 - 親のテーマ (`Owner.Content` の `ActualTheme`)を `RequestedTheme` に明示して渡す。開くたびに読むので、OS のテーマを切り替えたあとに開くダイアログにも反映される。ダイアログを開く 1 か所 (`Attach`)に集め、新しいダイアログが渡し忘れないようにする (`Owner.Content.XamlRoot` を直接代入しない)
 - 最終形への近づき方: ダイアログの見た目 (テーマ)の決定を SDK の 1 か所に持つ。アプリのダイアログは色を決め打ちせず、ThemeResource だけで書く

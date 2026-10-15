@@ -558,20 +558,22 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 
 | ファイル | 内容 |
 | --- | --- |
-| [docs/architecture.md](docs/architecture.md) | フォルダの層・プロジェクトの分け方・CsWin32 の決定の理由 |
+| [docs/architecture.md](docs/architecture.md) | フォルダの層・プロジェクトの分け方・CsWin32・機能 (プラグイン)がホストへ入る口・部品の一覧 |
 | [docs/storage.md](docs/storage.md) | JSON の読み書き・シリアライザの設定・壊れたファイルの扱い・汎用設定ストア・秘密の保存 |
 | [docs/notification-dialog.md](docs/notification-dialog.md) | 通知ダイアログの見た目と挙動・ウィンドウ位置の保存・パスを開く処理 |
 | [docs/dialogs.md](docs/dialogs.md) | 確認ダイアログ・ファイル/フォルダー選択・クリップボード・擬似モーダル・多重起動の防止 |
-| [docs/speech.md](docs/speech.md) | 読み上げ (Windows 標準の音声合成)の仕組みと決定の理由 |
-| [docs/audio.md](docs/audio.md) | 音声機器を眠らせない無音の出力 (`AudioGraph`)の仕組みと決定の理由 |
+| [docs/speech.md](docs/speech.md) | 読み上げ (Windows 標準の音声合成)の仕組み |
+| [docs/audio.md](docs/audio.md) | 音声機器を眠らせない無音の出力 (`AudioGraph`)の仕組み |
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
 | [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・`TreeGridView`・IME・添付の一時保存・添付の画像 |
+| [docs/db-sqlite.md](docs/db-sqlite.md) | SQLite のデータベースファイル (`MmmSdk.Db.Sqlite`)の使い方・開くときの決まり |
+| [docs/db-sqlserver.md](docs/db-sqlserver.md) | SQL Server への接続 (`MmmSdk.Db.SqlServer`)の使い方・接続の決まり・失敗のメッセージ |
 
 ## バージョン
 
-現在のバージョンは 0.1.0 です (`Directory.Build.props` の `Version`。ファイル・アセンブリのバージョンは 0.1.0.0 になります)。アプリとは別に上げます。
+バージョンは `Directory.Build.props` の `Version` で決まります (ファイル・アセンブリのバージョンは自動で決まります)。アプリとは別に上げます。
 
 ## ビルド
 
