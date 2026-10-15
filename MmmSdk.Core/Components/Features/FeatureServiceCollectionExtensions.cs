@@ -21,13 +21,14 @@ public static class FeatureServiceCollectionExtensions
     /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
     /// <param name="defaultEnabled">保存が無いとき (初回起動)のオン・オフ</param>
+    /// <param name="availableWhen">機能が使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)。null なら常に使える</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 機能の <c>Add&lt;機能&gt;()</c> の中で、ページ・トレイメニュー・起動時の準備などの登録に、同じキーを渡す。
     /// 設定ページの「機能」の一覧に並ぶ (利用者が決めた並びが無いときは、機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)の順)。
     /// </remarks>
-    public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName, bool defaultEnabled = true)
-        => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled, FeatureRegistrationScope.CurrentOrder));
+    public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName, bool defaultEnabled = true, Func<IServiceProvider, bool>? availableWhen = null)
+        => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled, FeatureRegistrationScope.CurrentOrder, AvailableWhen: availableWhen));
 
     /// <summary>オフにできない機能として登録する (設定ページの「機能」の一覧に、スイッチなしで出し、並び順だけ使う)</summary>
     /// <param name="services">登録先のサービスコレクション</param>

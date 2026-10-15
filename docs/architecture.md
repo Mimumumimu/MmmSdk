@@ -33,9 +33,9 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 
 ## 機能 (プラグイン)がホストへ入る口 (`Features` / `Pages` / `Hosting` / `Tray`)
 - アプリの機能を、機能ごとのライブラリ (プラグイン)に分けられるよう、機能がホスト (exe)へ入るための型を SDK に置く。機能はホストを参照できないため、機能もホストも SDK のこれらの型を参照する
-- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>(order)` で呼ぶ。`order` は、サイドバー・トレイ・設定の並び順の値で、登録の間だけ `FeatureRegistrationScope` が持つ)・機能の登録 `FeatureInfo` / `AddFeature` / `AddAlwaysOnFeature`(オフにできない機能。並び順だけ使う)・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`・オン・オフの管理 `FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順 (設定ストアの `Feature.Order`。キーの配列。載っていない機能は登録の順で後ろに付く。`OrderOf` が画面の並びの値を返し、`SetOrderAsync` / `ResetOrderAsync` で保存・既定へ戻し、`OrderChanged` で通知する。トレイは使わない)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。切り替えの確認・画面への反映はホストが持つ)・`FeatureChangeResult`
+- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>(order)` で呼ぶ。`order` は、サイドバー・トレイ・設定の並び順の値で、登録の間だけ `FeatureRegistrationScope` が持つ)・機能の登録 `FeatureInfo` / `AddFeature` / `AddAlwaysOnFeature`(オフにできない機能。並び順だけ使う)。`AddFeature` の `availableWhen` は、機能が動く前提 (例: サーバーモード)を満たさない間、機能の一覧にも出さず常にオフにする条件 (利用者のオン・オフとは別。サイドバー・トレイ・設定の部品・起動時の準備が、`IsEnabled` で一斉に外れる)・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`・オン・オフの管理 `FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順 (設定ストアの `Feature.Order`。キーの配列。載っていない機能は登録の順で後ろに付く。`OrderOf` が画面の並びの値を返し、`SetOrderAsync` / `ResetOrderAsync` で保存・既定へ戻し、`OrderChanged` で通知する。トレイは使わない)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。切り替えの確認・画面への反映はホストが持つ)・`FeatureChangeResult`
 - `MmmSdk.Core.Components.Hosting`: `AppEnvironment`(アプリの名前・データのフォルダー・アイコンのパス。ホストが 1 つ登録し、機能が DI から受け取る)
-- `MmmSdk.WinUI.Components.Pages`: サイドバーのページ `NavigationPage` / `NavigationItem` / `NavigationArea` / `AddNavigationPage`・設定の部品 `SettingsSection` / `AddSettingsSection`・ページの後始末 `IReleasablePage`・ホストが作ったページを調べる口 `IPageCache`
+- `MmmSdk.WinUI.Components.Pages`: サイドバーのページ `NavigationPage` / `NavigationItem` / `NavigationArea` / `AddNavigationPage`・設定の部品 `SettingsSection` / `AddSettingsSection`・ページの後始末 `IReleasablePage`・ホストが作ったページを調べる口 `IPageCache`・サイドバーの本体 `NavigationHost` (UserControl。`NavigationView` と、選んだ項目のページを出す `Frame`)・項目の一覧と選択を持つ `NavigationHostViewModel`・ページを DI のスコープごとに作って保つ `PageProvider`。登録された機能のオン・オフ・並び順 (`FeatureService`)に合わせて項目を作り直し、オフになった機能のページを捨てる。ウィンドウ (タイトルバー・トレイへの退避)は、アプリが持つ。アプリごとに同じ部品を書き写さず、機能 (バッチ処理)が増えても、ホストは機能の名前を持たずに済むようにするため、MmmTool と MmmBatch で共有する
 - `MmmSdk.WinUI.Components.Tray`: トレイメニューの項目の登録 `AddTrayMenuSource`(機能がオフの間は項目を出さない包みを内部に持つ)
 - 登録の拡張メソッドの型引数には、トリミング・AOT 対応のため `DynamicallyAccessedMembers(PublicConstructors)` を付ける (Core の `IsAotCompatible` の宣言に合わせる)
 - 最終形にどう近づくか: 機能とホストの境界をここに 1 か所に持つので、機能の追加・削除はホストの 1 行で済み、実行時に DLL を読み込むローダーを足しても、機能側は作り直さない
@@ -47,7 +47,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 
 ### MmmSdk.Core
 - `MmmSdk.Core.Components.Storage`: JsonFileStore・ReadableJsonOptions・DataLoadResult・DataFileException・LoadStatus
-- `.Settings`: ISettingsStore・SettingsStoreExtensions。インターフェースは型情報つきのメソッドだけで、基本型の専用メソッドは拡張メソッド。JSON 実装と `SettingsJsonContext` は `.Settings.Json`
+- `.Settings`: ISettingsStore・SettingsStoreExtensions・SettingsStoreStartup (設定の先読み。ホストが最初の起動時の準備として登録する)。インターフェースは型情報つきのメソッドだけで、基本型の専用メソッドは拡張メソッド。JSON 実装と `SettingsJsonContext` は `.Settings.Json`
 - `.WindowPositions`: WindowPositionService・WindowPosition・`WindowPositionJsonContext`・ScreenGeometry (画面との位置関係の純粋な計算)
 - `.Secrets`: ISecretStore・SecretStoreException (秘密の保存の口。実装は WinUI 側の `.Secrets`)
 - `.Paths`: PathOpener・PathOpenException・PathTarget

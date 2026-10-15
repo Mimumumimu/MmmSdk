@@ -26,6 +26,22 @@ public static class PageServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>サイドバーの本体 (<see cref="NavigationHost"/>)と、その部品を登録する</summary>
+    /// <param name="services">登録先のサービスコレクション</param>
+    /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
+    /// <remarks>
+    /// ホストアプリだけが呼ぶ (機能は呼ばない)。<c>FeatureService</c>(<c>AddFeatureService</c>)を先に登録すること。
+    /// <see cref="NavigationHost"/> は UI スレッドで解決すること。<see cref="IPageCache"/> は <see cref="PageProvider"/> と同じインスタンスを返す。
+    /// </remarks>
+    public static IServiceCollection AddNavigationHost(this IServiceCollection services)
+    {
+        services.AddSingleton<PageProvider>();
+        services.AddSingleton<IPageCache>(provider => provider.GetRequiredService<PageProvider>());
+        services.AddSingleton<NavigationHostViewModel>();
+        services.AddSingleton<NavigationHost>();
+        return services;
+    }
+
     /// <summary>設定ページに、機能ごとの設定の部品を登録する</summary>
     /// <typeparam name="TControl">設定の部品 (<c>UserControl</c>)の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
