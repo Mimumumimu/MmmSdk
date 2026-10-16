@@ -16,7 +16,7 @@
 ## TreeGridView (`MmmSdk.WinUI.Controls`)
 木構造の列と、普通の入力列を持つ表。WinUI 3 に、木構造と列を持つ表が標準で無く、Community Toolkit の `DataGrid` も WinUI 3 に移植されていないため、自前で持つ。業務の型は知らない (行は `ITreeGridRow`、列の見た目は `DataTemplate`)。
 
-- **行**: 使う側が、見えている行を 1 つの一覧にならして `ItemsSource` に渡す (`ITreeGridRow`: `Level`(字下げの段)・`HasChildren`・`IsExpanded`)。開閉の状態と、開閉に合わせた行の増減は、使う側が持つ。表は、字下げ (`IndentWidth`)と開閉ボタンを描き、押されたことを `RowToggleRequested` で知らせるだけ。行の値が変わったら `INotifyPropertyChanged` を発火する (字下げ・開閉ボタンを描き直す)。一覧が増減を通知する (`ObservableCollection`)なら、差分だけが反映される。行を動かす通知 (`Move`)は使わず、外して入れ直す
+- **行**: 使う側が、見えている行を 1 つの一覧にならして `ItemsSource` に渡す (`ITreeGridRow`: `Level`(字下げの段)・`HasChildren`・`IsExpanded`)。開閉の状態と、開閉に合わせた行の増減は、使う側が持つ。表は、字下げ (`IndentWidth`)と開閉ボタンを描き、押されたことを `RowToggleRequested` で知らせるだけ。行の値が変わったら `INotifyPropertyChanged` を発火する (字下げ・開閉ボタンを描き直す)。一覧が増減を通知する (`ObservableCollection`)なら、差分だけが反映される。行を動かす通知 (`Move`)は使わず、外して入れ直す。画面に出ている行の前に、大きな行の塊を差し込む・抜いたあとは、`RebindRows()` を呼ぶ (呼ばないと、スクロールするまで、見える範囲に行が作り直されず、行があるのに表が空に見える)
 - **列** (`TreeGridColumn`): `Key`・`Header`・`Width`(固定の幅)・`IsFrozen`(固定)・`IsTree`(木構造の列。表に 1 つだけ)・`IsVisible`・`HeaderBackground`・`CellTemplate`(セルの見た目。行がデータとして渡る)。コードで並べて `RefreshColumns()` を呼ぶ。列の表示・非表示・見出し・幅を変えたときも呼ぶ。固定の列は、固定でない列より前に出る。幅だけを変えたときは `RefreshColumnWidths()` を呼ぶ (セルを作り直さないので、入力中のフォーカスが外れない)
 - **固定**: 固定の列は、横にスクロールしても左に残り、見出しの行は、縦にスクロールしても上に残る。スクロールのたびにコードは動かさず、スクロールの位置を表すコンポジションの値 (`ElementCompositionPreview.GetScrollViewerManipulationPropertySet`)から、要素を逆向きに動かす式 (`-scroll.Translation.X`・`-scroll.Translation.Y`)を設定する。固定の部分は不透明にして、動くセルを隠す
 - **仮想化**: 行の高さは固定 (`RowHeight`。既定 36)。`ItemsRepeater` が、見えている行だけを作り、使い回す (`TreeGridRowPresenter`)。使い回すとき、セルは作り直さず、行 (`ContentControl.Content`)だけを差し替える。列を変えたときだけ、セルを作り直す

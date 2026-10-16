@@ -85,6 +85,19 @@ public sealed partial class TreeGridView : UserControl
         set => Repeater.ItemsSource = value;
     }
 
+    /// <summary>行の一覧を、表に付け直して、見える範囲の行の表示部品を作り直させる</summary>
+    /// <remarks>
+    /// 画面に出ている行の前に、行の塊を差し込む・抜くと、表 (<c>ItemsRepeater</c>)は、すでに作ってある表示部品を、ずれた位置のまま持ち、
+    /// スクロールするまで、見える範囲に行を作り直さないことがある (行はあるのに、表が空に見える)。一覧そのものは変わらない。
+    /// 大きな塊を増減したあとに呼ぶ。行を 1 つずつ増減するだけなら、呼ばなくてよい。
+    /// </remarks>
+    public void RebindRows()
+    {
+        var source = Repeater.ItemsSource;
+        Repeater.ItemsSource = null;
+        Repeater.ItemsSource = source;
+    }
+
     /// <summary>選んだ行 (行の中の入力欄にフォーカスが入った・右クリックしたときに変わる)</summary>
     public ITreeGridRow? SelectedRow
     {

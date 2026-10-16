@@ -59,6 +59,7 @@ public static class PageServiceCollectionExtensions
     {
         services.AddSingleton<PageProvider>();
         services.AddSingleton<IPageCache>(provider => provider.GetRequiredService<PageProvider>());
+        services.AddSingleton<IBusyCursor, BusyCursor>();
         services.AddSingleton<NavigationHostViewModel>();
         services.AddSingleton<NavigationHost>();
         return services;

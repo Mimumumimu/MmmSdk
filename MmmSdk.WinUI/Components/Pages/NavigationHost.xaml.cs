@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml.Controls;
 using MmmSdk.Core.Components.Features;
 
@@ -21,12 +22,16 @@ public sealed partial class NavigationHost : UserControl
     /// <param name="viewModel">サイドバーの項目と選択</param>
     /// <param name="pages">項目に対応するページ</param>
     /// <param name="features">機能のオン・オフ</param>
-    public NavigationHost(NavigationHostViewModel viewModel, PageProvider pages, FeatureService features)
+    /// <param name="busyCursor">マウスカーソルを処理待ちの形にする口</param>
+    public NavigationHost(NavigationHostViewModel viewModel, PageProvider pages, FeatureService features, IBusyCursor busyCursor)
     {
         ViewModel = viewModel;
         _pages = pages;
 
         InitializeComponent();
+
+        // サイドバーとページの全体に、処理待ちのカーソルを当てる (ProtectedCursor は、派生クラスの中からしか変えられない)
+        busyCursor.Changed += (_, _) => ProtectedCursor = busyCursor.IsBusy ? InputSystemCursor.Create(InputSystemCursorShape.Wait) : null;
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         features.Changed += OnFeatureChanged;
