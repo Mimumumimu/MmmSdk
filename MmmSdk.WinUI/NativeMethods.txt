@@ -25,6 +25,11 @@ ImmGetContext
 ImmReleaseContext
 ImmSetOpenStatus
 
+// クリップボードの中身の種類の判定 (持ち主のアプリに問い合わせない)
+CLIPBOARD_FORMAT
+IsClipboardFormatAvailable
+RegisterClipboardFormat
+
 // 通知を受ける非表示ウィンドウ (トレイ用)
 CreateWindowEx
 DefWindowProc

@@ -66,7 +66,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Dialogs`: IDialogService・IDialogHost・DialogService・ファイル/フォルダー選択・FileConflictChoice
 - `.Speech`: ISpeechService・SpeechService (Windows 標準の音声合成で日本語を読み上げる)
 - `.Audio`: IAudioKeepAlive・AudioKeepAlive (無音を流し続けて、音声機器が休止するのを防ぐ)
-- `.Clipboards`: IClipboardService・ClipboardService (クリップボードのテキストの読み書き。名前空間を `Clipboard` にすると `DataTransfer.Clipboard` の型名を隠すので複数形)
+- `.Clipboards`: IClipboardService・ClipboardService・ClipboardFormats (クリップボードのテキストの読み書きと、載っている中身の種類の判定。名前空間を `Clipboard` にすると `DataTransfer.Clipboard` の型名を隠すので複数形)
 - `.Attachments`: IImageConverter・ImageConverter・ThumbnailImage (添付の画像の変換とサムネイル)
 - `.Secrets`: CredentialSecretStore (資格情報マネージャーで ISecretStore を実装する。CsWin32 の `CredRead` など)
 - `.Windowing`: PseudoModal・WindowBoundsKeeper・DefaultWindowPlacement

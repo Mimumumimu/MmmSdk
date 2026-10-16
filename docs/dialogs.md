@@ -34,6 +34,8 @@
 - `IClipboardService`: クリップボードのテキストの読み書き。ViewModel から UI 型 (`Windows.ApplicationModel.DataTransfer`)に触れずに使うための口。UI スレッドから呼ぶ
 - `SetText(text)`: テキストを載せる。他のアプリがクリップボードを使っているときなどは `COMException`
 - `GetTextAsync()`: テキストを取り出す。テキストが無ければ null。読めなかったときは `COMException`
+- `ClipboardFormats`: ファイル (`HasFiles`)・画像 (`HasImage`)・テキスト (`HasText`)が載っているかを、`IsClipboardFormatAvailable` で調べる。コピー元のアプリへ問い合わせないので待たされない。判定は目安で、迷うものは「ある」と答える (見落とすと、取り出す処理が飛んで動きが変わるため)。中身の取り出しは `Clipboard.GetContent()` で行う
+- 貼り付けなどのイベントの中で、`Clipboard.GetContent()` / `Contains` を呼ばない (コピー元の返事を待つ間に、UI スレッドで画面の操作が処理され続け、イベントの途中で WinUI が内部で失敗して落ちるため)。種類は `ClipboardFormats` で決め、取り出しはイベントのあとに行う
 - 名前空間を `Clipboard` にしないのは、`Windows.ApplicationModel.DataTransfer.Clipboard` の型名を隠さないため (フォルダ名は `Clipboards`)
 
 ## NativeMessageBox (標準のメッセージボックス。`MmmSdk.WinUI.Utilities`)
