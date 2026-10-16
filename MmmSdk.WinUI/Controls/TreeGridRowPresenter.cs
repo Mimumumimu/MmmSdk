@@ -44,6 +44,9 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>セル (表示する列の順)</summary>
     private readonly List<(TreeGridColumn Column, ContentControl Cell)> _cells = [];
 
+    /// <summary>列ごとの、作ったセル (列を変えて作り直すとき、表示を続ける列のセルを使い回すため)</summary>
+    private readonly Dictionary<TreeGridColumn, ContentControl> _cellCache = [];
+
     /// <summary>セルごとの、フォーカスの枠 (セルの上に重ねる)</summary>
     private readonly Dictionary<ContentControl, Border> _frames = [];
 
@@ -324,20 +327,23 @@ public sealed partial class TreeGridRowPresenter : Grid
                 _scrollBackings.Add((column, backing, tint));
             }
 
-            var cell = new ContentControl
+            // 見た目の作成 (テンプレートの展開)が重いので、前から表示していた列のセルは作り直さず、使い回す
+            // (入力用の見た目に替わっていたセルは、テンプレートが違うので、作り直す)
+            if (!_cellCache.TryGetValue(column, out var cell) || !ReferenceEquals(cell.ContentTemplate, column.CellTemplate))
             {
-                ContentTemplate = column.CellTemplate,
-                HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                VerticalContentAlignment = VerticalAlignment.Stretch,
-                IsTabStop = column.IsFocusable,
-                Padding = new Thickness(0),
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
-            };
-            if (_row is not null)
-            {
-                cell.Content = _row;
+                cell = new ContentControl
+                {
+                    ContentTemplate = column.CellTemplate,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    VerticalContentAlignment = VerticalAlignment.Stretch,
+                    Padding = new Thickness(0),
+                    Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                };
+                AttachCell(column, cell);
+                _cellCache[column] = cell;
             }
-            AttachCell(column, cell);
+            cell.IsTabStop = column.IsFocusable;
+            cell.Content = _row;
             _cells.Add((column, cell));
 
             FrameworkElement element = column.IsTree ? BuildTreeCell(cell) : cell;
@@ -373,6 +379,12 @@ public sealed partial class TreeGridRowPresenter : Grid
         foreach (var (grid, frame) in pendingFrames)
         {
             grid.Children.Add(frame);
+        }
+
+        // 表示しなくなった列のセルは、持ち続けない (行への結び付きを残さない。また表示するときは、作り直す)
+        foreach (var column in _cellCache.Keys.Where(c => !_owner.VisibleColumns.Contains(c)).ToList())
+        {
+            _cellCache.Remove(column);
         }
 
         Grid.SetColumnSpan(_frozenTint, Math.Max(1, _frozenGrid.ColumnDefinitions.Count));
