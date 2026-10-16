@@ -15,9 +15,13 @@
         PaneDisplayMode="Left"
         SelectedItem="{x:Bind ViewModel.SelectedItem, Mode=TwoWay}">
 
+        <!-- 子の項目 (IsChild)は、親の項目の下に、字下げして並べる (Indent) -->
         <NavigationView.MenuItemTemplate>
             <DataTemplate x:DataType="local:NavigationItem">
-                <StackPanel Orientation="Horizontal" Spacing="12">
+                <StackPanel
+                    Margin="{x:Bind Indent}"
+                    Orientation="Horizontal"
+                    Spacing="12">
                     <FontIcon FontSize="16" Glyph="{x:Bind Glyph}" />
                     <TextBlock VerticalAlignment="Center" Text="{x:Bind Title}" />
                 </StackPanel>

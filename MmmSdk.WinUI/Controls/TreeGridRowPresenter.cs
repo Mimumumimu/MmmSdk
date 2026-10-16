@@ -136,7 +136,7 @@ public sealed partial class TreeGridRowPresenter : Grid
                 // 入力に入らないセル (集計の行・備考のボタンなど)は、押した時点で、セルにフォーカスを移す。
                 // 備考のボタンが開く入れ物を閉じたとき、フォーカスは、開く前の場所に戻るので、先にそのセルへ移しておく。
                 // 右クリックは、どのセルでも同じように移す (入力は始めない。入力中のセルの中は、入力欄自身のメニューに任せる)
-                if (FindCellAt(point.Position) is { } pressed)
+                if (FindCellAt(point.Position) is { } pressed && pressed.Column.IsFocusable)
                 {
                     var isRight = point.Properties.IsRightButtonPressed;
                     var canEdit = pressed.Column.IsEditable && _row is not null && _row.CanEdit(pressed.Column.Key);
@@ -196,7 +196,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         foreach (var (column, cell) in _cells)
         {
             cell.Content = row;
-            cell.IsTabStop = true;
+            cell.IsTabStop = column.IsFocusable;
             if (_frames.TryGetValue(cell, out var frame))
             {
                 frame.Visibility = Visibility.Collapsed;
@@ -329,7 +329,7 @@ public sealed partial class TreeGridRowPresenter : Grid
                 ContentTemplate = column.CellTemplate,
                 HorizontalContentAlignment = HorizontalAlignment.Stretch,
                 VerticalContentAlignment = VerticalAlignment.Stretch,
-                IsTabStop = true,
+                IsTabStop = column.IsFocusable,
                 Padding = new Thickness(0),
                 Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
             };
