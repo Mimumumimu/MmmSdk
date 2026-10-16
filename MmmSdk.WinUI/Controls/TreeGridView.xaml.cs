@@ -280,15 +280,17 @@ public sealed partial class TreeGridView : UserControl
                 continue;
             }
 
+            // フォーカスを受けない列 (TreeGridColumn.IsFocusable が false)は、移る先にしない
+            var focusable = _visibleColumns.Where(c => c.IsFocusable).ToList();
             var key = presenter.GetFocusedColumnKey(e.OriginalSource as DependencyObject);
-            var column = _visibleColumns.FindIndex(c => c.Key == key);
+            var column = focusable.FindIndex(c => c.Key == key);
             var rowIndex = rows.IndexOf(row);
             if (key is null || column < 0 || rowIndex < 0)
             {
                 return;
             }
 
-            var count = _visibleColumns.Count;
+            var count = focusable.Count;
             int target;
             if (e.Key == Windows.System.VirtualKey.Tab)
             {
@@ -325,7 +327,7 @@ public sealed partial class TreeGridView : UserControl
             e.Handled = true;
             if (rows[target / count] is ITreeGridRow targetRow)
             {
-                FocusCell(targetRow, _visibleColumns[target % count].Key, false);
+                FocusCell(targetRow, focusable[target % count].Key, false);
             }
             return;
         }
@@ -424,6 +426,20 @@ public sealed partial class TreeGridView : UserControl
             presenter.UpdateWidths();
         }
     }
+
+    /// <summary>横のスクロールの位置 (左端からの距離)</summary>
+    public double HorizontalOffset => Scroller.HorizontalOffset;
+
+    /// <summary>表が見えている幅 (固定の列の幅を含む)</summary>
+    public double ViewportWidth => Scroller.ViewportWidth;
+
+    /// <summary>固定の列の幅の合計</summary>
+    public double FrozenWidth => _visibleColumns.Where(c => c.IsFrozen).Sum(c => c.Width);
+
+    /// <summary>横のスクロールの位置を変える</summary>
+    /// <param name="offset">左端からの距離 (範囲の外は、端に収まる)</param>
+    /// <remarks>アニメーションなしで動かす。表がまだ画面に出ていないなど、幅が決まる前は、動かない。</remarks>
+    public void ScrollHorizontally(double offset) => Scroller.ChangeView(Math.Max(0, offset), null, null, true);
 
     /// <summary>行のセルにフォーカスを移す (行が画面の外なら、見える所までスクロールする)</summary>
     /// <param name="row">行</param>
@@ -567,7 +583,7 @@ public sealed partial class TreeGridView : UserControl
                 BorderBrush = columns[i].HeaderUnderline,
                 BorderThickness = new Thickness(0, 0, 0, columns[i].HeaderUnderline is null ? 0 : 2),
             };
-            cell.Child = new TextBlock { Text = columns[i].Header, Style = (Style)Resources["HeaderTextStyle"] };
+            cell.Child = columns[i].HeaderFactory?.Invoke() ?? new TextBlock { Text = columns[i].Header, Style = (Style)Resources["HeaderTextStyle"] };
             if (columns[i].HeaderToolTip is { } toolTip)
             {
                 ToolTipService.SetToolTip(cell, toolTip);

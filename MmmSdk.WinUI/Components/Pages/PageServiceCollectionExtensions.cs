@@ -26,6 +26,28 @@ public static class PageServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>サイドバーに、別のページの子の項目として、ページを登録する</summary>
+    /// <typeparam name="TPage">表示するページの型</typeparam>
+    /// <typeparam name="TParentPage">親の項目のページの型 (<see cref="AddNavigationPage{TPage}"/> で登録したもの)</typeparam>
+    /// <param name="services">登録先のサービスコレクション</param>
+    /// <param name="title">サイドバーの表示名</param>
+    /// <param name="glyph">サイドバーのアイコン (Segoe Fluent Icons のグリフ)</param>
+    /// <param name="featureKey">属する機能のキー (<c>AddFeature</c> で登録したもの)。オフにできない機能は null</param>
+    /// <param name="order">並び順の値 (親の下での順)。null なら、登録中の機能の値 (<c>AddFeaturePlugin</c> で渡したもの。機能の外では 0)</param>
+    /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
+    /// <remarks>
+    /// 子の項目は、サイドバーの上部の、親の項目の直後に、字下げして並べる (下部には出さない。開閉は無く、常に出す)。親がオフの間は出さない。子の下に、さらに子は持てない。
+    /// 項目のキーはページの型名。親の項目は、この呼び出しより前でも後でも、登録されていればよい。
+    /// </remarks>
+    public static IServiceCollection AddNavigationChildPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TPage, TParentPage>(this IServiceCollection services, string title, string glyph, string? featureKey = null, int? order = null)
+        where TPage : Page
+        where TParentPage : Page
+    {
+        services.AddTransient<TPage>();
+        services.AddSingleton(new NavigationPage(new NavigationItem(typeof(TPage).Name, title, glyph) { IsChild = true }, typeof(TPage), NavigationArea.Top, featureKey, order ?? FeatureRegistrationScope.CurrentOrder, typeof(TParentPage).Name));
+        return services;
+    }
+
     /// <summary>サイドバーの本体 (<see cref="NavigationHost"/>)と、その部品を登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>

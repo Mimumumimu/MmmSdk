@@ -19,6 +19,14 @@ public sealed class TreeGridColumn
     /// <summary>列の幅</summary>
     public double Width { get; set; } = 100;
 
+    /// <summary>見出しに文字ではなく出す部品を作る関数 (null なら、<see cref="Header"/> の文字を出す)</summary>
+    /// <remarks>
+    /// 見出しを作り直すたび (<see cref="TreeGridView.RefreshColumns"/>・<see cref="TreeGridView.RefreshColumnWidths"/>)に、新しい部品を作って渡す
+    /// (同じ部品を、前の見出しから外さずに、別の見出しへ入れられないため)。日付の軸のように、列の幅の中に自分で描く見出しに使う。
+    /// 見出しの高さは、表全体で 1 つ (<see cref="TreeGridView.HeaderHeight"/>)。
+    /// </remarks>
+    public Func<UIElement>? HeaderFactory { get; set; }
+
     /// <summary>見出しに触れたときに出す説明 (null なら出さない。見出しを短くするために使う)</summary>
     public string? HeaderToolTip { get; set; }
 
@@ -46,6 +54,13 @@ public sealed class TreeGridColumn
     /// 使う側が <see cref="TreeGridView.SummaryBackground"/> を渡しているときだけ働く。
     /// </remarks>
     public bool KeepsBaseBackground { get; set; }
+
+    /// <summary>セルがフォーカスを受けるか (既定は true)</summary>
+    /// <remarks>
+    /// false の列は、キーボードのフォーカス・「今のセル」の枠・Tab や矢印キーの移動の対象にならず、押してもフォーカスを移さない。
+    /// 日付の軸のような、表示だけで、幅が表の表示領域より広い列に使う (フォーカスが来ると、その列の左端までスクロールが動いてしまうため)。
+    /// </remarks>
+    public bool IsFocusable { get; set; } = true;
 
     /// <summary>クリックされたとき、入力欄に切り替えず、<see cref="TreeGridView.CellInvoked"/> で知らせる列か</summary>
     /// <remarks>メニューやカレンダーなど、使う側が、セルの下に選択の入れ物を出す列に使う (その列は <see cref="EditTemplate"/> を持たない)。</remarks>

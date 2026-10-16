@@ -11,4 +11,11 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 内閣府の「国民の祝日」の一覧 (ダウンロードしたままの CSV。Shift_JIS)。参照するアプリの出力・発行フォルダー (Assets\Holidays)へ、ファイルのままコピーする (組み込まない。新しい年の分は、利用者が最新の一覧に置き換えられる。Components/Holidays/JapaneseHolidays.cs が読む) -->
+    <None Include="Components\Holidays\syukujitsu.csv" Link="Assets\Holidays\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- 出典の記載 (公共データ利用規約が求める)。同じ場所へコピーし、アプリが、同梱ライブラリのライセンス全文 (THIRD-PARTY-NOTICES.txt)に載せる -->
+    <None Include="Components\Holidays\syukujitsu.LICENSE.txt" Link="Assets\Holidays\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

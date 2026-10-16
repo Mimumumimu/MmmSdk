@@ -22,7 +22,7 @@
             </ResourceDictionary>
             <ResourceDictionary x:Key="Light">
                 <SolidColorBrush x:Key="TreeGridPanelBackgroundBrush" Color="#FCFCFC" />
-                <SolidColorBrush x:Key="TreeGridHeaderBackgroundBrush" Color="#F3F3F3" />
+                <SolidColorBrush x:Key="TreeGridHeaderBackgroundBrush" Color="#E9F0FA" />
                 <SolidColorBrush x:Key="TreeGridSummaryBackgroundBrush" Color="#F3F3F3" />
                 <SolidColorBrush x:Key="TreeGridSelectionFrameBrush" Color="#7C3AED" />
             </ResourceDictionary>
@@ -90,6 +90,7 @@
     <ScrollViewer
         x:Name="Scroller"
         AllowFocusOnInteraction="False"
+        Background="{ThemeResource TreeGridPanelBackgroundBrush}"
         HorizontalScrollBarVisibility="Auto"
         TabFocusNavigation="Once"
         VerticalScrollBarVisibility="Auto"

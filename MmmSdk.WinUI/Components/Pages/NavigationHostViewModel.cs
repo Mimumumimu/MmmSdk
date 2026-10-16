@@ -38,10 +38,13 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     public partial NavigationItem? SelectedItem { get; set; }
 
     /// <summary>機能のオン・オフ・並び順に合わせて、サイドバーの項目を作り直す</summary>
-    /// <remarks>選択中の項目が消えるときは、先に上部の先頭の項目へ移す (ページの切り替えは、選択の変更で行われる)。</remarks>
+    /// <remarks>
+    /// 選択中の項目が消えるときは、先に上部の先頭の項目へ移す (ページの切り替えは、選択の変更で行われる)。
+    /// 子の項目は、サイドバーに出ている親の項目の直後に並べる (親がオフなら、子も出さない)。
+    /// </remarks>
     public void Refresh()
     {
-        var top = EnabledItems(NavigationArea.Top);
+        var top = TopItems();
         var footer = EnabledItems(NavigationArea.Footer);
 
         if (SelectedItem is { } selected && !top.Contains(selected) && !footer.Contains(selected))
@@ -53,11 +56,24 @@ public sealed partial class NavigationHostViewModel : ObservableObject
         Sync(FooterItems, footer, SelectedItem);
     }
 
-    /// <summary>場所ごとの、オンの機能の項目を取得する</summary>
+    /// <summary>上部の項目を、親の項目と、その直後の子の項目を並べて取得する</summary>
+    /// <returns>サイドバーの上部に出す項目 (親 → その子の順)</returns>
+    private List<NavigationItem> TopItems()
+        => [.. EnabledItems(NavigationArea.Top).SelectMany(parent => ChildItems(parent).Prepend(parent))];
+
+    /// <summary>場所ごとの、オンの機能の項目 (子の項目を除く)を取得する</summary>
     /// <param name="area">サイドバーの中の場所</param>
     /// <returns>並び順の項目 (機能の並びは利用者が決めた順。同じ値は登録順)</returns>
     private List<NavigationItem> EnabledItems(NavigationArea area)
-        => [.. _pages.Where(p => p.Area == area && _features.IsEnabled(p.FeatureKey))
+        => [.. _pages.Where(p => p.ParentKey is null && p.Area == area && _features.IsEnabled(p.FeatureKey))
+            .OrderBy(p => _features.OrderOf(p.FeatureKey, p.Order))
+            .Select(p => p.Item)];
+
+    /// <summary>親の項目の下に出す、オンの機能の子の項目を取得する</summary>
+    /// <param name="parent">親の項目</param>
+    /// <returns>並び順の項目 (機能の並びは利用者が決めた順。同じ値は登録順)</returns>
+    private List<NavigationItem> ChildItems(NavigationItem parent)
+        => [.. _pages.Where(p => p.ParentKey == parent.Key && _features.IsEnabled(p.FeatureKey))
             .OrderBy(p => _features.OrderOf(p.FeatureKey, p.Order))
             .Select(p => p.Item)];
 
