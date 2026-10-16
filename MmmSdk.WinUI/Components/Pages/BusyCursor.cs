@@ -39,6 +39,10 @@ public sealed class BusyCursor : IBusyCursor
         using var scope = Begin();
         await WaitForRenderAsync();
         await work();
+
+        // 表の行・見出しは、処理が終わったあとのレイアウトで作られる。その描画が済んでから、砂時計を終える
+        await WaitForRenderAsync();
+        await WaitForRenderAsync();
     }
 
     /// <summary>画面の描画が済むまで待つ (UI スレッドで呼ぶ)</summary>
