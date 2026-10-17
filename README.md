@@ -61,7 +61,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
 | `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`。オフにできない機能は `AddAlwaysOnFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存 (`SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値)・`FeatureChangeResult` |
-| `MmmSdk.Core.Components.Hosting` | アプリの名前・データのフォルダー・アイコンのパス (`AppEnvironment`)。ホストが 1 つ登録し、機能が DI から受け取る |
+| `MmmSdk.Core.Components.Hosting` | アプリの名前・データのフォルダー・アイコンのパス・WebView2 の保存先 (`AppEnvironment` と `WebView2Directory`)。ホストが 1 つ登録し、機能が DI から受け取る |
 | `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
 
@@ -79,6 +79,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの本体 (`NavigationHost`・`NavigationHostViewModel`・`PageProvider`。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)・機能のトレイメニューの項目の登録 (`AddTrayMenuSource`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
+| `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |

@@ -5,4 +5,9 @@ namespace MmmSdk.Core.Components.Hosting;
 /// <param name="DataDirectory">JSON などの保存先フォルダー</param>
 /// <param name="IconPath">アプリのアイコン (.ico)のパス (ウィンドウのタイトルバーに使う)</param>
 /// <remarks>機能は、ホストの型 (アプリ本体のクラス)を参照できないため、この値を DI から受け取る。</remarks>
-public sealed record AppEnvironment(string Name, string DataDirectory, string IconPath);
+public sealed record AppEnvironment(string Name, string DataDirectory, string IconPath)
+{
+    /// <summary>WebView2 のデータ (キャッシュなど)の保存先フォルダー</summary>
+    /// <remarks>同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中の WebView2 は、すべてここを使う (フォルダー名を、使う側が別々に書かない)。</remarks>
+    public string WebView2Directory => Path.Combine(DataDirectory, "WebView2");
+}

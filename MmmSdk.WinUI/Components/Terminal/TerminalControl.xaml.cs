@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.Web.WebView2.Core;
 using MmmSdk.Core.Utilities;
+using MmmSdk.WinUI.Components.WebViews;
 
 namespace MmmSdk.WinUI.Components.Terminal;
 
@@ -162,10 +163,7 @@ public sealed partial class TerminalControl : UserControl
 
         try
         {
-            var environment = UserDataFolder is null
-                ? null
-                : await CoreWebView2Environment.CreateWithOptionsAsync(null, UserDataFolder, new CoreWebView2EnvironmentOptions());
-            await WebView.EnsureCoreWebView2Async(environment);
+            await WebView2Setup.EnsureAsync(WebView, UserDataFolder);
         }
         catch (COMException ex)
         {
