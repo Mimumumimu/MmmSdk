@@ -72,7 +72,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Windowing`: PseudoModal・WindowBoundsKeeper・DefaultWindowPlacement
 - `.Errors`: ErrorState・FatalErrorHandler
 - `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く
-- `.Pages`: 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (上の「機能 (プラグイン)がホストへ入る口」)
+- `.Pages`: 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (上の「機能 (プラグイン)がホストへ入る口」)。`IBusyCursor` は、ウィンドウ全体のマウスカーソルを砂時計にする口で、`NavigationHost`(サイドバーとページの全体)が、その状態に合わせてカーソルを変える (サイドバーを押した直後は、マウスがページの外にあるため、ページだけでは変えない)。`RunAsync` は、砂時計を描かせてから、UI スレッドで長く動く処理を始める
 - `.Tray`: TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem・`AddTrayMenuSource`。`TrayMenuRenderer` は internal。DI 登録は `AddMmmSdkWinUI` と同じ `SdkWinUIServiceCollectionExtensions` の `AddMmmSdkTray`
 - `MmmSdk.WinUI.Controls`: TimeInputBox・LinkArea・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)
 - `MmmSdk.WinUI.Utilities`: WindowExtensions・WindowPlacement・NativeMessageBox・ImeControl・TextBoxExtensions・VisualTreeSearch・WarningBubble
