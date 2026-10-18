@@ -1,0 +1,10 @@
+// CsWin32 が生成する Win32 API の一覧 (生成されるのは internal。用途ごとにまとめる)
+
+// 資格情報マネージャー (秘密の保存)
+CredDelete
+CredFree
+CredRead
+CredWrite
+CRED_PERSIST
+CRED_TYPE
+WIN32_ERROR
