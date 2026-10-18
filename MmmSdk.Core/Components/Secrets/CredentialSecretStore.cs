@@ -1,11 +1,11 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
-using MmmSdk.Core.Components.Secrets;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Security.Credentials;
 
-namespace MmmSdk.WinUI.Components.Secrets;
+namespace MmmSdk.Core.Components.Secrets;
 
 /// <summary>
 /// 秘密を Windows の資格情報マネージャー (汎用資格情報)に保存する。
@@ -15,6 +15,7 @@ namespace MmmSdk.WinUI.Components.Secrets;
 /// (<c>CRED_PERSIST_LOCAL_MACHINE</c>。ほかの PC に同期しない)。値は UTF-16 で保存する。
 /// 1 件の大きさには OS の上限がある (<c>CRED_MAX_CREDENTIAL_BLOB_SIZE</c>。512 × 5 バイト = 1280 文字)。
 /// </remarks>
+[SupportedOSPlatform("windows5.1.2600")]
 public sealed unsafe class CredentialSecretStore : ISecretStore
 {
     /// <inheritdoc />

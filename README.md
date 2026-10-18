@@ -51,7 +51,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Storage` | JSON ファイルの読み書き (`IJsonFileStore` / `JsonFileStore`)・共通の書式 (`ReadableJsonOptions`)・読み込み結果 (`DataLoadResult`)・読み書きの失敗 (`DataFileException`) |
 | `MmmSdk.Core.Components.Settings` | 汎用設定ストア (`ISettingsStore`・拡張メソッド `SettingsStoreExtensions`)と、その先読みの起動時の準備 (`SettingsStoreStartup`。ホストが、各機能の準備より先に `AddStartupTask` で登録する)。JSON での実装は `MmmSdk.Core.Components.Settings.Json`(`JsonSettingsStore`) |
 | `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元 (`IWindowPositionService` / `WindowPositionService` / `WindowPosition`)と、画面との位置関係の計算 (`ScreenGeometry`。見えているか・作業領域に収める) |
-| `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を設定ファイルとは別の場所に保存する口 (`ISecretStore` / `SecretStoreException`) |
+| `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を、設定ファイルとは別の場所に保存する (`ISecretStore` / `SecretStoreException`)。Windows の資格情報マネージャーに保存する実装 (`CredentialSecretStore`)もある |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理 (`IPathOpener` / `PathOpener` / `PathOpenException`)と種類の判定 (`PathTarget`) |
 | `MmmSdk.Core.Components.Holidays` | 日本の祝日の判定 (`JapaneseHolidays`。アプリの `Assets/Holidays/syukujitsu.csv` (内閣府の「国民の祝日」の一覧。ダウンロードしたままのファイル)から読み、外へは通信しない。ファイルは置き換えられる。一覧にない年は、祝日にしない。出典の記載は `syukujitsu.LICENSE.txt`) |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
@@ -62,7 +62,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
 | `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`。オフにできない機能は `AddAlwaysOnFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存 (`SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値)・`FeatureChangeResult` |
 | `MmmSdk.Core.Components.Hosting` | アプリの名前・データのフォルダー・アイコンのパス・WebView2 の保存先 (`AppEnvironment` と `WebView2Directory`)。ホストが 1 つ登録し、機能が DI から受け取る |
-| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
+| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・待ちの途中で数え直せる定期タイマー (`RestartableTimer`。手動で取り込んだとき、自動の取り込みの間隔を数え直す)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
 
 #### MmmSdk.WinUI
@@ -74,7 +74,6 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Clipboards` | クリップボードのテキストの読み書き (`IClipboardService` / `ClipboardService`)・載っている中身の種類の判定 (`ClipboardFormats`) |
 | `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService`。Windows 標準の音声合成を使う) |
 | `MmmSdk.WinUI.Components.Audio` | 無音を流し続けて、音声機器が休止するのを防ぐ (`IAudioKeepAlive` / `AudioKeepAlive`。`AudioGraph` を使う) |
-| `MmmSdk.WinUI.Components.Secrets` | 秘密を Windows の資格情報マネージャーに保存する (`CredentialSecretStore`。`ISecretStore` の実装) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
 | `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの本体 (`NavigationHost`・`NavigationHostViewModel`・`PageProvider`。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)・機能のトレイメニューの項目の登録 (`AddTrayMenuSource`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
@@ -82,7 +81,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
-| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
@@ -149,10 +148,10 @@ services.AddMmmSdkWinUI();
 
 | メソッド | 登録するもの |
 | --- | --- |
-| `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`(すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる) |
+| `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`・`ISecretStore`(すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる) |
 | `AddFeatureService()` | `FeatureService`・`IFeatureStatus`(Singleton。機能のオン・オフの管理。ホストが 1 回だけ呼ぶ。`ISettingsStore` を先に登録しておく) |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`(Singleton)。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
-| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISecretStore`・`ISpeechService`(すべて Singleton)、`NotificationWindow`・`NotificationWindowViewModel`(Transient) |
+| `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISpeechService`(すべて Singleton)、`NotificationWindow`・`NotificationWindowViewModel`(Transient) |
 
 ## 使い方
 

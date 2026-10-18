@@ -4,7 +4,7 @@
 
 ## 作業の進め方
 
-- 各チャットの最初の応答の前に、`/winui3-mvvm` スキルを Skill ツールで読み込み、そのルールに従う (コメントの書き方など)
+- 各チャットの最初の応答の前に、`/csharp-dotnet` スキルを Skill ツールで読み込み、そのルールに従う (コメントの書き方など)。`MmmSdk.WinUI` を触る・答えるときだけ、`/winui3-mvvm` も読み込む。
 - アプリ側の取り込み方: アプリ側は Git サブモジュール (`external/MmmSdk`)として取り込み、プロジェクト参照でつなぐ。SDK の変更は、サブモジュールの中でコミット・push (先に)→ アプリ側で参照先の更新をコミット。サブモジュールの中で作業するときは、先に master ブランチに切り替える (detached HEAD にしない)
 - コミット・push は、ユーザーが明示的に指示するまで行わない
 - 機能の区切りで、変更した部分の README・docs を更新してから終える。これからやることが残るときは、末尾に「未実装・残りの作業」の見出しを作って書く (実装したら消し、説明は docs に移す)
@@ -18,15 +18,13 @@
   - 迷ったら「その型は、ある部品の一部か」で決め、一部ならその部品のフォルダに置く (例: `ReadableJsonOptions` は Storage、`ScreenGeometry` は WindowPositions、`SettingsStoreExtensions` は Settings、`TerminalControl` は Terminal、`ThumbnailImage` は Attachments)
   - Core と WinUI で同じテーマの部品は同じフォルダ名にする。`Interop/` は土台なので層の外。DI 登録 (`Sdk*ServiceCollectionExtensions.cs`)はプロジェクト直下
   - 部品ごとの中身の一覧は [docs/architecture.md](docs/architecture.md) の「部品の一覧」
-- DI は拡張メソッドで登録する：`AddMmmSdkCore(dataDirectory)`(IJsonFileStore・ISettingsStore・IWindowPositionService・IPathOpener。実装の型ではなくインターフェースで受け取る)→ `AddMmmSdkWinUI()`(通知ダイアログ・DialogService・ファイル/フォルダー選択・クリップボード・秘密の保存・読み上げ・無音の出力。Core を先に登録すること)。トレイを使うアプリは別に `AddMmmSdkTray(options)`、サイドバーを使うアプリは別に `AddNavigationHost()`(`AddFeatureService()` を先に登録すること)
-- ビルドの共通設定はリポジトリ直下の 3 つ。アプリに取り込まれても MSBuild は近いこちらを使うので、アプリの設定とは混ざらない。アプリと共通のパッケージは SDK を先に上げる
-  - `Directory.Build.props`: バージョン・Nullable・ImplicitUsings・XML コメントの検査・コードスタイルのビルド時検査・全プロジェクトを x64 専用にする `Platforms` と既定の `Platform` (Core も含めて AnyCPU を使わない)・出力先に x64・win-x64 の段を作らない `AppendPlatformToOutputPath` / `AppendRuntimeIdentifierToOutputPath` (RID の段があると、アプリの VS の「発行」が RID を渡したときだけ出力先が変わり、DLL を見つけられずに失敗する)
-  - `Directory.Packages.props`: 中央パッケージ管理 (csproj にバージョンを書かない)
-  - `.editorconfig`(`root = true`)
+- DI は拡張メソッドで登録する：`AddMmmSdkCore(dataDirectory)`(IJsonFileStore・ISettingsStore・IWindowPositionService・IPathOpener・ISecretStore。実装の型ではなくインターフェースで受け取る)→ `AddMmmSdkWinUI()`(通知ダイアログ・DialogService・ファイル/フォルダー選択・クリップボード・読み上げ・無音の出力。Core を先に登録すること)。トレイを使うアプリは別に `AddMmmSdkTray(options)`、サイドバーを使うアプリは別に `AddNavigationHost()`(`AddFeatureService()` を先に登録すること)
+- ビルドの共通設定 (`Directory.Build.props` / `Directory.Packages.props` / `.editorconfig`)はリポジトリ直下に持つ。一般の決まりは `csharp-dotnet` スキルの「ビルドと発行の設定」に従う。アプリに取り込まれても MSBuild は近いこちらを使うので、アプリの設定とは混ざらない。アプリと共通のパッケージは SDK を先に上げる。
+  - SDK 固有: `Directory.Build.props` の `AppendRuntimeIdentifierToOutputPath` で、出力先に win-x64 の段を作らない (RID の段があると、アプリの VS の「発行」が RID を渡したときだけ出力先が変わり、DLL を見つけられずに失敗する)
 - バージョンは `Directory.Build.props` の `Version`(ファイル・アセンブリのバージョンは自動で決まる)。アプリとは別に上げる。版の数字は、ほかの場所に書かない
-- Win32 の P/Invoke は CsWin32 (`Microsoft.Windows.CsWin32`。ソース生成。生成される型は internal)で書く。使う API の名前を `MmmSdk.WinUI/NativeMethods.txt` に足し (用途ごとにまとめる)、呼び出しは `PInvoke.<API>`(`Windows.Win32`)。設定は `NativeMethods.json`(`allowMarshaling: false`・`useSafeHandles: false`。ハンドルは `HWND` などの構造体)。`Interop/NativeMethods*.cs` には、生成された API を組み合わせる小さな補助 (IME・メニューのダーク対応・フォーカスを奪わない表示など)だけを置く (internal。アプリは Win32 の宣言を持たないので、SDK の 1 か所にだけある)。GDI (メニュー項目のフォント・描画)も CsWin32 で、手書きの `LibraryImport` は SDK に残っていない
-- Core と WinUI の置き分け: BCL だけで書ける処理は、Windows 専用でも Core に置く (`[SupportedOSPlatform("windows")]` を付ける。例: `Paths`・`SingleInstance`)。P/Invoke (CsWin32)や WinUI の型が要るものは WinUI に置く (例: `Terminal`(PseudoConsole)・`Tray`・`NativeMessageBox`)。Core はアプリの Core からも呼べる形を保つ
-- JSON のソース生成の Context は部品ごと (`SettingsJsonContext` / `WindowPositionJsonContext` / `FeatureJsonContext`。いずれも internal)。アプリ固有の型の登録はアプリ側の Context で行い、`ISettingsStore` / `JsonFileStore` には `JsonTypeInfo<T>` を渡す。シリアライザの設定は `ReadableJsonOptions.Create()`(public)に 1 か所だけ書き、SDK とアプリの Context がそれを使う (設定は Context に結び付くので Context ごとに作る)
+- Win32 の P/Invoke は CsWin32 (`Microsoft.Windows.CsWin32`。ソース生成。生成される型は internal)で書く。使う API の名前を、その部品のあるプロジェクトの `NativeMethods.txt` (`MmmSdk.WinUI` と `MmmSdk.Core` にある)に足し (用途ごとにまとめる。同じ API を 2 つに書かない)、呼び出しは `PInvoke.<API>`(`Windows.Win32`)。設定は `NativeMethods.json`(`allowMarshaling: false`・`useSafeHandles: false`。ハンドルは `HWND` などの構造体)。`Interop/NativeMethods*.cs` には、生成された API を組み合わせる小さな補助 (IME・メニューのダーク対応・フォーカスを奪わない表示など)だけを置く (internal。アプリは Win32 の宣言を持たないので、SDK の 1 か所にだけある)。GDI (メニュー項目のフォント・描画)も CsWin32 で、手書きの `LibraryImport` は SDK に残っていない
+- Core と WinUI の置き分け: BCL だけで書ける処理は、Windows 専用でも Core に置く (`[SupportedOSPlatform("windows")]` を付ける。例: `Paths`・`SingleInstance`)。WinUI の型が要るものは WinUI に置く (例: `Tray`・`NativeMessageBox`)。P/Invoke (CsWin32)は、画面を持たないアプリ (Web 版のサーバー)からも使う部品なら Core (例: `Secrets`)、そうでなければ WinUI (例: `Terminal`(PseudoConsole))に置く。Core はアプリの Core からも呼べる形を保つ
+- JSON のソース生成の Context は部品ごと (`SettingsJsonContext` / `WindowPositionJsonContext` / `FeatureJsonContext`。いずれも internal)。アプリ固有の型の登録はアプリ側の Context で行い、`ISettingsStore` / `JsonFileStore` には `JsonTypeInfo<T>` を渡す。シリアライザの設定は `ReadableJsonOptions.Create()`(public)に 1 か所だけ書き、SDK とアプリの Context がそれを使う
 
 ## 設計の基本姿勢
 

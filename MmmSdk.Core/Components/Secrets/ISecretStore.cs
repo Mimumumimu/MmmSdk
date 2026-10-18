@@ -5,7 +5,7 @@ namespace MmmSdk.Core.Components.Secrets;
 /// </summary>
 /// <remarks>
 /// 名前ごとに 1 件の文字列を持つ。設定ファイル (<c>ISettingsStore</c>)は手で開いて見られるので、秘密はこちらに保存する。
-/// 実装は OS の資格情報の保管庫を使う (<c>MmmSdk.WinUI.Components.Secrets.CredentialSecretStore</c>)。
+/// 実装は OS の資格情報の保管庫を使う (<c>MmmSdk.Core.Components.Secrets.CredentialSecretStore</c>)。
 /// 名前はアプリごとに決め、ほかのアプリの項目と衝突しないようにする (例: <c>MmmTool.Backlog</c>)。
 /// </remarks>
 public interface ISecretStore
