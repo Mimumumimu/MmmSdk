@@ -29,6 +29,13 @@ public interface ITerminalSession : IDisposable
     /// <remarks>バックグラウンドスレッドから通知される。</remarks>
     event EventHandler? Exited;
 
+    /// <summary>シェルへ、利用者の入力が送られた</summary>
+    /// <remarks>
+    /// キー入力と、<see cref="Submit"/> の貼り付けが当たる。端末が自動で返す報告 (フォーカスの出入り・マウス・端末の問い合わせへの返事)は含めない。
+    /// 呼び出したスレッドから通知される。
+    /// </remarks>
+    event EventHandler? InputWritten;
+
     /// <summary><see cref="Submit"/> が呼ばれた</summary>
     /// <remarks>端末の表示側が貼り付けとして入力する。</remarks>
     event EventHandler<SubmitRequest>? SubmitRequested;

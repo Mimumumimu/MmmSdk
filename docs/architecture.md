@@ -72,7 +72,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Windowing`: PseudoModal・WindowBoundsKeeper・DefaultWindowPlacement
 - `.Errors`: ErrorState・FatalErrorHandler
 - `.WebViews`: WebView2Setup (WebView2 を、保存先を指定して初期化する。TerminalControl など、WebView2 を使う部品が共有する)
-- `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く
+- `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・TerminalOutputWatcher・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く
 - `.Pages`: 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (上の「機能 (プラグイン)がホストへ入る口」)。`IBusyCursor` は、ウィンドウ全体のマウスカーソルを砂時計にする口で、`NavigationHost`(サイドバーとページの全体)が、その状態に合わせてカーソルを変える (サイドバーを押した直後は、マウスがページの外にあるため、ページだけでは変えない)。`RunAsync` は、砂時計を描かせてから、UI スレッドで長く動く処理を始める。サイドバーの移動の履歴は `NavigationHostViewModel` が持ち、`NavigationHistoryButtons` (タイトルバーに置く「戻る」「進む」)と Alt+←・Alt+→ で使う。ショートカットはボタンに持たせ、キーフックは使わない (アプリが前面のときだけ効けばよいため)。`INavigationService` は、機能が、サイドバーの指定のページ (`Open<TPage>()`)を開いてもらう口で、通知のクリックなど、ページの外から使う。ホストのウィンドウを前面に出すのは、ホストアプリが `ShowRequested` を受けて行い (トレイへ隠れていても見せるため、ページを開くたびに知らせる)、機能がホストのウィンドウを知らなくて済む。ページが機能のオフなどで項目に無いときは、何もせず false を返す
 - `.Tray`: TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem・`AddTrayMenuSource`。`TrayMenuRenderer` は internal。DI 登録は `AddMmmSdkWinUI` と同じ `SdkWinUIServiceCollectionExtensions` の `AddMmmSdkTray`
 - `MmmSdk.WinUI.Controls`: TimeInputBox・LinkArea・RefreshButton・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)

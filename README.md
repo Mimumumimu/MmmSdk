@@ -77,7 +77,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
 | `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの本体 (`NavigationHost`・`NavigationHostViewModel`・`PageProvider`。移動の履歴と、タイトルバーに置く「戻る」「進む」のボタン `NavigationHistoryButtons`を含む。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)・機能のトレイメニューの項目の登録 (`AddTrayMenuSource`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
-| `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
+| `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、出力に特定の文字列が出たことを見つける `TerminalOutputWatcher` と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
 | `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
@@ -464,6 +464,7 @@ if (ShellCommands.TryConvertPath(session.Shell, filePath, out var shellPath))
 
 - 起動するシェルを、読み込みなどが済んでから決めるときは、XAML で `Session` をつながず、決めてからコードで `TerminalView.Session = session` と渡してください (渡したときに起動します)。起動したあとにシェルを替えるときは、`session.Shell` を替えてから `TerminalView.RestartSessionAsync()` を呼んでください
 
+- 出力に特定の文字列が出たことを知りたいときは、`TerminalOutputWatcher` を使います。制御文字と空白を除き、大文字小文字を区別せずに探します。見つけると一度だけ `Matched` を通知し、利用者の入力 (`ITerminalSession.InputWritten`)があるまで探すのを止めます。通知はバックグラウンドのスレッドから来るので、画面を触るときは UI スレッドへ移してください
 - xterm.js のファイルは、参照するアプリの出力フォルダー (`Assets/Terminal/`)へ自動でコピーされます
 - `UserDataFolder` は WebView2 のデータ (キャッシュなど)の保存先です。省略すると、EXE の隣に `<EXE 名>.WebView2` フォルダーができます。読み込まれる前に設定してください (初期化のときに 1 回だけ読みます)
 - 画面側の WebView2 ランタイムが無いときは、ターミナルの場所に理由が文字で出ます (ほかの機能は使えます)
