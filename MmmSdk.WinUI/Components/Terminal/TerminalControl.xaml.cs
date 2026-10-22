@@ -66,6 +66,14 @@ public sealed partial class TerminalControl : UserControl
         Loaded += OnLoaded;
     }
 
+    /// <summary>表示したとき・端末の準備ができたときに、自分でフォーカスを取るか (既定は取る)</summary>
+    /// <remarks>
+    /// 端末のほかに入力欄を持つ画面が、表示したときのフォーカスを入力欄に置きたいときに false にする。
+    /// WebView2 にフォーカスがあるあいだは、ウィンドウ全体のショートカット (Alt+矢印など)が効かないため。
+    /// <see cref="FocusTerminal"/> を直接呼ぶ移動は、この設定にかかわらず行う。
+    /// </remarks>
+    public bool AutoFocus { get; set; } = true;
+
     /// <summary>シェルのセッション</summary>
     public ITerminalSession? Session
     {
@@ -156,7 +164,10 @@ public sealed partial class TerminalControl : UserControl
         if (_webViewInitialized)
         {
             // ページを再表示したとき
-            FocusTerminal();
+            if (AutoFocus)
+            {
+                FocusTerminal();
+            }
             return;
         }
         _webViewInitialized = true;
@@ -267,7 +278,10 @@ public sealed partial class TerminalControl : UserControl
         }
 
         FlushOutput();
-        FocusTerminal();
+        if (AutoFocus)
+        {
+            FocusTerminal();
+        }
     }
 
     /// <summary>端末への入力をシェルへ送る (シェル終了後は再起動する)</summary>

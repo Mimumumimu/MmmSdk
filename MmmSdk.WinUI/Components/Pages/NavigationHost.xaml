@@ -28,6 +28,12 @@
             </DataTemplate>
         </NavigationView.MenuItemTemplate>
 
-        <Frame x:Name="ContentFrame" />
+        <!-- 戻る・進むのあとにフォーカスを置く先。枠は出さない (NavigationHost.OnHistoryTraversed) -->
+        <Frame
+            x:Name="ContentFrame"
+            FocusVisualPrimaryThickness="0"
+            FocusVisualSecondaryThickness="0"
+            IsTabStop="True"
+            UseSystemFocusVisuals="False" />
     </NavigationView>
 </UserControl>

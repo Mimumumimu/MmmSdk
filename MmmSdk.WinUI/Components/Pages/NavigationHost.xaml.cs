@@ -34,6 +34,7 @@ public sealed partial class NavigationHost : UserControl
         busyCursor.Changed += (_, _) => ProtectedCursor = busyCursor.IsBusy ? InputSystemCursor.Create(InputSystemCursorShape.Wait) : null;
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ViewModel.HistoryTraversed += OnHistoryTraversed;
         features.Changed += OnFeatureChanged;
         features.OrderChanged += (_, _) => ViewModel.Refresh();
         NavigateTo(ViewModel.SelectedItem);
@@ -59,6 +60,17 @@ public sealed partial class NavigationHost : UserControl
             NavigateTo(ViewModel.SelectedItem);
         }
     }
+
+    /// <summary>戻る・進むでページが替わったら、フォーカスをページの表示領域に置く</summary>
+    /// <param name="sender">イベントの送信元</param>
+    /// <param name="e">イベントの情報</param>
+    /// <remarks>
+    /// 移る前のページのフォーカスがあった要素が画面から外れると、WinUI は、画面で最初にフォーカスできる要素 (サイドバーの先頭の項目)へフォーカスを移し、白い枠が出る。
+    /// それを避けるため、枠の出ない表示領域に置く。ページが自分でフォーカスを置くとき (CLI補助の入力欄など)は、そのあとの読み込みで置き直される。
+    /// 外れたあとの移動が済んでから置くよう、順番待ちに回す。
+    /// </remarks>
+    private void OnHistoryTraversed(object? sender, EventArgs e)
+        => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () => ContentFrame.Focus(Microsoft.UI.Xaml.FocusState.Programmatic));
 
     /// <summary>項目に対応するページを表示する</summary>
     /// <param name="item">表示するナビゲーション項目</param>
