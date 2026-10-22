@@ -7,7 +7,13 @@
     <!-- Alt+←・Alt+→ は、ボタンのショートカット。ウィンドウのどこにフォーカスがあっても効く (使えないときのボタンは、ショートカットも効かない) -->
     <!-- ボタンにフォーカスを取らせない (取ると、入力中の欄からフォーカスが外れ、白い枠が出る) -->
 
+    <!-- 使えないときは、背景・枠を変えず、文字を薄くするだけにする (標準では、使えない状態の背景が差し替わり、灰色の四角が出る) -->
+
     <StackPanel Orientation="Horizontal">
+        <StackPanel.Resources>
+            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent" />
+        </StackPanel.Resources>
         <Button
             x:Name="BackButton"
             AllowFocusOnInteraction="False"
