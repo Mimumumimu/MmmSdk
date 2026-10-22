@@ -58,7 +58,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Attachments`: AttachmentStore
 - `.Shells`: ShellInfo・ShellKind・ShellLocator・ShellCommands・WslPath・WslDistribution (シェルの決定と、シェル別のコマンド作り・パスの変換。WSL も含む)
 - `.Features` / `.Hosting`: 機能 (プラグイン)がホストへ自分を登録する口と、オン・オフと並び順の管理 (`FeatureService`)。上の「機能 (プラグイン)がホストへ入る口」。`Json/FeatureJsonContext` は機能の並び順の配列用 (internal)
-- `.Scheduling`: MinuteScheduler
+- `.Scheduling`: MinuteScheduler・DayChangeWatcher
 - `.Logging`: ErrorLog
 - `MmmSdk.Core.Utilities`: Forget・Debouncer・RestartableTimer・RecentListExtensions・FileSizeFormatter
 

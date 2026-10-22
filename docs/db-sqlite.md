@@ -7,7 +7,7 @@
 
 | 型 | 内容 |
 | --- | --- |
-| `SqliteDatabaseOptions` | 設定。`FilePath`(ファイルのパス)・`Migrations`(版を上げるスクリプト)・`BusyTimeoutSeconds`(ロックを待つ秒数。既定は 30) |
+| `SqliteDatabaseOptions` | 設定。`FilePath`(ファイルのパス)・`Migrations`(版を上げるスクリプト)・`SchemaSql`(あるべき表と索引の SQL で、無ければ点検しない)・`BusyTimeoutSeconds`(ロックを待つ秒数。既定は 30) |
 | `SqliteMigration` | 版を上げるスクリプト 1 つ(`Version`・`Sql`) |
 | `SqliteDatabase` | ファイルを開いて処理を実行する入口。`RunAsync`(接続を開いて処理)・`RunInTransactionAsync`(書き込みのトランザクションの中で処理)・`RecoveryMessage`(壊れたファイルを退避したときのメッセージ) |
 
@@ -29,6 +29,14 @@ await database.RunInTransactionAsync(async (connection, transaction) =>
 
 ## 決まり
 - **開くとき**: 最初の 1 度だけ、フォルダとファイルを作り、`PRAGMA user_version` より新しい版のスクリプトを順に 1 つのトランザクションで実行して、`user_version` を更新する。スクリプトは何度流しても壊れない形(`IF NOT EXISTS`)にする
+- **あるべき形の点検**: `SchemaSql` があるときは、版の更新のあと、同じトランザクションの中で、実際の DB と比べて、足りないものを足す (`SqliteSchemaRepair`)
+  - 足りない列は、`CREATE TABLE` に書いた定義のまま `ALTER TABLE ... ADD COLUMN` で足す。`CHECK` も含む。列は表の末尾に付く。
+  - そのあと、`SchemaSql` を流して、足りない表と索引を作る。列を使う索引は、列を足してからでないと作れないため、この順にする。
+  - 版の番号 (`user_version`)には頼らない。書き足したスクリプトが、流し済みの DB に流れなかった場合も、整う。
+  - 直せないもの: 列の名前の変更・型の変更・削除・データの書き換え。番号つきのスクリプトで行う。
+  - `SchemaSql` は、`CREATE TABLE IF NOT EXISTS` と `CREATE INDEX IF NOT EXISTS` だけで書き、初期データを含めない。
+  - `SchemaSql` の表の中に、コメントを書かない。列の定義を取り出すとき、定義の一部になるため。
+  - 版のスクリプトを細かく上げる方式にしない。書き換えたスクリプトは流し済みの DB に届かないが、点検は実際の DB の形だけを見るため。
 - **壊れたファイル**: DB として開けない(`SQLITE_NOTADB`・`SQLITE_CORRUPT`)ときは、同じフォルダの `名前.broken-yyyyMMdd-HHmmss.db`(同じ秒なら `-2` 以降)へ名前を変えて退避し、空の DB を作り直して `RecoveryMessage` に知らせる。自動では消さない。ロック・権限などの IO エラーは退避できないので、`DataFileException` にして止める
 - **接続**: 処理のたびに開いて閉じる。接続プールは使わない(閉じた接続がファイルを掴んだままにならず、退避やバックアップのコピーが妨げられない)。ジャーナルは既定の方式(`DELETE`)で、ファイルが 1 つのまま残る
 - **書き込み**: `RunInTransactionAsync` は書き込みの許可を最初に取る(`BEGIN IMMEDIATE`)。読んでから書く処理の途中で、ほかの書き込みに割り込まれない。ロックは `BusyTimeoutSeconds` まで待つ

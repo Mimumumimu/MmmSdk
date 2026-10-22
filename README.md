@@ -56,7 +56,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Holidays` | 日本の祝日の判定 (`JapaneseHolidays`。アプリの `Assets/Holidays/syukujitsu.csv` (内閣府の「国民の祝日」の一覧。ダウンロードしたままのファイル)から読み、外へは通信しない。ファイルは置き換えられる。一覧にない年は、祝日にしない。出典の記載は `syukujitsu.LICENSE.txt`) |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
 | `MmmSdk.Core.Components.Shells` | シェルの決定 (`ShellInfo` / `ShellKind` / `ShellLocator`)と、シェル別のコマンド作り・パスの変換 (`ShellCommands`)、WSL のパス (`WslPath`)・ディストリビューション (`WslDistribution`) |
-| `MmmSdk.Core.Components.Scheduling` | 毎分 00 秒に処理を呼ぶ (`MinuteScheduler`) |
+| `MmmSdk.Core.Components.Scheduling` | 毎分 00 秒に処理を呼ぶ (`MinuteScheduler`)・日付が変わったことの検知 (`DayChangeWatcher`) |
 | `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
@@ -420,6 +420,17 @@ var scheduler = new MinuteScheduler(TimeProvider.System);
 scheduler.Start(async now => { /* 毎分 00 秒の処理。now は現在の日時 */ });   // タイマーのスレッドで動く
 var minute = MinuteScheduler.TruncateToMinute(now);                           // 秒以下を切り捨てる
 scheduler.Dispose();                                                          // 止める
+```
+
+### 日付が変わったことの検知 (`DayChangeWatcher`)
+
+画面に出している日付と今の日付を、`MinuteScheduler` で毎分比べ、違っていたら知らせます。「次の 0 時まであと何時間」と予約する方式と違い、スタンバイや時計の変更でずれても、最大 1 分で追いつきます。
+
+```csharp
+var watcher = new DayChangeWatcher(TimeProvider.System);
+watcher.MarkShown(now);                      // 画面を作ったら、使った日時を覚えさせる
+watcher.Start(() => { /* 日付が違う。読み直す */ });   // タイマーのスレッドで動く。違いが直るまで毎分呼ぶ
+watcher.Dispose();                           // 止める
 ```
 
 ### ターミナル・シェル (`MmmSdk.WinUI.Components.Terminal` / `MmmSdk.Core.Components.Shells`)

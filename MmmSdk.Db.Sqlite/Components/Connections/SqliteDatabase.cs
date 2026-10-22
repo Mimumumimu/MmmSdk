@@ -177,7 +177,7 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         }
     }
 
-    /// <summary>版を確かめ、新しい版のスクリプトを順に実行する</summary>
+    /// <summary>版を確かめ、新しい版のスクリプトを順に実行し、あるべき形があれば、足りないものを足す</summary>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>実行の完了を表すタスク</returns>
     private async Task MigrateAsync(CancellationToken cancellationToken)
@@ -185,7 +185,7 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         await using var connection = Open();
         var current = await ReadVersionAsync(connection, cancellationToken).ConfigureAwait(false);
         var pending = options.Migrations.Where(m => m.Version > current).OrderBy(m => m.Version).ToList();
-        if (pending.Count == 0)
+        if (pending.Count == 0 && options.SchemaSql is null)
         {
             return;
         }
@@ -196,6 +196,11 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
             await ExecuteAsync(connection, transaction, migration.Sql, cancellationToken).ConfigureAwait(false);
             // PRAGMA はパラメーターを受け付けないので、整数をそのまま書く
             await ExecuteAsync(connection, transaction, $"PRAGMA user_version = {migration.Version}", cancellationToken).ConfigureAwait(false);
+        }
+        if (options.SchemaSql is { } schemaSql)
+        {
+            // 版の更新のあとで、あるべき形と比べる。版の番号に頼らないので、書き足したスクリプトが流れなかった DB も整う
+            await SqliteSchemaRepair.RepairAsync(connection, transaction, schemaSql, cancellationToken).ConfigureAwait(false);
         }
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
