@@ -36,7 +36,7 @@
                 TextTrimming="CharacterEllipsis" />
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <TextBlock x:Name="BodyText" TextWrapping="Wrap" />
+                <StackPanel x:Name="BodyPanel" Spacing="10" />
             </ScrollViewer>
         </Grid>
 

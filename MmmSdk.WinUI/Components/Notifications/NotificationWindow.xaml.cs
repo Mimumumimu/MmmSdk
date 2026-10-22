@@ -1,8 +1,10 @@
 using System.Drawing;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Text;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
@@ -134,38 +136,65 @@ public sealed partial class NotificationWindow : Window
         BlinkStoryboard.Begin();
     }
 
-    /// <summary>本文の Inlines を組み立てる</summary>
+    /// <summary>本文を組み立てる</summary>
     /// <param name="items">本文の項目</param>
     /// <remarks>
-    /// 項目を改行で区切って並べる。リンクはクリックで開く。
+    /// 項目ごとに 1 つの <see cref="TextBlock"/> (Inlines)を縦に並べる。リンクはクリックで開く。
     /// リンクだけの行は当たり判定が行末の余白まで横に伸びてしまうため、リンクの直後に全角スペースの Run を 1 つ置いて文字幅側に留める。
+    /// 補足 (<see cref="NotificationItem.Detail"/>)があれば、項目の下に、小さく薄い字の <see cref="TextBlock"/> で、改行のまま出す。
     /// </remarks>
     private void BuildBody(IReadOnlyList<NotificationItem> items)
     {
-        BodyText.Inlines.Clear();
+        BodyPanel.Children.Clear();
 
-        for (var i = 0; i < items.Count; i++)
+        foreach (var item in items)
         {
-            if (i > 0) BodyText.Inlines.Add(new LineBreak());
-
-            var item = items[i];
+            var text = new TextBlock { FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
             if (string.IsNullOrWhiteSpace(item.LinkPath))
             {
-                BodyText.Inlines.Add(new Run { Text = item.Text });
+                text.Inlines.Add(new Run { Text = item.Text });
+            }
+            else
+            {
+                var path = item.LinkPath;
+                var link = new Hyperlink();
+                link.Inlines.Add(new Run { Text = item.Text });
+                link.Click += (_, _) =>
+                {
+                    // クリックで閉じる判定 (OnPointerReleased)から、リンクのクリックを区別する
+                    _linkClicked = true;
+                    ViewModel.OpenLinkCommand.Execute(path);
+                };
+                text.Inlines.Add(link);
+                text.Inlines.Add(new Run { Text = "　" });
+            }
+
+            if (string.IsNullOrWhiteSpace(item.Detail))
+            {
+                BodyPanel.Children.Add(text);
                 continue;
             }
 
-            var path = item.LinkPath;
-            var link = new Hyperlink();
-            link.Inlines.Add(new Run { Text = item.Text });
-            link.Click += (_, _) =>
+            var detail = new TextBlock
             {
-                // クリックで閉じる判定 (OnPointerReleased)から、リンクのクリックを区別する
-                _linkClicked = true;
-                ViewModel.OpenLinkCommand.Execute(path);
+                Text = item.Detail.Trim(),
+                FontSize = 13,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                TextWrapping = TextWrapping.Wrap,
             };
-            BodyText.Inlines.Add(link);
-            BodyText.Inlines.Add(new Run { Text = "　" });
+            // 補足は、字下げして左に細い線を付け、件名の下の引用として見せる
+            var detailBox = new Border
+            {
+                Margin = new Thickness(2, 0, 0, 0),
+                Padding = new Thickness(10, 0, 0, 0),
+                BorderBrush = (Brush)Application.Current.Resources["ControlStrongStrokeColorDefaultBrush"],
+                BorderThickness = new Thickness(2, 0, 0, 0),
+                Child = detail,
+            };
+            var group = new StackPanel { Spacing = 4 };
+            group.Children.Add(text);
+            group.Children.Add(detailBox);
+            BodyPanel.Children.Add(group);
         }
     }
 

@@ -5,12 +5,12 @@
 ## 概要
 - `INotificationDialogService.Show(title, items, onClicked?, positionKey)` / `Show(title, message)`。UI スレッドから呼ぶ
 - ウィンドウはアプリ内で常に 1 枚。新しい通知は内容を差し替えて再表示する。ユーザーが閉じたら破棄し、次の通知で作り直す
-- 項目は `NotificationItem(Text, LinkPath?)`。リンクを開く処理は `IPathOpener`。開けなかったときは何も表示しない (通知ダイアログに失敗の表示は持たせない方針)
+- 項目は `NotificationItem(Text, LinkPath?, Detail?)`。`Text` は SemiBold。`Detail` があれば、`Text` の下に、字下げして左に細い線 (`ControlStrongStrokeColorDefaultBrush`)を付け、小さく薄い字 (13、`TextFillColorSecondaryBrush`)で、改行のまま出す。同じ左端に並べると、件名と補足の上下の関係が見えないため。リンクを開く処理は `IPathOpener`。開けなかったときは何も表示しない (通知ダイアログに失敗の表示は持たせない方針)
 
 ## 見た目
 - 幅 400 固定。高さは本文に合わせて 160〜480 (超えたらスクロール)
 - Mica。タイトルは `SubtitleTextBlockStyle`
-- 本文は `TextBlock.Inlines`(Run / Hyperlink / LineBreak)をコードで組み立てる。リンクの直後に全角スペースの Run を置く (クリックの当たり判定のため)
+- 本文は、項目ごとの `TextBlock` を縦に並べ、件名の `TextBlock.Inlines`(Run / Hyperlink)をコードで組み立てる。補足は別の `TextBlock`。リンクの直後に全角スペースの Run を置く (クリックの当たり判定のため)
 - 表示されたとき、アンバーの全面オーバーレイの不透明度を 0 → 0.55 (0.09 秒)→ 0 (0.18 秒)で 3 回繰り返して知らせる。オーバーレイは操作を邪魔しないよう当たり判定を持たせない
 
 ## 挙動
