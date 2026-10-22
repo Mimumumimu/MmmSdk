@@ -59,6 +59,25 @@ public sealed class PseudoModal
         }
     }
 
+    /// <summary>親のいるモニターの作業領域に収まる、ウィンドウの高さの上限</summary>
+    /// <param name="marginDip">上下に空ける余白の合計 (DIP)</param>
+    /// <returns>DIP の上限の高さ。親を設定する前は <see cref="double.PositiveInfinity"/></returns>
+    /// <remarks>
+    /// 位置を内側へ寄せても、ウィンドウが作業領域より高いと下が切れる。
+    /// 大きさを決める前にこの値で高さを抑えて、画面の小さいモニターや高い表示倍率でも全体が見えるようにする。
+    /// </remarks>
+    public double GetAvailableHeightDip(double marginDip = 16)
+    {
+        if (_ownerWindow is null)
+        {
+            return double.PositiveInfinity;
+        }
+
+        var bounds = new RectInt32(_ownerWindow.Position.X, _ownerWindow.Position.Y, _ownerWindow.Size.Width, _ownerWindow.Size.Height);
+        var workArea = DisplayArea.GetFromRect(bounds, DisplayAreaFallback.Nearest).WorkArea;
+        return workArea.Height / OwnerScale - marginDip;
+    }
+
     /// <summary>親の中央に置く (作業領域からはみ出す分は内側へ寄せる)</summary>
     public void CenterOnOwner()
     {
