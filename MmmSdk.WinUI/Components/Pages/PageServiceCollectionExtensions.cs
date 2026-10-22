@@ -52,8 +52,9 @@ public static class PageServiceCollectionExtensions
     /// <param name="services">登録先のサービスコレクション</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
-    /// ホストアプリだけが呼ぶ (機能は呼ばない)。<c>FeatureService</c>(<c>AddFeatureService</c>)を先に登録すること。
+    /// ホストアプリだけが呼ぶ。機能は呼ばない。<c>FeatureService</c>(<c>AddFeatureService</c>)を先に登録すること。
     /// <see cref="NavigationHost"/> は UI スレッドで解決すること。<see cref="IPageCache"/> は <see cref="PageProvider"/> と同じインスタンスを返す。
+    /// 機能がページを開いてもらう口 (<see cref="INavigationService"/>)も登録する。ホストのウィンドウを前面に出すのは、ホストアプリが <see cref="INavigationService.ShowRequested"/> で行う。
     /// </remarks>
     public static IServiceCollection AddNavigationHost(this IServiceCollection services)
     {
@@ -61,6 +62,7 @@ public static class PageServiceCollectionExtensions
         services.AddSingleton<IPageCache>(provider => provider.GetRequiredService<PageProvider>());
         services.AddSingleton<IBusyCursor, BusyCursor>();
         services.AddSingleton<NavigationHostViewModel>();
+        services.AddSingleton<INavigationService, NavigationService>();
         services.AddSingleton<NavigationHost>();
         return services;
     }
