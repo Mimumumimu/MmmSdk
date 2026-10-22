@@ -6,7 +6,8 @@ namespace MmmSdk.Db.Sqlite.Components.Connections;
 /// データベースの形を、あるべき形 (<see cref="SqliteDatabaseOptions.SchemaSql"/>)と比べて、足りないものを足す。
 /// </summary>
 /// <remarks>
-/// 足すのは、足りない列と、足りない表・索引だけ。列の名前の変更・型の変更・削除は直せないので、番号つきのスクリプトで行う。
+/// 足すのは、足りない列と、足りない表・索引だけ。型の変更・削除は直せないので、番号つきのスクリプトで行う。
+/// 列の名前の変更は、比べる前に、<see cref="SqliteDatabaseOptions.ColumnRenames"/> で行う。
 /// 足りない列は、あるべき形の <c>CREATE TABLE</c> に書いた定義のまま、<c>ALTER TABLE ... ADD COLUMN</c> で表の末尾に付ける。
 /// 版の番号 (<c>PRAGMA user_version</c>)には頼らない。どの版の DB でも、何度流しても、同じ結果になる。
 /// </remarks>
@@ -14,6 +15,25 @@ internal static class SqliteSchemaRepair
 {
     /// <summary>列の定義ではない、表の制約の書き出しの語</summary>
     private static readonly HashSet<string> ConstraintKeywords = new(StringComparer.OrdinalIgnoreCase) { "CONSTRAINT", "PRIMARY", "UNIQUE", "CHECK", "FOREIGN" };
+
+    /// <summary>古い名前の列がある表だけ、列の名前を変える</summary>
+    /// <param name="connection">開いた接続</param>
+    /// <param name="transaction">書き込みのトランザクション</param>
+    /// <param name="renames">列の名前の変更</param>
+    /// <param name="cancellationToken">キャンセルを監視するトークン</param>
+    /// <returns>変更の完了を表すタスク</returns>
+    /// <remarks>表が無い・古い名前の列が無い・新しい名前の列がすでにある場合は、何もしない。値は、列を作り直さずに引き継がれる。</remarks>
+    public static async Task RenameColumnsAsync(SqliteConnection connection, SqliteTransaction transaction, IReadOnlyList<SqliteColumnRename> renames, CancellationToken cancellationToken)
+    {
+        foreach (var rename in renames)
+        {
+            var actual = await ReadColumnNamesAsync(connection, transaction, rename.Table, cancellationToken).ConfigureAwait(false);
+            if (actual.Contains(rename.OldName) && !actual.Contains(rename.NewName))
+            {
+                await ExecuteAsync(connection, transaction, $"ALTER TABLE {Quote(rename.Table)} RENAME COLUMN {Quote(rename.OldName)} TO {Quote(rename.NewName)}", cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
 
     /// <summary>あるべき形と実際の DB を比べて、足りないものを足す</summary>
     /// <param name="connection">開いた接続</param>

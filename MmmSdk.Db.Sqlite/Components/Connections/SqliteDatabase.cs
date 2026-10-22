@@ -185,7 +185,7 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         await using var connection = Open();
         var current = await ReadVersionAsync(connection, cancellationToken).ConfigureAwait(false);
         var pending = options.Migrations.Where(m => m.Version > current).OrderBy(m => m.Version).ToList();
-        if (pending.Count == 0 && options.SchemaSql is null)
+        if (pending.Count == 0 && options.SchemaSql is null && options.ColumnRenames.Count == 0)
         {
             return;
         }
@@ -197,6 +197,8 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
             // PRAGMA はパラメーターを受け付けないので、整数をそのまま書く
             await ExecuteAsync(connection, transaction, $"PRAGMA user_version = {migration.Version}", cancellationToken).ConfigureAwait(false);
         }
+        // 古い名前の列だけ名前を変える。あるべき形と比べる前に行う (比べると、新しい名前の空の列を足してしまうため)
+        await SqliteSchemaRepair.RenameColumnsAsync(connection, transaction, options.ColumnRenames, cancellationToken).ConfigureAwait(false);
         if (options.SchemaSql is { } schemaSql)
         {
             // 版の更新のあとで、あるべき形と比べる。版の番号に頼らないので、書き足したスクリプトが流れなかった DB も整う
