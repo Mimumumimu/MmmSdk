@@ -77,5 +77,5 @@ services.AddTransient<ITerminalSession, PseudoConsoleSession>(); // 利用側ご
 <!-- xmlns:terminal="using:MmmSdk.WinUI.Components.Terminal" -->
 <terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" UserDataFolder="{x:Bind local:AppPaths.WebView2Directory}" />
 ```
-- `UserDataFolder` は WebView2 のデータ (キャッシュなど)の保存先。読み込まれる前に設定する (初期化のときに 1 回だけ読む)。省略すると WebView2 の既定 (EXE の隣の `<EXE 名>.WebView2`)。同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す (MmmTool は `AppEnvironment.WebView2Directory` = `Cache\WebView2`。ノートの表示も、同じ場所を使う)。初期化は `WebView2Setup.EnsureAsync` が行い、設定は 1 か所にある
+- `UserDataFolder` は WebView2 のデータ (キャッシュなど)の保存先。読み込まれる前に設定する (初期化のときに 1 回だけ読む)。省略すると WebView2 の既定 (EXE の隣の `<EXE 名>.WebView2`)。同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す (MmmTool は `AppEnvironment.WebView2Directory` = `Cache\WebView2`。ノートの表示も、同じ場所を使う)。初期化は `WebView2Setup.EnsureAsync` が行い、設定は 1 か所にある。スクロールバーは、Windows 11 のアプリと同じ細い重なりの形 (`FluentOverlay`)にする (既定の形は、幅が広く上下に矢印が付くため)
 - 起動するシェルを替えるときは、`Start` の前に `session.Shell = new ShellInfo(path, kind)`(WSL なら `ShellLocator.Wsl`)を設定する。画面に渡す前に決まらないときは、XAML で `Session` をつながず、決めてからコードで渡す (上の「画面」)
