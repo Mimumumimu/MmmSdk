@@ -27,19 +27,32 @@
 
 ## セッション (`ITerminalSession` / `PseudoConsoleSession`)
 - シェル 1 つ分。`Shell`(既定は `ShellLocator.Default`)と `WorkingDirectory` を、`Start` の前に設定する。`PseudoConsole` でシェルを起動し、出力の読み取り (`OutputReceived`。バックグラウンドスレッドから通知)・終了の通知 (`Exited`)・入力 (`Write`)・サイズ変更 (`Resize`)を受け持つ
+- `InputWritten`: キー入力と `Submit` で、利用者の入力がシェルへ送られたことを通知する。xterm.js が自動で返す報告は含めない。含めると、画面をクリックしただけで「入力があった」ことになるため。報告は、フォーカスの出入りの `ESC [ I` と `ESC [ O`、マウス、端末の問い合わせへの返事。矢印キーは、終端が A〜D・H・F・~ なので、報告と見分けられる
 - `Submit(text)`: テキストを貼り付けとして入力し、続けて Enter で確定する。画面側 (`TerminalControl`)を通して xterm.js の `term.paste`(ブラケットペースト)で貼り付けるので、複数行でも CLI が 1 行ずつ実行せず、ひとまとまりで受け取る。画面が無いとき (未接続)は、そのまま書き込んで確定する
 - `RestartAsync`: 古いシェルの終了待ち (最大で数秒)を UI スレッドの外で行ってから、同じ設定で起動し直す
 - `Dispose` は同期のまま (アプリの終了時に呼ばれ、シェルを確実に終わらせる。`IAsyncDisposable` にしない理由は [conpty.md](conpty.md))
 - 出力の UTF-8 は、状態を持つデコーダーで復元する (読み取りの切れ目で多バイト文字が分かれても壊れない)
 
+## 出力の監視 (`TerminalOutputWatcher`)
+- セッションの出力に、指定した文字列が出たことを見つける。`SetPatterns` で文字列を差し替え、見つかると `Matched` を通知する (バックグラウンドスレッドから)
+- 制御文字と空白を除き、大文字小文字を区別せずに探す。色やカーソル移動を文字の途中に挟む CLI でも、出力のかたまりの境目で文字列が分かれても、見つけるため。制御文字の読み飛ばしは、かたまりの境目をまたいで続ける。除く考え方は `terminal.js` の送信の合図の探し方と同じで、C# 側は DCS や `ESC ( B` のような形も読み飛ばす。除く規則を直すときは、両方を直す
+- 見つけたら一度だけ通知し、`ITerminalSession.InputWritten` があるまで探すのを止める (CLI は同じ確認の枠を何度も描き直すので、止めないと、描き直しのたびに通知が来るため)
+- 入力のあとは、出力が 150 ミリ秒途切れるまで探さない。ただし、入力から 500 ミリ秒で打ち切って探す (`SettleQuietMilliseconds`・`SettleMaxMilliseconds`)
+  - 入力の直後に、CLI が画面全体を描き直し、前に出た文字も、もう一度出力に出るため。これを探すと、前の画面に残っている文字で通知が来る
+  - 打ち切りがあるのは、考え中のスピナーなどで出力が途切れない CLI でも、そのあとに出る本物の確認を、探せるようにするため。送信の Enter のタイミングと同じ、最低と最長を持つ形
+  - 画面全体の描き直しが、入力と関係なく起きたとき (ウィンドウの大きさを変えたときなど)は、防げない
+- 文字列の意味 (何のために探すか)は、使う側が決める。CLI ごとの文言を SDK に書かない
+- 使い終わったら `Dispose` で、セッションのイベントを外す
+
 ## 画面 (`TerminalControl`)
-- WebView2 上の xterm.js で描く `UserControl`。`Session` に `ITerminalSession` を渡すと、入出力をつなぐ。`FocusTerminal()` でフォーカスを移す。画面から取り除いてもう使わないとき (タブを閉じる・ページを捨てる)は `Close()` を呼ぶ (セッションを外し、WebView2 のプロセスを解放する。呼ばないと、アプリを終了するまで残る。シェルは終了しないので、セッションの `Dispose` も呼ぶ。閉じたあとは再利用できない)
+- WebView2 上の xterm.js で描く `UserControl`。`Session` に `ITerminalSession` を渡すと、入出力をつなぐ。`FocusTerminal()` でフォーカスを移す。表示したときと準備ができたときは、既定で自分でフォーカスを取る。入力欄が別にある画面は、`AutoFocus` を false にして取らせない (WebView2 にフォーカスがあると、ウィンドウ全体のショートカットが効かないため)。画面から取り除いてもう使わないとき (タブを閉じる・ページを捨てる)は `Close()` を呼ぶ (セッションを外し、WebView2 のプロセスを解放する。呼ばないと、アプリを終了するまで残る。シェルは終了しないので、セッションの `Dispose` も呼ぶ。閉じたあとは再利用できない)
 - シェルは、表示の準備 (xterm.js の `ready`)ができたときに、`Session` が渡されていれば起動する。準備のあとに `Session` を渡したときは、渡したときに起動する (起動するシェルを、読み込みなどが済んでから決めたいときは、決めてから `Session` を渡す)
 - `RestartSessionAsync()`: シェルを起動し直す (起動していなければ起動する)。セッションの `Shell` を替えたあとに呼ぶ。動いているシェル (とその中の CLI)は終了する。表示の準備がまだのとき・`Session` が無いとき・起動し直しの途中は何もしない (準備ができたときに、そのときの設定で起動する)。起動し直しには端末の大きさが要るので、セッションではなく画面の口にしている
 - IME の回避策: テキスト入力欄 (`TextBox`・`PasswordBox`・`RichEditBox`)から WebView2 へ直接フォーカスが移ると、タスクバーの IME は日本語入力のままなのに、キー入力が IME に渡らず英字が入る (JS 側では `keydown` の `keyCode` が 229 でなく通常のキーコードになり、`compositionstart` も出ない)。別のウィンドウへ切り替えて戻るか、ほかの部品 (ツリーなど)を一度経由すると直る
   - 原因は特定できていない (WinUI または WebView2 側の不具合と考えている。IME のオン・オフの状態・XAML のフォーカスの状態・JS のフォーカスのイベントは、直るときと直らないときで同じ)。ターミナルを先にクリックして IME をオンにしたときは起きない
   - 回避として、入力欄から WebView2 へ移るときだけ、見えない `FocusRelay` を挟んでから `FocusTerminal()` で端末に移す (`OnWebViewGettingFocus`)
   - 副作用は、入力欄 → ターミナルのときだけ、フォーカスの外れ・付け直しが 1 回ずつ増えること
+  - 経由は 1 回だけにする。`FocusTerminal` の `_relayDone` が、その印になる。プログラムから `FocusTerminal()` を呼ぶと、`FocusRelay` へ向け直す呼び出しが「成功」と返るのに、フォーカスは入力欄のまま動かない。向け直しのたびに `FocusTerminal()` を呼び直す作りでは、止まらなくなって CPU を使い続ける。2 回目は、経由できていなくても、そのまま端末へ移す
   - WinUI・WebView2 の更新で直ったら、この処理と `FocusRelay` を外す (外して、入力欄 → ターミナルで日本語を打てれば確認できる)。試して効果がなかったもの: IME の状態の引き継ぎ・`blur`/`focus` の付け直し・WebView への `Focus` の再呼び出し
 - 変換候補の位置の補正 (`terminal.js`): Kiro などの TUI は、本物のカーソルを隠し、入力位置を反転表示の 1 マス (偽のカーソル)で描く。本物のカーソルは、最後に描いた行の末尾に置きっぱなしになる (入力位置へ動かす命令を出さない)。xterm.js は IME の入力欄と変換中の文字を本物のカーソルの位置に置くので、変換候補が入力位置から離れた場所に出ていた
   - 補正は、本物のカーソルが隠れていて (`?25l`)、画面に反転表示のマスが 1 つ (全角は 2 マス)だけのときに、本物のカーソルをそのマスへ移す。出力が途切れたとき (未処理の書き込みが無いとき)に移し、次の出力を書く前に元の位置へ戻す (アプリの相対移動を狂わせないため)
@@ -64,5 +77,5 @@ services.AddTransient<ITerminalSession, PseudoConsoleSession>(); // 利用側ご
 <!-- xmlns:terminal="using:MmmSdk.WinUI.Components.Terminal" -->
 <terminal:TerminalControl Session="{x:Bind ViewModel.Terminal}" UserDataFolder="{x:Bind local:AppPaths.WebView2Directory}" />
 ```
-- `UserDataFolder` は WebView2 のデータ (キャッシュなど)の保存先。読み込まれる前に設定する (初期化のときに 1 回だけ読む)。省略すると WebView2 の既定 (EXE の隣の `<EXE 名>.WebView2`)。同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す (MmmTool は `AppEnvironment.WebView2Directory` = `Data\WebView2`。ノートの表示も、同じ場所を使う)。初期化は `WebView2Setup.EnsureAsync` が行い、設定は 1 か所にある
+- `UserDataFolder` は WebView2 のデータ (キャッシュなど)の保存先。読み込まれる前に設定する (初期化のときに 1 回だけ読む)。省略すると WebView2 の既定 (EXE の隣の `<EXE 名>.WebView2`)。同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す (MmmTool は `AppEnvironment.WebView2Directory` = `Cache\WebView2`。ノートの表示も、同じ場所を使う)。初期化は `WebView2Setup.EnsureAsync` が行い、設定は 1 か所にある。スクロールバーは、Windows 11 のアプリと同じ細い重なりの形 (`FluentOverlay`)にする (既定の形は、幅が広く上下に矢印が付くため)
 - 起動するシェルを替えるときは、`Start` の前に `session.Shell = new ShellInfo(path, kind)`(WSL なら `ShellLocator.Wsl`)を設定する。画面に渡す前に決まらないときは、XAML で `Session` をつながず、決めてからコードで渡す (上の「画面」)

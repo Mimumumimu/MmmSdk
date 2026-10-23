@@ -14,15 +14,15 @@ public static class WebView2Setup
     /// <returns>初期化の完了を表すタスク</returns>
     /// <remarks>
     /// 同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、設定はここ 1 か所に置く。
+    /// スクロールバーは、Windows 11 のアプリと同じ、細い重なりの形 (<see cref="CoreWebView2ScrollbarStyle.FluentOverlay"/>)にする。既定の形は、幅が広く、上下に矢印が付くため。
     /// WebView2 ランタイムが無い・起動できないときは <see cref="System.Runtime.InteropServices.COMException"/> が出る。
     /// </remarks>
     public static async Task EnsureAsync(WebView2 view, string? userDataFolder)
     {
         ArgumentNullException.ThrowIfNull(view);
 
-        var environment = userDataFolder is null
-            ? null
-            : await CoreWebView2Environment.CreateWithOptionsAsync(null, userDataFolder, new CoreWebView2EnvironmentOptions());
+        var options = new CoreWebView2EnvironmentOptions { ScrollBarStyle = CoreWebView2ScrollbarStyle.FluentOverlay };
+        var environment = await CoreWebView2Environment.CreateWithOptionsAsync(null, userDataFolder, options);
         await view.EnsureCoreWebView2Async(environment);
     }
 }

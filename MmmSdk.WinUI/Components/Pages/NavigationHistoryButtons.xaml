@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="MmmSdk.WinUI.Components.Pages.NavigationHistoryButtons"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Alt+←・Alt+→ は、ボタンのショートカット。ウィンドウのどこにフォーカスがあっても効く (使えないときのボタンは、ショートカットも効かない) -->
+    <!-- ボタンにフォーカスを取らせない (取ると、入力中の欄からフォーカスが外れ、白い枠が出る) -->
+
+    <!-- 使えないときは、背景・枠を変えず、文字を薄くするだけにする (標準では、使えない状態の背景が差し替わり、灰色の四角が出る) -->
+
+    <StackPanel Orientation="Horizontal">
+        <StackPanel.Resources>
+            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent" />
+            <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent" />
+        </StackPanel.Resources>
+        <Button
+            x:Name="BackButton"
+            AllowFocusOnInteraction="False"
+            IsTabStop="False"
+            Width="40"
+            Height="32"
+            Padding="0"
+            Background="Transparent"
+            BorderThickness="0"
+            Click="OnBackClick"
+            CornerRadius="4"
+            IsEnabled="{x:Bind ViewModel.CanGoBack, Mode=OneWay, FallbackValue=False}"
+            ToolTipService.ToolTip="戻る">
+            <Button.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Left" Modifiers="Menu" />
+            </Button.KeyboardAccelerators>
+            <FontIcon FontSize="12" Glyph="&#xE76B;" />
+        </Button>
+        <Button
+            x:Name="ForwardButton"
+            AllowFocusOnInteraction="False"
+            IsTabStop="False"
+            Width="40"
+            Height="32"
+            Padding="0"
+            Background="Transparent"
+            BorderThickness="0"
+            Click="OnForwardClick"
+            CornerRadius="4"
+            IsEnabled="{x:Bind ViewModel.CanGoForward, Mode=OneWay, FallbackValue=False}"
+            ToolTipService.ToolTip="進む">
+            <Button.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Right" Modifiers="Menu" />
+            </Button.KeyboardAccelerators>
+            <FontIcon FontSize="12" Glyph="&#xE76C;" />
+        </Button>
+    </StackPanel>
+</UserControl>

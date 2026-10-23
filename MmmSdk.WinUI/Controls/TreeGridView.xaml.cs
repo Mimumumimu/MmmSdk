@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Media;
 
 namespace MmmSdk.WinUI.Controls;
 
@@ -592,7 +593,9 @@ public sealed partial class TreeGridView : UserControl
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(columns[i].Width) });
             var cell = new Border
             {
-                Background = columns[i].HeaderBackground,
+                // 背景が無いと、見出しの右クリックを受けられない (透明なら受ける)
+                Background = columns[i].HeaderBackground ?? new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                ContextFlyout = columns[i].HeaderContextFlyout,
                 BorderBrush = columns[i].HeaderUnderline,
                 BorderThickness = new Thickness(0, 0, 0, columns[i].HeaderUnderline is null ? 0 : 2),
             };

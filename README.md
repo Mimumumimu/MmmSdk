@@ -61,7 +61,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
 | `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`。オフにできない機能は `AddAlwaysOnFeature`)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存 (`SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値)・`FeatureChangeResult` |
-| `MmmSdk.Core.Components.Hosting` | アプリの名前・データのフォルダー・アイコンのパス・WebView2 の保存先 (`AppEnvironment` と `WebView2Directory`)。ホストが 1 つ登録し、機能が DI から受け取る |
+| `MmmSdk.Core.Components.Hosting` | アプリの名前・データとキャッシュのフォルダー・アイコンのパス・WebView2 の保存先 (`AppEnvironment` と `WebView2Directory`)。ホストが 1 つ登録し、機能が DI から受け取る |
 | `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・待ちの途中で数え直せる定期タイマー (`RestartableTimer`。手動で取り込んだとき、自動の取り込みの間隔を数え直す)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
 
@@ -75,14 +75,14 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService`。Windows 標準の音声合成を使う) |
 | `MmmSdk.WinUI.Components.Audio` | 無音を流し続けて、音声機器が休止するのを防ぐ (`IAudioKeepAlive` / `AudioKeepAlive`。`AudioGraph` を使う) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
-| `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの本体 (`NavigationHost`・`NavigationHostViewModel`・`PageProvider`。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく) |
+| `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの本体 (`NavigationHost`・`NavigationHostViewModel`・`PageProvider`。ページを別のウィンドウに外す `PageDetacher`・`DetachedPageWindow`と、移動の履歴と、タイトルバーに置く「戻る」「進む」のボタン `NavigationHistoryButtons`を含む。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく) |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)・機能のトレイメニューの項目の登録 (`AddTrayMenuSource`)。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
-| `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
+| `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、出力に特定の文字列が出たことを見つける `TerminalOutputWatcher` と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
 | `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
-| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
-| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
+| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・`TreeView` の選択を ViewModel と合わせる補助 (`TreeViewExtensions`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
 #### MmmSdk.Db.Sqlite
@@ -246,22 +246,24 @@ var kind = PathTarget.Classify(path);   // Empty / Url / Folder / Executable / F
 
 ### 通知ダイアログ (`INotificationDialogService`)
 
-UI スレッドから呼びます。ウィンドウはアプリ内で常に 1 枚で、新しい通知が来ると内容を差し替えて再表示します。
+UI スレッドから呼びます。ウィンドウはアプリ内で常に 1 枚で、中は、通知の送り元 (機能)ごとの「節」を並べます。送り元が通知すると、その送り元の節だけが入れ替わり、ほかの送り元の節は残ります。
 
 ```csharp
-notifications.Show("リマインダー",
+// 機能の通知は、送り元のキーと並びの値を決めた節で出す。値の小さい順に、上から並ぶ
+notifications.Show(new NotificationSection("Reminders", 4, "リマインダー",
 [
     new NotificationItem("定例ミーティング", "https://example.com/meeting"),
     new NotificationItem("日報を書く"),
 ],
-onClicked: () => { /* 本文 (リンク以外)をクリックして閉じたときだけ呼ばれる */ });
+OnClicked: () => { /* この節をクリックして閉じたときだけ呼ばれる */ }));
 
+// エラーの知らせなど、機能の通知ではないものは、汎用の節として出す
 notifications.Show("お知らせ", "メッセージだけの簡易通知");
 ```
 
 - フォーカスを奪わず、常に最前面に表示します (Alt+Tab には出ません)
-- ドラッグで移動、クリックで閉じます。本文のリンクをクリックすると `PathOpener` で開きます
-- 表示位置は `positionKey`(既定は `"Notification"`)ごとに保存・復元します。保存位置が画面外になっていたら、プライマリモニターの作業領域の右下に出します
+- ドラッグで移動します。節をクリックすると、その節だけが閉じ、ほかの節は残ります。全部の節が無くなったら、ウィンドウが閉じます。本文のリンクをクリックすると `PathOpener` で開きます
+- 表示位置は `"Notification"` に保存・復元します。保存位置が画面外になっていたら、プライマリモニターの作業領域の右下に出します
 - 表示されたときに、ウィンドウ全体を数回点滅させて知らせます
 
 ### 読み上げ (`ISpeechService`)
@@ -462,6 +464,7 @@ if (ShellCommands.TryConvertPath(session.Shell, filePath, out var shellPath))
 
 - 起動するシェルを、読み込みなどが済んでから決めるときは、XAML で `Session` をつながず、決めてからコードで `TerminalView.Session = session` と渡してください (渡したときに起動します)。起動したあとにシェルを替えるときは、`session.Shell` を替えてから `TerminalView.RestartSessionAsync()` を呼んでください
 
+- 出力に特定の文字列が出たことを知りたいときは、`TerminalOutputWatcher` を使います。制御文字と空白を除き、大文字小文字を区別せずに探します。見つけると一度だけ `Matched` を通知し、利用者の入力 (`ITerminalSession.InputWritten`)があるまで探すのを止めます。通知はバックグラウンドのスレッドから来るので、画面を触るときは UI スレッドへ移してください
 - xterm.js のファイルは、参照するアプリの出力フォルダー (`Assets/Terminal/`)へ自動でコピーされます
 - `UserDataFolder` は WebView2 のデータ (キャッシュなど)の保存先です。省略すると、EXE の隣に `<EXE 名>.WebView2` フォルダーができます。読み込まれる前に設定してください (初期化のときに 1 回だけ読みます)
 - 画面側の WebView2 ランタイムが無いときは、ターミナルの場所に理由が文字で出ます (ほかの機能は使えます)
@@ -566,6 +569,30 @@ var scrollViewer = VisualTreeSearch.FindDescendant<ScrollViewer>(treeView);     
 var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");         // 型と名前で探す
 ```
 
+### TreeView の選択 (`TreeViewExtensions`)
+
+`ItemsSource` でデータを渡した `TreeView` の選択は、`x:Bind` の双方向にできません。選択の変更とクリックされた行から、データを取り出せます。
+
+```csharp
+private void OnTreeSelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
+    => ViewModel.SelectedItem = args.GetAddedItem<MyItem>();      // 新しく選ばれたデータ
+
+var item = tree.FindItem<MyItem>(e.OriginalSource);               // クリックされた要素の行のデータ
+var row = tree.FindContainer(e.OriginalSource);                   // クリックされた要素の行 (TreeViewItem)
+```
+
+### 収まらない分を隠す行 (`OverflowRowLayout`)
+
+```xml
+<ItemsRepeater ItemsSource="{x:Bind Chips}">
+    <ItemsRepeater.Layout>
+        <controls:OverflowRowLayout x:Name="RowLayout" ReservedWidth="38" Spacing="6" />
+    </ItemsRepeater.Layout>
+</ItemsRepeater>
+```
+
+幅に収まらない要素は隠れます。`HiddenStartIndex` 以降が隠れた要素で、`HasHidden` が true のとき、右の `ReservedWidth` の幅に「⋯」ボタンを重ねて、隠れた要素の一覧を出します。`OverflowChanged` は配置の途中で起きるので、ボタンの表示は `DispatcherQueue.TryEnqueue` で配置のあとに変えてください。
+
 ## ドキュメント
 
 | ファイル | 内容 |
@@ -579,7 +606,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
-| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・`TreeGridView`・IME・添付の一時保存・添付の画像 |
+| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・`TreeGridView`・`OverflowRowLayout`・`TreeViewExtensions`・IME・添付の一時保存・添付の画像 |
 | [docs/db-sqlite.md](docs/db-sqlite.md) | SQLite のデータベースファイル (`MmmSdk.Db.Sqlite`)の使い方・開くときの決まり |
 | [docs/db-sqlserver.md](docs/db-sqlserver.md) | SQL Server への接続 (`MmmSdk.Db.SqlServer`)の使い方・接続の決まり・失敗のメッセージ |
 

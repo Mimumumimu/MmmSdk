@@ -9,7 +9,8 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid">
+    <!-- 背景を透明にしないと、何も描いていない余白が当たり判定を持たず、クリックが届かない -->
+    <Grid x:Name="RootGrid" Background="Transparent">
         <Grid.Resources>
             <!-- 到達の明滅：不透明度 0 → 0.55 (0.09 秒)→ 0 (0.18 秒)を 3 回 -->
             <Storyboard x:Name="BlinkStoryboard" RepeatBehavior="3x">
@@ -21,22 +22,15 @@
             </Storyboard>
         </Grid.Resources>
 
-        <Grid Padding="16,8,16,16" RowSpacing="8">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <!-- 右上のウィンドウボタンと重ならないよう、右に余白を空ける -->
+        <!-- 上の余白は、右上のウィンドウボタンと、節の見出しが重ならないための空き。左に、ウィンドウ全体の名前を置く。節の見出しと項目は、コードで組み立てる -->
+        <Grid Padding="16,8,16,16">
             <TextBlock
-                Grid.Row="0"
-                Margin="0,4,120,0"
-                Style="{StaticResource SubtitleTextBlockStyle}"
-                Text="{x:Bind ViewModel.Title, Mode=OneWay}"
-                TextTrimming="CharacterEllipsis" />
-
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <TextBlock x:Name="BodyText" TextWrapping="Wrap" />
+                VerticalAlignment="Top"
+                IsHitTestVisible="False"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="通知" />
+            <ScrollViewer Margin="0,28,0,0" VerticalScrollBarVisibility="Visible">
+                <StackPanel x:Name="BodyPanel" Spacing="14" />
             </ScrollViewer>
         </Grid>
 

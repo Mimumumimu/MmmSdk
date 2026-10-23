@@ -66,6 +66,14 @@ public sealed partial class TerminalControl : UserControl
         Loaded += OnLoaded;
     }
 
+    /// <summary>表示したとき・端末の準備ができたときに、自分でフォーカスを取るか (既定は取る)</summary>
+    /// <remarks>
+    /// 端末のほかに入力欄を持つ画面が、表示したときのフォーカスを入力欄に置きたいときに false にする。
+    /// WebView2 にフォーカスがあるあいだは、ウィンドウ全体のショートカット (Alt+矢印など)が効かないため。
+    /// <see cref="FocusTerminal"/> を直接呼ぶ移動は、この設定にかかわらず行う。
+    /// </remarks>
+    public bool AutoFocus { get; set; } = true;
+
     /// <summary>シェルのセッション</summary>
     public ITerminalSession? Session
     {
@@ -156,7 +164,10 @@ public sealed partial class TerminalControl : UserControl
         if (_webViewInitialized)
         {
             // ページを再表示したとき
-            FocusTerminal();
+            if (AutoFocus)
+            {
+                FocusTerminal();
+            }
             return;
         }
         _webViewInitialized = true;
@@ -267,7 +278,10 @@ public sealed partial class TerminalControl : UserControl
         }
 
         FlushOutput();
-        FocusTerminal();
+        if (AutoFocus)
+        {
+            FocusTerminal();
+        }
     }
 
     /// <summary>端末への入力をシェルへ送る (シェル終了後は再起動する)</summary>
@@ -409,7 +423,7 @@ public sealed partial class TerminalControl : UserControl
     /// </remarks>
     private void OnWebViewGettingFocus(UIElement sender, GettingFocusEventArgs args)
     {
-        if (!_webViewReady || args.OldFocusedElement is not (TextBox or PasswordBox or RichEditBox))
+        if (_relayDone || !_webViewReady || args.OldFocusedElement is not (TextBox or PasswordBox or RichEditBox))
         {
             return;
         }
@@ -421,13 +435,41 @@ public sealed partial class TerminalControl : UserControl
         _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, FocusTerminal);
     }
 
+    /// <summary>見えない部品 (<c>FocusRelay</c>)を経由する 1 段目を済ませて、端末へ移すところか</summary>
+    /// <remarks>経由の向け直しは 1 回だけにして、必ず終わるようにする。</remarks>
+    private bool _relayDone;
+
     /// <summary>端末にキーボードフォーカスを移す。</summary>
+    /// <remarks>
+    /// テキスト入力欄にフォーカスがあるときは、直接 WebView2 へ移さず、見えない部品を一度経由してから移す。理由は <see cref="OnWebViewGettingFocus"/> の備考。
+    /// 経由は 1 回だけで、2 回目は、経由できていなくても、そのまま端末へ移す。
+    /// 向け直しが効かないと、移す処理が自分を呼び直して、止まらなくなるため。
+    /// </remarks>
     public void FocusTerminal()
     {
         if (!_webViewReady)
         {
             return;
         }
+
+        if (!_relayDone && Microsoft.UI.Xaml.Input.FocusManager.GetFocusedElement(XamlRoot) is TextBox or PasswordBox or RichEditBox)
+        {
+            FocusRelay.Focus(FocusState.Programmatic);
+            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+            {
+                _relayDone = true;
+                try
+                {
+                    FocusTerminal();
+                }
+                finally
+                {
+                    _relayDone = false;
+                }
+            });
+            return;
+        }
+
         WebView.Focus(FocusState.Programmatic);
         PostMessage("focus", null);
     }

@@ -46,6 +46,9 @@ public sealed class PseudoConsoleSession : ITerminalSession
     public event EventHandler? Exited;
 
     /// <inheritdoc />
+    public event EventHandler? InputWritten;
+
+    /// <inheritdoc />
     public event EventHandler<SubmitRequest>? SubmitRequested;
 
     /// <inheritdoc />
@@ -95,7 +98,39 @@ public sealed class PseudoConsoleSession : ITerminalSession
         catch (Exception ex) when (ex is IOException or ObjectDisposedException)
         {
             // シェル終了後の入力は捨てる
+            return;
         }
+
+        if (IsUserInput(text))
+        {
+            InputWritten?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>書き込む文字列が、利用者の入力か (端末が自動で返す報告ではないか)を調べる</summary>
+    /// <param name="text">シェルへ書き込む文字列</param>
+    /// <returns>利用者の入力なら true。フォーカスの出入り・マウス・端末の問い合わせへの返事なら false</returns>
+    /// <remarks>
+    /// xterm.js は、アプリが求めたときに、フォーカスの出入りやマウスの位置を、キー入力と同じ経路で送ってくる。
+    /// これを入力として数えると、入力欄をクリックしただけで「入力があった」ことになる。
+    /// 矢印キー (<c>ESC [ A</c> など)は、終端が A〜D・H・F・~ なので、報告の終端 (I・O・c・R・n・t・M・m・y)で見分けられる。
+    /// </remarks>
+    private static bool IsUserInput(string text)
+    {
+        if (text.Length < 2 || text[0] != '\x1b')
+        {
+            return true;
+        }
+
+        return text[1] switch
+        {
+            // 端末の問い合わせへの返事 (DCS・OSC)
+            'P' or ']' => false,
+            // ESC [ M と 3 バイトは、従来の形式のマウスの報告
+            '[' => !(text.Length > 2 && text[2] is '?' or '>' or '<' or '=' or 'M')
+                && "IOcRntMmy".IndexOf(text[^1]) < 0,
+            _ => true,
+        };
     }
 
     /// <inheritdoc />
@@ -127,6 +162,7 @@ public sealed class PseudoConsoleSession : ITerminalSession
 
         OutputReceived = null;
         Exited = null;
+        InputWritten = null;
         SubmitRequested = null;
         // アプリの終了時に呼ばれる。シェルを確実に終わらせてから抜ける
         var (console, readTask) = Detach();

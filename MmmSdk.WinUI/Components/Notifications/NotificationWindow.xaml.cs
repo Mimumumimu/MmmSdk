@@ -3,6 +3,7 @@ using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
@@ -27,6 +28,8 @@ public sealed partial class NotificationWindow : Window
 {
     /// <summary>ウィンドウの幅 (DIP)</summary>
     private const double WindowWidth = 400;
+    /// <summary>項目 (件名と補足)を、節の見出しより右へ字下げする幅 (DIP)</summary>
+    private const double ItemIndent = 12;
     /// <summary>ウィンドウの最低の高さ (DIP)</summary>
     private const double MinWindowHeight = 160;
     /// <summary>ウィンドウの最大の高さ (DIP)。これを超える分は本文をスクロールする</summary>
@@ -42,11 +45,18 @@ public sealed partial class NotificationWindow : Window
     /// <summary>ウィンドウのハンドル</summary>
     private readonly nint _hwnd;
 
-    /// <summary>位置を保存・復元しているキー。まだ表示していなければ null</summary>
-    private string? _positionKey;
+    /// <summary>位置を保存・復元するキー (アプリ内で 1 枚のウィンドウなので、1 つ)</summary>
+    private const string PositionKey = "Notification";
 
-    /// <summary>本文をクリックして閉じたときに呼ぶ処理</summary>
-    private Action? _onClicked;
+    /// <summary>保存位置を復元した (または既定の位置に置いた)か。表示するのは初回だけ復元する</summary>
+    private bool _positionRestored;
+
+    /// <summary>押下した位置にある節の送り元のキー。節の外なら null</summary>
+    private string? _pressedSection;
+
+    /// <summary>節が 1 つだけのときの、その節の送り元のキー。2 つ以上なら null</summary>
+    /// <remarks>1 つだけなら、余白を含むウィンドウのどこをクリックしても、その節のクリックとして扱う。</remarks>
+    private string? _soleSectionKey;
 
     /// <summary>左ボタンを押している最中か</summary>
     private bool _pressed;
@@ -62,6 +72,10 @@ public sealed partial class NotificationWindow : Window
 
     /// <summary>押下したときのウィンドウ位置</summary>
     private PointInt32 _startWindow;
+
+    /// <summary>節をクリックして閉じようとした (引数は、その節の送り元のキー)</summary>
+    /// <remarks>ウィンドウは、自分では閉じない。節を捨てるか、ウィンドウごと閉じるかは、受けた側が決める。</remarks>
+    public event EventHandler<string>? SectionClicked;
 
     /// <summary>ウィンドウの ViewModel</summary>
     public NotificationWindowViewModel ViewModel { get; }
@@ -98,28 +112,20 @@ public sealed partial class NotificationWindow : Window
         RootGrid.AddHandler(UIElement.PointerCaptureLostEvent, new PointerEventHandler(OnPointerCaptureLost), true);
     }
 
-    /// <summary>内容を差し替えて表示し、到達を明滅で知らせる</summary>
-    /// <param name="title">通知のタイトル</param>
-    /// <param name="items">本文の項目</param>
-    /// <param name="onClicked">本文をクリックして閉じたときに呼ぶ処理。無ければ null</param>
-    /// <param name="positionKey">位置を保存・復元するキー</param>
-    /// <remarks>
-    /// 大きさ・位置を決めてから、フォーカスを奪わずに最前面へ表示する。
-    /// 非アクティブで表示するとバインドの初回評価が走らないことがあるため、明示的に更新する。
-    /// </remarks>
-    public void Present(string title, IReadOnlyList<NotificationItem> items, Action? onClicked, string positionKey)
+    /// <summary>節を並べ直して表示し、到達を明滅で知らせる</summary>
+    /// <param name="sections">出す節 (並べ終えたもの)</param>
+    /// <param name="blink">到達を明滅で知らせるか。節をクリックして残りを作り直すときは false</param>
+    /// <remarks>大きさ・位置を決めてから、フォーカスを奪わずに最前面へ表示する。</remarks>
+    public void Present(IReadOnlyList<NotificationSection> sections, bool blink)
     {
-        _onClicked = onClicked;
-        ViewModel.Title = title;
-        Bindings.Update();
-        BuildBody(items);
+        BuildBody(sections);
 
         FitHeight();
         var position = AppWindow.Position;
-        if (_positionKey != positionKey)
+        if (!_positionRestored)
         {
-            _positionKey = positionKey;
-            position = RestoreOrDefaultPosition(positionKey);
+            _positionRestored = true;
+            position = RestoreOrDefaultPosition(PositionKey);
         }
         // 差し替えで高さが変わると、下や右がはみ出すことがあるため、毎回収める
         AppWindow.Move(KeepInWorkArea(position));
@@ -131,30 +137,79 @@ public sealed partial class NotificationWindow : Window
         NativeMethods.ShowTopmostNoActivate(_hwnd);
 
         BlinkStoryboard.Stop();
-        BlinkStoryboard.Begin();
+        if (blink)
+        {
+            BlinkStoryboard.Begin();
+        }
     }
 
-    /// <summary>本文の Inlines を組み立てる</summary>
-    /// <param name="items">本文の項目</param>
-    /// <remarks>
-    /// 項目を改行で区切って並べる。リンクはクリックで開く。
-    /// リンクだけの行は当たり判定が行末の余白まで横に伸びてしまうため、リンクの直後に全角スペースの Run を 1 つ置いて文字幅側に留める。
-    /// </remarks>
-    private void BuildBody(IReadOnlyList<NotificationItem> items)
+    /// <summary>位置を保存して、ウィンドウを閉じる</summary>
+    /// <remarks>節をクリックして、最後の節がなくなったときに、サービスが呼ぶ。Window.Close() では AppWindow.Closing が発火しないため、先に位置を保存する。</remarks>
+    public void CloseAfterClick()
     {
-        BodyText.Inlines.Clear();
+        SavePosition();
+        Close();
+    }
 
-        for (var i = 0; i < items.Count; i++)
+    /// <summary>本文を組み立てる</summary>
+    /// <param name="sections">出す節 (並べ終えたもの)</param>
+    /// <remarks>節ごとに、見出しと項目を縦に並べ、節の間には区切り線を引く。押した位置の節を知るため、節の枠に送り元のキーを持たせる。</remarks>
+    private void BuildBody(IReadOnlyList<NotificationSection> sections)
+    {
+        BodyPanel.Children.Clear();
+        _soleSectionKey = sections.Count == 1 ? sections[0].SourceKey : null;
+
+        for (var i = 0; i < sections.Count; i++)
         {
-            if (i > 0) BodyText.Inlines.Add(new LineBreak());
-
-            var item = items[i];
-            if (string.IsNullOrWhiteSpace(item.LinkPath))
+            if (i > 0)
             {
-                BodyText.Inlines.Add(new Run { Text = item.Text });
-                continue;
+                BodyPanel.Children.Add(new Border
+                {
+                    Height = 1,
+                    Background = (Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"],
+                });
             }
+            BodyPanel.Children.Add(BuildSection(sections[i]));
+        }
+    }
 
+    /// <summary>節 1 つを組み立てる</summary>
+    /// <param name="section">節</param>
+    /// <returns>見出しと項目を縦に並べた枠。送り元のキーを持つ</returns>
+    private StackPanel BuildSection(NotificationSection section)
+    {
+        var panel = new StackPanel { Spacing = 10, Tag = section.SourceKey };
+        panel.Children.Add(new TextBlock
+        {
+            Style = (Style)Application.Current.Resources["SubtitleTextBlockStyle"],
+            Text = section.Title,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
+        foreach (var item in section.Items)
+        {
+            panel.Children.Add(BuildItem(item));
+        }
+        return panel;
+    }
+
+    /// <summary>項目 1 つを組み立てる</summary>
+    /// <param name="item">本文の項目</param>
+    /// <returns>項目の表示</returns>
+    /// <remarks>
+    /// 項目は 1 つの <see cref="TextBlock"/> (Inlines)にする。リンクはクリックで開く。
+    /// リンクだけの行は当たり判定が行末の余白まで横に伸びてしまうため、リンクの直後に全角スペースの Run を 1 つ置いて文字幅側に留める。
+    /// 補足 (<see cref="NotificationItem.Detail"/>)があれば、項目の下に、小さく薄い字の <see cref="TextBlock"/> で、改行のまま出す。
+    /// </remarks>
+    private UIElement BuildItem(NotificationItem item)
+    {
+        // 太字は節の見出しだけにして、項目は見出しより右に字下げする (補足が無くても、見出しと項目の上下が分かるように)
+        var text = new TextBlock { Margin = new Thickness(ItemIndent, 0, 0, 0), TextWrapping = TextWrapping.Wrap };
+        if (string.IsNullOrWhiteSpace(item.LinkPath))
+        {
+            text.Inlines.Add(new Run { Text = item.Text });
+        }
+        else
+        {
             var path = item.LinkPath;
             var link = new Hyperlink();
             link.Inlines.Add(new Run { Text = item.Text });
@@ -164,13 +219,39 @@ public sealed partial class NotificationWindow : Window
                 _linkClicked = true;
                 ViewModel.OpenLinkCommand.Execute(path);
             };
-            BodyText.Inlines.Add(link);
-            BodyText.Inlines.Add(new Run { Text = "　" });
+            text.Inlines.Add(link);
+            text.Inlines.Add(new Run { Text = "　" });
         }
+
+        if (string.IsNullOrWhiteSpace(item.Detail))
+        {
+            return text;
+        }
+
+        var detail = new TextBlock
+        {
+            Text = item.Detail.Trim(),
+            FontSize = 13,
+            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            TextWrapping = TextWrapping.Wrap,
+        };
+        // 補足は、字下げして左に細い線を付け、件名の下の引用として見せる
+        var detailBox = new Border
+        {
+            Margin = new Thickness(ItemIndent + 2, 0, 0, 0),
+            Padding = new Thickness(10, 0, 0, 0),
+            BorderBrush = (Brush)Application.Current.Resources["ControlStrongStrokeColorDefaultBrush"],
+            BorderThickness = new Thickness(2, 0, 0, 0),
+            Child = detail,
+        };
+        var group = new StackPanel { Spacing = 4 };
+        group.Children.Add(text);
+        group.Children.Add(detailBox);
+        return group;
     }
 
     /// <summary>本文に合わせて高さを決める (表示前に確定する)</summary>
-    /// <remarks>幅は固定。タイトル帯 + 本文の必要高さを実測し、最低・最大の高さの範囲で合わせる。</remarks>
+    /// <remarks>幅は固定。上の余白と節の必要高さを実測し、最低・最大の高さの範囲で合わせる。</remarks>
     private void FitHeight()
     {
         var scale = this.GetDpiScale();
@@ -225,11 +306,11 @@ public sealed partial class NotificationWindow : Window
     /// </remarks>
     private async void SavePosition()
     {
-        if (_positionKey is not { } key) return;
+        if (!_positionRestored) return;
         var position = AppWindow.Position;
         try
         {
-            await _positions.SaveAsync(key, new WindowPosition(position.X, position.Y));
+            await _positions.SaveAsync(PositionKey, new WindowPosition(position.X, position.Y));
         }
         catch (DataFileException)
         {
@@ -254,6 +335,22 @@ public sealed partial class NotificationWindow : Window
         _pressed = true;
         _dragging = false;
         _linkClicked = false;
+        _pressedSection = FindSectionKey(e.OriginalSource as DependencyObject) ?? _soleSectionKey;
+    }
+
+    /// <summary>押した要素がある節の、送り元のキーを探す</summary>
+    /// <param name="element">押した要素。無ければ null</param>
+    /// <returns>節の送り元のキー。節の外 (余白・区切り線)なら null</returns>
+    private string? FindSectionKey(DependencyObject? element)
+    {
+        for (; element is not null; element = VisualTreeHelper.GetParent(element))
+        {
+            if (element is FrameworkElement { Tag: string key } frame && ReferenceEquals(frame.Parent, BodyPanel))
+            {
+                return key;
+            }
+        }
+        return null;
     }
 
     /// <summary>しきい値を超えて動いたらドラッグとして、ウィンドウを動かす</summary>
@@ -303,14 +400,11 @@ public sealed partial class NotificationWindow : Window
             return;
         }
 
+        var section = _pressedSection;
         DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
         {
-            if (_linkClicked) return;
-            var onClicked = _onClicked;
-            // Window.Close() では AppWindow.Closing が発火しないため、ここで保存する
-            SavePosition();
-            Close();
-            onClicked?.Invoke();
+            if (_linkClicked || section is null) return;
+            SectionClicked?.Invoke(this, section);
         });
     }
 

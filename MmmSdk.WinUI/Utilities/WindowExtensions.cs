@@ -47,6 +47,36 @@ public static class WindowExtensions
         window.SetTitleBar(titleBar);
     }
 
+    /// <summary>タイトルバーの上に置いたボタンの範囲を、ドラッグ・ダブルクリックの対象から外す</summary>
+    /// <param name="window">対象のウィンドウ (<see cref="UseCustomTitleBar"/> を済ませたもの)</param>
+    /// <param name="element">タイトルバーの上に置いた要素</param>
+    /// <remarks>
+    /// 押せない状態のボタンを連打すると、そこがタイトルバーとして扱われ、ダブルクリックでウィンドウが最大化されるため、範囲を指定して防ぐ。
+    /// 外せる範囲は、ウィンドウごとに 1 つの要素だけで、呼ぶたびに前の指定を置き換える。
+    /// </remarks>
+    public static void KeepClickableInTitleBar(this Window window, FrameworkElement element)
+    {
+        void Update()
+        {
+            if (element.XamlRoot is not { } xamlRoot)
+            {
+                return;
+            }
+
+            var scale = xamlRoot.RasterizationScale;
+            var origin = element.TransformToVisual(null).TransformPoint(new Windows.Foundation.Point(0, 0));
+            var rect = new RectInt32((int)(origin.X * scale), (int)(origin.Y * scale), (int)(element.ActualWidth * scale), (int)(element.ActualHeight * scale));
+            Microsoft.UI.Input.InputNonClientPointerSource.GetForWindowId(window.AppWindow.Id).SetRegionRects(Microsoft.UI.Input.NonClientRegionKind.Passthrough, [rect]);
+        }
+
+        element.SizeChanged += (_, _) => Update();
+        element.Loaded += (_, _) =>
+        {
+            Update();
+            element.XamlRoot.Changed += (_, _) => Update();
+        };
+    }
+
     /// <summary>最大化・最小化できない重ね合わせ型のウィンドウにする</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="isDialog">ダイアログ用の見た目 (<see cref="OverlappedPresenter.CreateForDialog"/>)にするか</param>
