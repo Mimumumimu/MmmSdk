@@ -62,19 +62,43 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     public bool CanGoForward => FindTarget(1) >= 0;
 
     /// <summary>ひとつ前に開いたページへ戻る</summary>
-    /// <remarks>機能をオフにして、サイドバーから消えた項目は飛ばす。</remarks>
+    /// <remarks>機能をオフにして、サイドバーから消えた項目と、別のウィンドウに外している項目は飛ばす。</remarks>
     public void GoBack() => Traverse(-1);
 
     /// <summary>戻る前に開いていたページへ進む</summary>
-    /// <remarks>機能をオフにして、サイドバーから消えた項目は飛ばす。</remarks>
+    /// <remarks>機能をオフにして、サイドバーから消えた項目と、別のウィンドウに外している項目は飛ばす。</remarks>
     public void GoForward() => Traverse(1);
+
+    /// <summary>選択中の項目を外すとき、メインの表示領域に出す別の項目を選ぶ</summary>
+    /// <param name="detached">外す項目</param>
+    /// <remarks>履歴をひとつ前、無ければひとつ先、それも無ければ、サイドバーの先頭にある、外していない項目。1 つも無いときは、選択を外す。</remarks>
+    public void SelectAnotherThan(NavigationItem detached)
+    {
+        if (SelectedItem != detached)
+        {
+            return;
+        }
+
+        if (CanGoBack)
+        {
+            GoBack();
+        }
+        else if (CanGoForward)
+        {
+            GoForward();
+        }
+        else
+        {
+            SelectedItem = MenuItems.Concat(FooterItems).FirstOrDefault(i => i != detached && !i.IsDetached);
+        }
+    }
 
     /// <summary>選択が変わったら、履歴に足す</summary>
     /// <param name="value">新しい選択</param>
     /// <remarks>戻る・進むの途中で別のページを選んだら、その先の履歴は捨てる。ブラウザーと同じ動き。</remarks>
     partial void OnSelectedItemChanged(NavigationItem? value)
     {
-        if (!_isTraversing && value is not null && (_position < 0 || _history[_position] != value))
+        if (!_isTraversing && value is { IsDetached: false } && (_position < 0 || _history[_position] != value))
         {
             _history.RemoveRange(_position + 1, _history.Count - _position - 1);
             _history.Add(value);
@@ -118,7 +142,7 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     {
         for (var i = _position + direction; i >= 0 && i < _history.Count; i += direction)
         {
-            if (_history[i] != SelectedItem && (MenuItems.Contains(_history[i]) || FooterItems.Contains(_history[i])))
+            if (_history[i] != SelectedItem && !_history[i].IsDetached && (MenuItems.Contains(_history[i]) || FooterItems.Contains(_history[i])))
             {
                 return i;
             }
@@ -147,7 +171,7 @@ public sealed partial class NavigationHostViewModel : ObservableObject
 
         if (SelectedItem is { } selected && !top.Contains(selected) && !footer.Contains(selected))
         {
-            SelectedItem = top.FirstOrDefault();
+            SelectedItem = top.FirstOrDefault(i => !i.IsDetached);
         }
 
         Sync(MenuItems, top, SelectedItem);

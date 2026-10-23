@@ -6,12 +6,14 @@ namespace MmmSdk.WinUI.Components.Pages;
 /// サイドバーのページを、機能から開く口の実装。
 /// </summary>
 /// <param name="viewModel">サイドバーの項目と選択</param>
-public sealed class NavigationService(NavigationHostViewModel viewModel) : INavigationService
+/// <param name="detacher">別のウィンドウに外したページ</param>
+public sealed class NavigationService(NavigationHostViewModel viewModel, PageDetacher detacher) : INavigationService
 {
     /// <inheritdoc />
     public event EventHandler? ShowRequested;
 
     /// <inheritdoc />
+    /// <remarks>ページを別のウィンドウに外しているときは、そのウィンドウを前に出す。メインウィンドウは出さない。</remarks>
     public bool Open<TPage>()
         where TPage : Page
     {
@@ -20,6 +22,12 @@ public sealed class NavigationService(NavigationHostViewModel viewModel) : INavi
         if (item is null)
         {
             return false;
+        }
+
+        if (item.IsDetached)
+        {
+            detacher.Activate(item);
+            return true;
         }
 
         viewModel.SelectedItem = item;

@@ -15,16 +15,58 @@
         PaneDisplayMode="Left"
         SelectedItem="{x:Bind ViewModel.SelectedItem, Mode=TwoWay}">
 
-        <!-- 子の項目 (IsChild)は、親の項目の下に、字下げして並べる (Indent) -->
+        <!--
+            子の項目は、親の項目の下に、字下げして並べる。IsChild と Indent で決める。
+            項目は、外へドラッグして別のウィンドウに外せる。ドラッグは、OS のドラッグの仕組みを使わず、項目の上でマウスの動きを追って見分ける。マウスを乗せると右端に出るボタンでも外せる。外している間は、右端に、外している印を出す。
+            Tag は、イベントの処理が、どの項目かを知るため
+        -->
         <NavigationView.MenuItemTemplate>
             <DataTemplate x:DataType="local:NavigationItem">
-                <StackPanel
+                <Grid
                     Margin="{x:Bind Indent}"
-                    Orientation="Horizontal"
-                    Spacing="12">
+                    Background="Transparent"
+                    CanDrag="{x:Bind CanDetach}"
+                    ColumnSpacing="12"
+                    DragStarting="OnItemDragStarting"
+                    DropCompleted="OnItemDropCompleted"
+                    PointerEntered="OnItemPointerEntered"
+                    PointerExited="OnItemPointerExited"
+                    Tapped="OnItemTapped"
+                    Tag="{x:Bind}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <FontIcon FontSize="16" Glyph="{x:Bind Glyph}" />
-                    <TextBlock VerticalAlignment="Center" Text="{x:Bind Title}" />
-                </StackPanel>
+                    <TextBlock
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Text="{x:Bind Title}" />
+                    <Button
+                        Grid.Column="2"
+                        MinWidth="0"
+                        MinHeight="0"
+                        Margin="0,0,-8,0"
+                        Padding="6"
+                        AutomationProperties.Name="別のウィンドウで開く"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="OnItemDetachClick"
+                        IsHitTestVisible="False"
+                        Opacity="0"
+                        Tag="{x:Bind}"
+                        ToolTipService.ToolTip="別のウィンドウで開く"
+                        Visibility="{x:Bind local:NavigationHost.VisibleWhenCanDetach(CanDetach, IsDetached), Mode=OneWay}">
+                        <FontIcon FontSize="12" Glyph="&#xE8A7;" />
+                    </Button>
+                    <FontIcon
+                        Grid.Column="2"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Glyph="&#xE8A7;"
+                        Visibility="{x:Bind local:NavigationHost.VisibleWhenDetached(IsDetached), Mode=OneWay}" />
+                </Grid>
             </DataTemplate>
         </NavigationView.MenuItemTemplate>
 
