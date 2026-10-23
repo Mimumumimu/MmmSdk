@@ -81,8 +81,8 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
-| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
-| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
+| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・`TreeView` の選択を ViewModel と合わせる補助 (`TreeViewExtensions`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
 #### MmmSdk.Db.Sqlite
@@ -569,6 +569,29 @@ var scrollViewer = VisualTreeSearch.FindDescendant<ScrollViewer>(treeView);     
 var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");         // 型と名前で探す
 ```
 
+### TreeView の選択 (`TreeViewExtensions`)
+
+`ItemsSource` でデータを渡した `TreeView` の選択は、`x:Bind` の双方向にできません。選択の変更とクリックされた行から、データを取り出せます。
+
+```csharp
+private void OnTreeSelectionChanged(TreeView sender, TreeViewSelectionChangedEventArgs args)
+    => ViewModel.SelectedItem = args.GetAddedItem<MyItem>();      // 新しく選ばれたデータ
+
+var item = tree.FindItem<MyItem>(e.OriginalSource);               // クリックされた要素の行のデータ
+```
+
+### 収まらない分を隠す行 (`OverflowRowLayout`)
+
+```xml
+<ItemsRepeater ItemsSource="{x:Bind Chips}">
+    <ItemsRepeater.Layout>
+        <controls:OverflowRowLayout x:Name="RowLayout" ReservedWidth="38" Spacing="6" />
+    </ItemsRepeater.Layout>
+</ItemsRepeater>
+```
+
+幅に収まらない要素は隠れます。`HiddenStartIndex` 以降が隠れた要素で、`HasHidden` が true のとき、右の `ReservedWidth` の幅に「⋯」ボタンを重ねて、隠れた要素の一覧を出します。`OverflowChanged` は配置の途中で起きるので、ボタンの表示は `DispatcherQueue.TryEnqueue` で配置のあとに変えてください。
+
 ## ドキュメント
 
 | ファイル | 内容 |
@@ -582,7 +605,7 @@ var delete = VisualTreeSearch.FindDescendant<Button>(numberBox, "DeleteButton");
 | [docs/tray.md](docs/tray.md) | タスクトレイのアイコン・メニューの仕組み |
 | [docs/conpty.md](docs/conpty.md) | ConPTY (`PseudoConsole`)の仕組みと後始末の順序 |
 | [docs/terminal.md](docs/terminal.md) | シェルの決定・ターミナルのセッションと画面 (xterm.js) |
-| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・`TreeGridView`・IME・添付の一時保存・添付の画像 |
+| [docs/controls.md](docs/controls.md) | `TimeInputBox`・`LinkArea`・`TreeGridView`・`OverflowRowLayout`・`TreeViewExtensions`・IME・添付の一時保存・添付の画像 |
 | [docs/db-sqlite.md](docs/db-sqlite.md) | SQLite のデータベースファイル (`MmmSdk.Db.Sqlite`)の使い方・開くときの決まり |
 | [docs/db-sqlserver.md](docs/db-sqlserver.md) | SQL Server への接続 (`MmmSdk.Db.SqlServer`)の使い方・接続の決まり・失敗のメッセージ |
 

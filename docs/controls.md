@@ -73,6 +73,19 @@
 - 外に出たときだけスクロールを動かす補助にする (`TextBox` と重ならない)。SDK に置くのは、特定の機能に依存しない汎用の処理で、ほかの複数行の入力欄にも使えるため
 - 位置の Y を「表示の中の位置」と取り違えると、見えているのに外と判断して逆に動かし、動きが乱れる。上の「位置」の項を守る
 
+## OverflowRowLayout (`MmmSdk.WinUI.Controls`)
+`ItemsRepeater` に付けるレイアウトで、`NonVirtualizingLayout` の派生。要素を 1 行に並べ、幅に収まらない分を、大きさ 0 に置いて隠す。
+- 隠した要素の一覧を出す「⋯」のようなボタンは、使う側が置く。`HiddenStartIndex` (ここ以降が隠れる)と `HasHidden` を読んで、一覧を作る。
+- 収まらないときだけ、右に `ReservedWidth` の幅を空ける。ボタンをその幅に重ねる。全部収まるときは、空けない。
+- 隠す要素が変わると `OverflowChanged` が起きる。配置の途中で呼ばれるので、ボタンの表示は、配置が終わってから (`DispatcherQueue.TryEnqueue`)変える。
+- 横にスクロールさせない (スクロールバーを隠した行は、マウスのホイールで動かず、右の要素の存在に気づけないため)
+- 仮想化しないので、要素の数は、1 行に並べる程度を想定する
+
+## TreeViewExtensions (`MmmSdk.WinUI.Utilities`)
+`ItemsSource` でデータを渡した `TreeView` で、選択を ViewModel と合わせるときの補助。
+- `args.GetAddedItem<T>()`: `SelectionChanged` で、新しく選ばれたデータを取る。クリックならデータ、コードから選んだときは `TreeViewNode` で来るので、両方から取り出す
+- `tree.FindItem<T>(source)`: クリックされた要素から、その行のデータを探す。行 (`TreeViewItem`)の `DataContext` はデータではなく `TreeViewNode` のことがあるので、`TreeView` に引かせる
+
 ## AttachmentStore (`MmmSdk.Core.Components.Attachments`)
 添付ファイルの一時保存先 (`%TEMP%\<appName>\session_日時\`)の管理。保存先ごとに 1 つ。`appName` はアプリごとに別の名前にする。
 
