@@ -21,8 +21,13 @@
             </Storyboard>
         </Grid.Resources>
 
-        <!-- 上の余白は、右上のウィンドウボタンと、節の見出しが重ならないための空き。節の見出しと項目は、コードで組み立てる -->
+        <!-- 上の余白は、右上のウィンドウボタンと、節の見出しが重ならないための空き。左に、ウィンドウ全体の名前を置く。節の見出しと項目は、コードで組み立てる -->
         <Grid Padding="16,8,16,16">
+            <TextBlock
+                VerticalAlignment="Top"
+                IsHitTestVisible="False"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="通知" />
             <ScrollViewer Margin="0,28,0,0" VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="BodyPanel" Spacing="14" />
             </ScrollViewer>

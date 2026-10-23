@@ -29,6 +29,8 @@ public sealed partial class NotificationWindow : Window
 {
     /// <summary>ウィンドウの幅 (DIP)</summary>
     private const double WindowWidth = 400;
+    /// <summary>項目 (件名と補足)を、節の見出しより右へ字下げする幅 (DIP)</summary>
+    private const double ItemIndent = 12;
     /// <summary>ウィンドウの最低の高さ (DIP)</summary>
     private const double MinWindowHeight = 160;
     /// <summary>ウィンドウの最大の高さ (DIP)。これを超える分は本文をスクロールする</summary>
@@ -196,7 +198,8 @@ public sealed partial class NotificationWindow : Window
     /// </remarks>
     private UIElement BuildItem(NotificationItem item)
     {
-        var text = new TextBlock { FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap };
+        // 太字は節の見出しだけにして、項目は見出しより右に字下げする (補足が無くても、見出しと項目の上下が分かるように)
+        var text = new TextBlock { Margin = new Thickness(ItemIndent, 0, 0, 0), TextWrapping = TextWrapping.Wrap };
         if (string.IsNullOrWhiteSpace(item.LinkPath))
         {
             text.Inlines.Add(new Run { Text = item.Text });
@@ -231,7 +234,7 @@ public sealed partial class NotificationWindow : Window
         // 補足は、字下げして左に細い線を付け、件名の下の引用として見せる
         var detailBox = new Border
         {
-            Margin = new Thickness(2, 0, 0, 0),
+            Margin = new Thickness(ItemIndent + 2, 0, 0, 0),
             Padding = new Thickness(10, 0, 0, 0),
             BorderBrush = (Brush)Application.Current.Resources["ControlStrongStrokeColorDefaultBrush"],
             BorderThickness = new Thickness(2, 0, 0, 0),
