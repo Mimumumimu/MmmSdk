@@ -1,7 +1,6 @@
 using System.Drawing;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Text;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -54,6 +53,10 @@ public sealed partial class NotificationWindow : Window
 
     /// <summary>押下した位置にある節の送り元のキー。節の外なら null</summary>
     private string? _pressedSection;
+
+    /// <summary>節が 1 つだけのときの、その節の送り元のキー。2 つ以上なら null</summary>
+    /// <remarks>1 つだけなら、余白を含むウィンドウのどこをクリックしても、その節のクリックとして扱う。</remarks>
+    private string? _soleSectionKey;
 
     /// <summary>左ボタンを押している最中か</summary>
     private bool _pressed;
@@ -154,6 +157,7 @@ public sealed partial class NotificationWindow : Window
     private void BuildBody(IReadOnlyList<NotificationSection> sections)
     {
         BodyPanel.Children.Clear();
+        _soleSectionKey = sections.Count == 1 ? sections[0].SourceKey : null;
 
         for (var i = 0; i < sections.Count; i++)
         {
@@ -331,7 +335,7 @@ public sealed partial class NotificationWindow : Window
         _pressed = true;
         _dragging = false;
         _linkClicked = false;
-        _pressedSection = FindSectionKey(e.OriginalSource as DependencyObject);
+        _pressedSection = FindSectionKey(e.OriginalSource as DependencyObject) ?? _soleSectionKey;
     }
 
     /// <summary>押した要素がある節の、送り元のキーを探す</summary>
