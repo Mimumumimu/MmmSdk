@@ -34,12 +34,20 @@ public static class TreeViewExtensions
     /// <returns>その行のデータ。見つからなければ null</returns>
     /// <remarks>行 (<see cref="TreeViewItem"/>)の <c>DataContext</c> はデータではなく <see cref="TreeViewNode"/> のことがあるので、<see cref="TreeView"/> に行からデータを引かせる。</remarks>
     public static T? FindItem<T>(this TreeView tree, object source) where T : class
+        => tree.FindContainer(source) is { } container ? tree.ItemFromContainer(container) as T : null;
+
+    /// <summary>画面上の要素から、その行の <see cref="TreeViewItem"/> を探す</summary>
+    /// <param name="tree">行を持つ <see cref="TreeView"/></param>
+    /// <param name="source">画面上の要素 (クリックされた要素など)</param>
+    /// <returns>その要素が入っている行。何も無い所なら null</returns>
+    /// <remarks>右クリックした行のそばに、メニューや吹き出しを出すときに使う。</remarks>
+    public static TreeViewItem? FindContainer(this TreeView tree, object source)
     {
         for (var current = source as DependencyObject; current is not null and not TreeView; current = VisualTreeHelper.GetParent(current))
         {
             if (current is TreeViewItem container)
             {
-                return tree.ItemFromContainer(container) as T;
+                return container;
             }
         }
         return null;

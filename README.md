@@ -578,6 +578,7 @@ private void OnTreeSelectionChanged(TreeView sender, TreeViewSelectionChangedEve
     => ViewModel.SelectedItem = args.GetAddedItem<MyItem>();      // 新しく選ばれたデータ
 
 var item = tree.FindItem<MyItem>(e.OriginalSource);               // クリックされた要素の行のデータ
+var row = tree.FindContainer(e.OriginalSource);                   // クリックされた要素の行 (TreeViewItem)
 ```
 
 ### 収まらない分を隠す行 (`OverflowRowLayout`)

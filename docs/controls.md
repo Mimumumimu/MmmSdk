@@ -85,6 +85,7 @@
 `ItemsSource` でデータを渡した `TreeView` で、選択を ViewModel と合わせるときの補助。
 - `args.GetAddedItem<T>()`: `SelectionChanged` で、新しく選ばれたデータを取る。クリックならデータ、コードから選んだときは `TreeViewNode` で来るので、両方から取り出す
 - `tree.FindItem<T>(source)`: クリックされた要素から、その行のデータを探す。行 (`TreeViewItem`)の `DataContext` はデータではなく `TreeViewNode` のことがあるので、`TreeView` に引かせる
+- `tree.FindContainer(source)`: クリックされた要素から、その行の `TreeViewItem` を探す。右クリックした行のそばに、メニューや吹き出しを出すときに使う
 
 ## AttachmentStore (`MmmSdk.Core.Components.Attachments`)
 添付ファイルの一時保存先 (`%TEMP%\<appName>\session_日時\`)の管理。保存先ごとに 1 つ。`appName` はアプリごとに別の名前にする。
