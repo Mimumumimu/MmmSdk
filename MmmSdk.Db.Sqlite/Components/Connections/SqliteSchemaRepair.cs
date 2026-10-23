@@ -35,6 +35,29 @@ internal static class SqliteSchemaRepair
         }
     }
 
+    /// <summary>古い列と新しい列が両方ある表だけ、新しい列に値を移して、古い列を落とす</summary>
+    /// <param name="connection">開いた接続</param>
+    /// <param name="transaction">書き込みのトランザクション</param>
+    /// <param name="replacements">列の置き換え</param>
+    /// <param name="cancellationToken">キャンセルを監視するトークン</param>
+    /// <returns>置き換えの完了を表すタスク</returns>
+    /// <remarks>
+    /// あるべき形の点検のあとに行う。新しい列が、制約つきで足されたあとにするため。
+    /// 古い列を落とすので、2 回目からは、古い列が無く、何もしない。
+    /// </remarks>
+    public static async Task ReplaceColumnsAsync(SqliteConnection connection, SqliteTransaction transaction, IReadOnlyList<SqliteColumnReplacement> replacements, CancellationToken cancellationToken)
+    {
+        foreach (var replacement in replacements)
+        {
+            var actual = await ReadColumnNamesAsync(connection, transaction, replacement.Table, cancellationToken).ConfigureAwait(false);
+            if (actual.Contains(replacement.OldName) && actual.Contains(replacement.NewName))
+            {
+                await ExecuteAsync(connection, transaction, $"UPDATE {Quote(replacement.Table)} SET {Quote(replacement.NewName)} = {replacement.NewValueSql}", cancellationToken).ConfigureAwait(false);
+                await ExecuteAsync(connection, transaction, $"ALTER TABLE {Quote(replacement.Table)} DROP COLUMN {Quote(replacement.OldName)}", cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+
     /// <summary>あるべき形と実際の DB を比べて、足りないものを足す</summary>
     /// <param name="connection">開いた接続</param>
     /// <param name="transaction">書き込みのトランザクション</param>

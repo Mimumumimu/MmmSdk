@@ -185,7 +185,7 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         await using var connection = Open();
         var current = await ReadVersionAsync(connection, cancellationToken).ConfigureAwait(false);
         var pending = options.Migrations.Where(m => m.Version > current).OrderBy(m => m.Version).ToList();
-        if (pending.Count == 0 && options.SchemaSql is null && options.ColumnRenames.Count == 0)
+        if (pending.Count == 0 && options.SchemaSql is null && options.ColumnRenames.Count == 0 && options.ColumnReplacements.Count == 0)
         {
             return;
         }
@@ -204,6 +204,8 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
             // 版の更新のあとで、あるべき形と比べる。版の番号に頼らないので、書き足したスクリプトが流れなかった DB も整う
             await SqliteSchemaRepair.RepairAsync(connection, transaction, schemaSql, cancellationToken).ConfigureAwait(false);
         }
+        // 新しい列が足されたあとで、古い列の値を移して、古い列を落とす
+        await SqliteSchemaRepair.ReplaceColumnsAsync(connection, transaction, options.ColumnReplacements, cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 

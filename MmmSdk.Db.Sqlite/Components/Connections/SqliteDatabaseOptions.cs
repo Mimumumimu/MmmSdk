@@ -26,6 +26,15 @@ public sealed class SqliteDatabaseOptions
     /// </remarks>
     public IReadOnlyList<SqliteColumnRename> ColumnRenames { get; init; } = [];
 
+    /// <summary>列の置き換え (無ければ空)</summary>
+    /// <remarks>
+    /// あるべき形との比較のあと、古い列と新しい列が両方ある表だけ、新しい列の値を古い列から作り、<c>ALTER TABLE ... DROP COLUMN</c> で古い列を落とす。
+    /// 古い列を落とすので、1 度行えば、次からは何もしない。
+    /// 比較のあとに行うのは、新しい列を、あるべき形の定義 (制約つき)で足してから、値を移すため。
+    /// 古い列を、索引・ビュー・トリガーが使っていると、落とせない。
+    /// </remarks>
+    public IReadOnlyList<SqliteColumnReplacement> ColumnReplacements { get; init; } = [];
+
     /// <summary>ロックを待つ秒数 (既定は 30 秒)</summary>
     public int BusyTimeoutSeconds { get; init; } = 30;
 }
