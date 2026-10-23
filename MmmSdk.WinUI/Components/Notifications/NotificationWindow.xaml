@@ -29,7 +29,7 @@
                 IsHitTestVisible="False"
                 Style="{StaticResource CaptionTextBlockStyle}"
                 Text="通知" />
-            <ScrollViewer Margin="0,28,0,0" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Margin="0,28,0,0" VerticalScrollBarVisibility="Visible">
                 <StackPanel x:Name="BodyPanel" Spacing="14" />
             </ScrollViewer>
         </Grid>

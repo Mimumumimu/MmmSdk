@@ -91,9 +91,9 @@
         x:Name="Scroller"
         AllowFocusOnInteraction="False"
         Background="{ThemeResource TreeGridPanelBackgroundBrush}"
-        HorizontalScrollBarVisibility="Auto"
+        HorizontalScrollBarVisibility="Visible"
         TabFocusNavigation="Once"
-        VerticalScrollBarVisibility="Auto"
+        VerticalScrollBarVisibility="Visible"
         ZoomMode="Disabled">
         <Grid x:Name="ContentGrid" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Grid.RowDefinitions>
