@@ -68,6 +68,19 @@ public sealed class FeatureService(
         return info is { CanDisable: false } || settings.Get(SettingKey(featureKey), info?.DefaultEnabled ?? true);
     }
 
+    /// <summary>使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)の結果が変わったことを、画面に知らせる</summary>
+    /// <remarks>
+    /// 使える条件が付いた機能すべてについて、<see cref="Changed"/> を出す。受け取った画面は、サイドバーを作り直し、使えなくなった機能のページを捨てる。
+    /// 条件の元になる値 (サインイン後に読み込む、ユーザーごとの許可など)が、画面を作ったあとで変わったときに呼ぶ。
+    /// </remarks>
+    public void NotifyAvailabilityChanged()
+    {
+        foreach (var info in _registered.Where(f => f.AvailableWhen is not null))
+        {
+            Changed?.Invoke(this, info.Key);
+        }
+    }
+
     /// <summary>画面の並びに使う値を取得する (サイドバー・設定ページの部品)</summary>
     /// <param name="featureKey">属する機能のキー。null・登録の無いキーのときは <paramref name="registeredOrder"/> のまま</param>
     /// <param name="registeredOrder">登録時の並び順の値</param>
