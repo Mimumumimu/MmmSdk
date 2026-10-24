@@ -62,7 +62,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
 | `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口 (`IFeaturePlugin`。ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値)・機能の登録 (`FeatureInfo` / `AddFeature`。オフにできない機能は `AddAlwaysOnFeature`。どちらも、使える条件 `availableWhen` を渡せる。条件の元の値が変わったときは、`FeatureService.NotifyAvailabilityChanged` で画面に知らせる)・起動時の準備 (`IStartupTask` / `AddStartupTask`)・オフにする前の確認 (`IFeatureDisableConfirmation`)・オン・オフを調べる口 (`IFeatureStatus`)・`FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存 (`SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値)・`FeatureChangeResult` |
 | `MmmSdk.Core.Components.Hosting` | アプリの名前・データとキャッシュのフォルダー・アイコンのパス・WebView2 の保存先 (`AppEnvironment` と `WebView2Directory`)。ホストが 1 つ登録し、機能が DI から受け取る |
-| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・待ちの途中で数え直せる定期タイマー (`RestartableTimer`。手動で取り込んだとき、自動の取り込みの間隔を数え直す)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`) |
+| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・待ちの途中で数え直せる定期タイマー (`RestartableTimer`。手動で取り込んだとき、自動の取り込みの間隔を数え直す)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`)・選んだ日付を、選んだ日の間だけ覚える (`RememberedDate`。ページを作り直しても、見ている日付を引き継ぐ状態クラスが使う) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
 
 #### MmmSdk.WinUI
