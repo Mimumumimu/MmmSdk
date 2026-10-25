@@ -21,7 +21,7 @@ public static class FeatureServiceCollectionExtensions
     /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
     /// <param name="defaultEnabled">保存が無いとき (初回起動)のオン・オフ</param>
-    /// <param name="availableWhen">機能が使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)。null なら常に使える</param>
+    /// <param name="availableWhen">機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。null なら常に使える</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 機能の <c>Add&lt;機能&gt;()</c> の中で、ページ・トレイメニュー・起動時の準備などの登録に、同じキーを渡す。
@@ -34,13 +34,15 @@ public static class FeatureServiceCollectionExtensions
     /// <param name="services">登録先のサービスコレクション</param>
     /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
+    /// <param name="availableWhen">機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。null なら常に使える</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 常にオンなので、起動時の準備・トレイメニューの登録には、キーを渡さなくてよい。
     /// サイドバーのページ・設定の部品の登録には、並び順を使うために同じキーを渡す。
+    /// 使える条件を満たさないときは、オンにできない機能でも、画面に出ない。
     /// </remarks>
-    public static IServiceCollection AddAlwaysOnFeature(this IServiceCollection services, string featureKey, string displayName)
-        => services.AddSingleton(new FeatureInfo(featureKey, displayName, true, FeatureRegistrationScope.CurrentOrder, false));
+    public static IServiceCollection AddAlwaysOnFeature(this IServiceCollection services, string featureKey, string displayName, Func<IServiceProvider, bool>? availableWhen = null)
+        => services.AddSingleton(new FeatureInfo(featureKey, displayName, true, FeatureRegistrationScope.CurrentOrder, false, availableWhen));
 
     /// <summary>起動時の準備を登録する</summary>
     /// <typeparam name="TTask">起動時の準備の型</typeparam>
