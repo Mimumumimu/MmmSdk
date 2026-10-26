@@ -53,6 +53,11 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Secrets`: ISecretStore・SecretStoreException (秘密の保存の口)・CredentialSecretStore (資格情報マネージャーで ISecretStore を実装する。CsWin32 の `CredRead` など)。Web 版のサーバーのように画面を持たないアプリからも使うので、Core に置き、`NativeMethods.txt` は Core にも持つ
 - `.Paths`: PathOpener・PathOpenException・PathTarget
 - `.Holidays`: JapaneseHolidays (日本の祝日の判定)。内閣府の「国民の祝日」の一覧 (`syukujitsu.csv`。ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない)を、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る (SDK の csproj。利用者が、最新の一覧に置き換えられるように。置き換えたら、次の起動から使う)。ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる (ファイルは変換せず、そのまま置くので、加工の記載は要らない)
+- `.DaysOfWeek`: Weekdays と WeekdaySet
+  - `Weekdays` は曜日フラグで、月 = 1 から日 = 64 の足し算の数。JSON・DB の列と同じ値
+  - `WeekdaySet` は、変換・判定・表記
+  - 曜日を 1 つも選んでいないときと 7 つ全部のときは、どちらも毎日の意味で扱い、表記も「毎日」にする。同じ意味は、同じ見え方・同じ動きにするため。
+  - リマインダーの曜日指定と、作業管理の自動入力が共有する
 - `.Notifications`: NotificationItem
 - `.SingleInstance`: SingleInstanceGuard
 - `.Attachments`: AttachmentStore
@@ -70,6 +75,9 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Clipboards`: IClipboardService・ClipboardService・ClipboardFormats (クリップボードのテキストの読み書きと、載っている中身の種類の判定。名前空間を `Clipboard` にすると `DataTransfer.Clipboard` の型名を隠すので複数形)
 - `.Attachments`: IImageConverter・ImageConverter・ThumbnailImage (添付の画像の変換とサムネイル)
 - `.Windowing`: PseudoModal・WindowBoundsKeeper・DefaultWindowPlacement
+- `.DaysOfWeek`: WeekdayPicker と WeekdayColors
+  - `WeekdayPicker` は、月〜日の 7 つのトグルボタンで、`Value` に曜日フラグが出る。土は青、日は赤の文字
+  - `WeekdayColors` は、土日の文字の色で、ライト・ダークの両方の値を持つ。スケジュールの日付も同じ色を使う
 - `.Errors`: ErrorState・FatalErrorHandler
 - `.WebViews`: WebView2Setup (WebView2 を、保存先を指定して初期化する。TerminalControl など、WebView2 を使う部品が共有する)
 - `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・TerminalOutputWatcher・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く

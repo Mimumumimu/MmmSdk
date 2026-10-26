@@ -54,6 +54,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を、設定ファイルとは別の場所に保存する (`ISecretStore` / `SecretStoreException`)。Windows の資格情報マネージャーに保存する実装 (`CredentialSecretStore`)もある |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理 (`IPathOpener` / `PathOpener` / `PathOpenException`)と種類の判定 (`PathTarget`) |
 | `MmmSdk.Core.Components.Holidays` | 日本の祝日の判定 (`JapaneseHolidays`。アプリの `Assets/Holidays/syukujitsu.csv` (内閣府の「国民の祝日」の一覧。ダウンロードしたままのファイル)から読み、外へは通信しない。ファイルは置き換えられる。一覧にない年は、祝日にしない。出典の記載は `syukujitsu.LICENSE.txt`) |
+| `MmmSdk.Core.Components.DaysOfWeek` | 曜日フラグ `Weekdays` (月 = 1 から日 = 64 の足し算の数)と、変換・判定・表記の `WeekdaySet` で、曜日を選んでいないときと 7 つ全部のときは、どちらも毎日で、表記も「毎日」 |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
 | `MmmSdk.Core.Components.Shells` | シェルの決定 (`ShellInfo` / `ShellKind` / `ShellLocator`)と、シェル別のコマンド作り・パスの変換 (`ShellCommands`)、WSL のパス (`WslPath`)・ディストリビューション (`WslDistribution`) |
 | `MmmSdk.Core.Components.Scheduling` | 毎分 00 秒に処理を呼ぶ (`MinuteScheduler`)・日付が変わったことの検知 (`DayChangeWatcher`) |
@@ -80,6 +81,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、出力に特定の文字列が出たことを見つける `TerminalOutputWatcher` と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
 | `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
+| `MmmSdk.WinUI.Components.DaysOfWeek` | 月〜日の 7 つのトグルボタンの曜日の選択欄 `WeekdayPicker` で、土は青、日は赤の文字と、土日の文字の色 `WeekdayColors` |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・`TreeView` の選択を ViewModel と合わせる補助 (`TreeViewExtensions`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
