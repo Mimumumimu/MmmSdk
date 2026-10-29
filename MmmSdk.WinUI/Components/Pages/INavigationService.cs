@@ -20,4 +20,15 @@ public interface INavigationService
     /// <returns>ページを開いたら true。サイドバーに項目が無い (機能がオフ・未登録)なら false</returns>
     bool Open<TPage>()
         where TPage : Page;
+
+    /// <summary>サイドバーの、指定のページの項目に、知らせの印 (バッジ)を出す・消す</summary>
+    /// <typeparam name="TPage">印を付けるページの型 (<c>AddNavigationPage</c> で登録したもの)</typeparam>
+    /// <param name="visible">出すなら true</param>
+    /// <remarks>
+    /// 機能がオフの間も、印の状態は項目が持つ。オンに戻したとき、その状態のまま出る。
+    /// 選ばれている項目と、別のウィンドウに外している項目 (どちらもページを開いている間)には、印を出さない。別のページへ移るか、外したウィンドウを閉じると出る。
+    /// 未登録のページを指定したときは、何もしない。
+    /// </remarks>
+    void SetBadge<TPage>(bool visible)
+        where TPage : Page;
 }

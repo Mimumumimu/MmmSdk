@@ -275,6 +275,11 @@ public sealed partial class NavigationHost : UserControl
     /// <returns>外しているなら表示</returns>
     public static Visibility VisibleWhenDetached(bool isDetached) => isDetached ? Visibility.Visible : Visibility.Collapsed;
 
+    /// <summary>知らせがある項目にだけ、知らせの印を出すための表示の切り替え</summary>
+    /// <param name="hasBadge">知らせがあるか</param>
+    /// <returns>知らせがあるなら表示</returns>
+    public static Visibility VisibleWhenBadge(bool hasBadge) => hasBadge ? Visibility.Visible : Visibility.Collapsed;
+
     /// <summary>外せる項目で、まだ外していないものにだけ、外すボタンを置くための表示の切り替え</summary>
     /// <param name="canDetach">外せる項目か</param>
     /// <param name="isDetached">外しているか</param>

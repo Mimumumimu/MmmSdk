@@ -34,4 +34,14 @@ public sealed class NavigationService(NavigationHostViewModel viewModel, PageDet
         ShowRequested?.Invoke(this, EventArgs.Empty);
         return true;
     }
+
+    /// <inheritdoc />
+    public void SetBadge<TPage>(bool visible)
+        where TPage : Page
+    {
+        if (viewModel.FindRegisteredItem(typeof(TPage).Name) is { } item)
+        {
+            item.HasBadge = visible;
+        }
+    }
 }

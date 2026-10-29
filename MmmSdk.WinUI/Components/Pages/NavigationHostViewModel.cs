@@ -37,6 +37,12 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     [ObservableProperty]
     public partial NavigationItem? SelectedItem { get; set; }
 
+    /// <summary>登録されたページの項目を、キーで探す</summary>
+    /// <param name="key">項目のキー (ページの型名)</param>
+    /// <returns>見つかった項目。未登録なら null</returns>
+    /// <remarks>機能がオフでサイドバーに無い項目も探す。項目は登録ごとに 1 つなので、オンに戻したとき同じ項目が並ぶ。</remarks>
+    public NavigationItem? FindRegisteredItem(string key) => _pages.Select(page => page.Item).FirstOrDefault(item => item.Key == key);
+
     #region 移動の履歴 (戻る・進む)
 
     /// <summary>履歴に残す項目の最大数 (古いものから捨てる)</summary>
@@ -90,6 +96,21 @@ public sealed partial class NavigationHostViewModel : ObservableObject
         else
         {
             SelectedItem = MenuItems.Concat(FooterItems).FirstOrDefault(i => i != detached && !i.IsDetached);
+        }
+    }
+
+    /// <summary>選択が変わったら、項目の「選ばれている」を合わせる</summary>
+    /// <param name="oldValue">前の選択</param>
+    /// <param name="newValue">新しい選択</param>
+    partial void OnSelectedItemChanged(NavigationItem? oldValue, NavigationItem? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.IsSelected = false;
+        }
+        if (newValue is not null)
+        {
+            newValue.IsSelected = true;
         }
     }
 

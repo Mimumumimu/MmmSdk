@@ -36,5 +36,22 @@ public sealed partial class NavigationItem(string key, string title, string glyp
     /// <summary>ページが別のウィンドウに外れているか</summary>
     /// <remarks>外れている間は、メインの表示領域に出さない。サイドバーの項目には、外れていることを示す印を出す。</remarks>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsBadge))]
     public partial bool IsDetached { get; set; }
+
+    /// <summary>機能が、知らせの印 (バッジ)を求めているか</summary>
+    /// <remarks>機能が <see cref="INavigationService.SetBadge{TPage}"/> で決める。ページを開いていない間に、見てほしいことが起きたことを知らせる。</remarks>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsBadge))]
+    public partial bool HasBadge { get; set; }
+
+    /// <summary>サイドバーで選ばれている項目か</summary>
+    /// <remarks>ホストが、選択に合わせて決める。</remarks>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsBadge))]
+    public partial bool IsSelected { get; set; }
+
+    /// <summary>サイドバーの項目に、知らせの印を出すか</summary>
+    /// <remarks>選ばれている項目と、別のウィンドウに外している項目には出さない。ページを開いている間は、ページの中で知らせを見られるため。</remarks>
+    public bool ShowsBadge => HasBadge && !IsSelected && !IsDetached;
 }
