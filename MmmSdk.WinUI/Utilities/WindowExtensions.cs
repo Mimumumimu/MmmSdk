@@ -5,6 +5,7 @@ using MmmSdk.WinUI.Interop;
 using Windows.Graphics;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Utilities;
 
@@ -34,6 +35,42 @@ public static class WindowExtensions
         window.AppWindow.Show(activateWindow: true);
         window.Activate();
         window.SetForeground();
+    }
+
+    /// <summary>ウィンドウが見えていて、アプリが前面にないときだけ、タスクバーのボタンを点滅させる</summary>
+    /// <param name="appWindow">対象のウィンドウ</param>
+    /// <returns>点滅させたとき true。トレイへ退避している・最小化している・アプリのウィンドウが前面にあるときは、何もせず false</returns>
+    /// <remarks>
+    /// 前面のウィンドウが自分のプロセスのものなら、別ウィンドウやモーダルを含め、アプリを使っている最中なので点滅させない。
+    /// 点滅は、アプリが前面に戻った時点で Windows が止める (<c>FLASHW_TIMERNOFG</c>)ので、止める呼び出しは要らない。
+    /// 最小化・トレイへの退避中は、タスクバーのボタンを使って気づいてもらう場面ではないため、対象にしない。
+    /// </remarks>
+    public static unsafe bool FlashTaskbarIfInactive(this AppWindow appWindow)
+    {
+        if (!appWindow.IsVisible || appWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized })
+        {
+            return false;
+        }
+
+        var foreground = PInvoke.GetForegroundWindow();
+        if (foreground != HWND.Null)
+        {
+            uint foregroundProcessId;
+            PInvoke.GetWindowThreadProcessId(foreground, &foregroundProcessId);
+            if (foregroundProcessId == (uint)Environment.ProcessId)
+            {
+                return false;
+            }
+        }
+
+        var info = new FLASHWINFO
+        {
+            cbSize = (uint)sizeof(FLASHWINFO),
+            hwnd = (HWND)Win32Interop.GetWindowFromWindowId(appWindow.Id),
+            dwFlags = FLASHWINFO_FLAGS.FLASHW_TRAY | FLASHWINFO_FLAGS.FLASHW_TIMERNOFG,
+        };
+        PInvoke.FlashWindowEx(in info);
+        return true;
     }
 
     /// <summary>【一時の計測】<see cref="BringToFront"/> と同じ手順で前面に出し、前面化の結果を文字列で返す</summary>

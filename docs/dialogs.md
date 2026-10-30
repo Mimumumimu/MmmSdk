@@ -65,6 +65,9 @@
 
 ## WindowExtensions (`MmmSdk.WinUI.Utilities`)
 - `SetForeground`: ウィンドウを前面に出す (`Activate` のあとに呼ぶ)。別のアプリが前面にあると、Windows の制限で前面にならないことがある
+- `FlashTaskbarIfInactive` (`AppWindow` の拡張): ウィンドウが見えていて、前面のウィンドウが同じプロセスのものでないときだけ、タスクバーのボタンを点滅させて `true` を返す。最小化中・トレイへの退避中・アプリが前面にあるときは何もしない (`false`)
+  - 前面に戻ると Windows が点滅を止める (`FLASHW_TIMERNOFG`)ので、止める口は無い
+  - 前面のウィンドウが同じプロセスのものなら、別ウィンドウやモーダルでも前面とみなす。アプリを使っている最中に点滅させないため
 - `GetDpiScale`: ウィンドウがあるモニターの DPI 倍率 (100% で 1.0)。`XamlRoot` は表示するまで無いので、表示前に大きさを決めるときに使う
 - アプリ側にも同じ P/Invoke を持たなくて済むようにするための公開口 (SDK の `NativeMethods` は internal)
 - `UseCustomTitleBar`: アプリのアイコンを付け、タイトルバーを自分で描く (コンテンツをタイトルバーまで広げ、ドラッグできる領域を指定する)

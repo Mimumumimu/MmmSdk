@@ -2,6 +2,8 @@
 
 // ウィンドウの表示・スタイル・入力
 EnableWindow
+FlashWindowEx
+FLASHWINFO
 GetCursorPos
 GetDpiForWindow
 GetSystemMetrics
