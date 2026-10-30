@@ -53,6 +53,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元 (`IWindowPositionService` / `WindowPositionService` / `WindowPosition`)と、画面との位置関係の計算 (`ScreenGeometry`。見えているか・作業領域に収める) |
 | `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を、設定ファイルとは別の場所に保存する (`ISecretStore` / `SecretStoreException`)。Windows の資格情報マネージャーに保存する実装 (`CredentialSecretStore`)もある |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理 (`IPathOpener` / `PathOpener` / `PathOpenException`)と種類の判定 (`PathTarget`) |
+| `MmmSdk.Core.Components.TextLinks` | 文章の中の `http://`・`https://` の URL を、リンクにしてよいものだけ位置つきで見つける (`TextLinkFinder` / `TextLink`) |
 | `MmmSdk.Core.Components.Holidays` | 日本の祝日の判定 (`JapaneseHolidays`。アプリの `Assets/Holidays/syukujitsu.csv` (内閣府の「国民の祝日」の一覧。ダウンロードしたままのファイル)から読み、外へは通信しない。ファイルは置き換えられる。一覧にない年は、祝日にしない。出典の記載は `syukujitsu.LICENSE.txt`) |
 | `MmmSdk.Core.Components.DaysOfWeek` | 曜日フラグ `Weekdays` (月 = 1 から日 = 64 の足し算の数)と、変換・判定・表記の `WeekdaySet` で、曜日を選んでいないときと 7 つ全部のときは、どちらも毎日で、表記も「毎日」 |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
@@ -71,6 +72,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | 名前空間 | 内容 |
 | --- | --- |
 | `MmmSdk.WinUI.Components.Notifications` | 通知ダイアログ (`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`) |
+| `MmmSdk.WinUI.Components.TextLinks` | `TextBlock` に出す文章の URL をリンクにする添付プロパティ `LinkedText`。押したときの処理は、渡したコマンドが行う |
 | `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost`。実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService`。複数選択・保存先の選択を含む)・同じ名前のファイルがあるときの確認 (`AskFileConflictAsync`) |
 | `MmmSdk.WinUI.Components.Clipboards` | クリップボードのテキストの読み書き (`IClipboardService` / `ClipboardService`)・載っている中身の種類の判定 (`ClipboardFormats`) |
 | `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService`。Windows 標準の音声合成を使う) |

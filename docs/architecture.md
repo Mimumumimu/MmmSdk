@@ -52,6 +52,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.WindowPositions`: WindowPositionService・WindowPosition・`WindowPositionJsonContext`・ScreenGeometry (画面との位置関係の純粋な計算)
 - `.Secrets`: ISecretStore・SecretStoreException (秘密の保存の口)・CredentialSecretStore (資格情報マネージャーで ISecretStore を実装する。CsWin32 の `CredRead` など)。Web 版のサーバーのように画面を持たないアプリからも使うので、Core に置き、`NativeMethods.txt` は Core にも持つ
 - `.Paths`: PathOpener・PathOpenException・PathTarget
+- `.TextLinks`: TextLinkFinder・TextLink。文章の中の `http://`・`https://` の URL を見つけ、リンクにしてよいものだけを位置つきで返す。末尾の句読点は含めず、`http` と `https` 以外・空白や引用符を含むもの・長すぎるものは返さない。ノートの HTML・メッセージの Web 版のサーバー・PC 版の `LinkedText` が、同じ結果を使う
 - `.Holidays`: JapaneseHolidays (日本の祝日の判定)。内閣府の「国民の祝日」の一覧 (`syukujitsu.csv`。ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない)を、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る (SDK の csproj。利用者が、最新の一覧に置き換えられるように。置き換えたら、次の起動から使う)。ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる (ファイルは変換せず、そのまま置くので、加工の記載は要らない)
 - `.DaysOfWeek`: Weekdays と WeekdaySet
   - `Weekdays` は曜日フラグで、月 = 1 から日 = 64 の足し算の数。JSON・DB の列と同じ値
@@ -83,6 +84,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・TerminalOutputWatcher・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く
 - `.Pages`: 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (上の「機能 (プラグイン)がホストへ入る口」)。`IBusyCursor` は、ウィンドウ全体のマウスカーソルを砂時計にする口で、`NavigationHost`(サイドバーとページの全体)が、その状態に合わせてカーソルを変える (サイドバーを押した直後は、マウスがページの外にあるため、ページだけでは変えない)。`RunAsync` は、砂時計を描かせてから、UI スレッドで長く動く処理を始める。サイドバーの移動の履歴は `NavigationHostViewModel` が持ち、`NavigationHistoryButtons` (タイトルバーに置く「戻る」「進む」)と Alt+←・Alt+→ で使う。ショートカットはボタンに持たせ、キーフックは使わない (アプリが前面のときだけ効けばよいため)。`INavigationService` は、機能が、サイドバーの指定のページ (`Open<TPage>()`)を開いてもらう口で、通知のクリックなど、ページの外から使う。ホストのウィンドウを前面に出すのは、ホストアプリが `ShowRequested` を受けて行い (トレイへ隠れていても見せるため、ページを開くたびに知らせる)、機能がホストのウィンドウを知らなくて済む。ページが機能のオフなどで項目に無いときは、何もせず false を返す
   - サイドバーの印: `INavigationService.SetBadge<TPage>(bool)` は、サイドバーの指定のページの項目の右端に、知らせの丸を出し入れする口。ページを開いていない間に、見てほしいことが起きたことを知らせる。選ばれている項目と、別のウィンドウに外している項目には出さない。標準の点のバッジ `InfoBadge` は小さくて気づきにくいため使わない。印の状態は、機能がオフの間も項目が持つ。
+- `.TextLinks`: LinkedText。`TextBlock` の添付プロパティ `Text` に文章を渡すと、URL を `Hyperlink` にして並べる。リンクを押すと、`LinkCommand` に URL を渡す。開く処理と失敗の表示は、受け取る側が持つ。`NavigateUri` は使わない。開けなかったときの表示を、アプリが決めるため。強調色の地の上などでは、`LinkForeground` で色を渡す
 - `.Tray`: TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem・`AddTrayMenuSource`。`TrayMenuRenderer` は internal。DI 登録は `AddMmmSdkWinUI` と同じ `SdkWinUIServiceCollectionExtensions` の `AddMmmSdkTray`
 - `MmmSdk.WinUI.Controls`: TimeInputBox・LinkArea・RefreshButton・OverflowRowLayout・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)
 - `MmmSdk.WinUI.Utilities`: WindowExtensions・WindowPlacement・NativeMessageBox・ImeControl・TextBoxExtensions・TreeViewExtensions・VisualTreeSearch・WarningBubble
