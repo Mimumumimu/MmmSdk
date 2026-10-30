@@ -7,6 +7,7 @@ GetDpiForWindow
 GetSystemMetrics
 GetForegroundWindow
 GetWindowLongPtr
+GetWindowThreadProcessId
 HWND_TOPMOST
 SetForegroundWindow
 SetWindowLongPtr

@@ -36,6 +36,53 @@ public static class WindowExtensions
         window.SetForeground();
     }
 
+    /// <summary>【一時の計測】<see cref="BringToFront"/> と同じ手順で前面に出し、前面化の結果を文字列で返す</summary>
+    /// <param name="window">対象のウィンドウ</param>
+    /// <returns>前面化の前後の前面ウィンドウと、<c>SetForegroundWindow</c> の戻り値</returns>
+    /// <remarks>通知のクリックで画面が後ろに残る原因を調べるための一時の関数。原因が決まったら消す。</remarks>
+    public static string BringToFrontTraced(this Window window)
+    {
+        var hwnd = (HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id);
+        var before = DescribeForeground();
+        var minimized = window.AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
+
+        NativeMethods.MoveToCurrentVirtualDesktop((nint)hwnd);
+        if (window.AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+        {
+            presenter.Restore();
+        }
+        window.AppWindow.Show(activateWindow: true);
+        window.Activate();
+        var accepted = PInvoke.SetForegroundWindow(hwnd);
+
+        var after = DescribeForeground();
+        var isSelf = PInvoke.GetForegroundWindow() == hwnd;
+        return $"SetForegroundWindow={(bool)accepted} / 最小化={minimized} / 前面が自分={isSelf} / 前={before} / 後={after}";
+    }
+
+    /// <summary>【一時の計測】いまの前面ウィンドウを、ハンドルとプロセス名で表す</summary>
+    private static unsafe string DescribeForeground()
+    {
+        var foreground = PInvoke.GetForegroundWindow();
+        if (foreground == HWND.Null)
+        {
+            return "なし";
+        }
+
+        uint processId;
+        PInvoke.GetWindowThreadProcessId(foreground, &processId);
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById((int)processId);
+            return $"0x{(nint)foreground:X} {process.ProcessName}({processId})";
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            // 調べている間に終了した・権限が無いプロセス。名前だけ諦める
+            return $"0x{(nint)foreground:X} (プロセス不明 {processId})";
+        }
+    }
+
     /// <summary>アプリのアイコンを付け、タイトルバーを自分で描く (コンテンツをタイトルバーまで広げる)</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="titleBar">ドラッグでウィンドウを動かせるタイトルバーの領域</param>
