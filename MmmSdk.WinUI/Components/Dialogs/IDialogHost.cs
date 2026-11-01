@@ -50,4 +50,10 @@ public interface IDialogHost
     /// UI スレッドから呼ぶ。
     /// </remarks>
     void CloseAll(Window? keep);
+
+    /// <summary><see cref="CloseAll"/> で閉じている最中か</summary>
+    /// <remarks>
+    /// 各ウィンドウの閉じる処理が、同期の中で調べる。アプリの終了では、DI のホストをすぐ破棄するので、閉じる前に非同期の処理を挟むウィンドウ (外したページのウィンドウなど)は、挟まずに閉じる。
+    /// </remarks>
+    bool IsClosingAll { get; }
 }

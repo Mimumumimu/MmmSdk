@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using MmmSdk.Core.Components.Features;
+using MmmSdk.Core.Utilities;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Win32;
@@ -258,7 +259,7 @@ public sealed partial class NavigationHost : UserControl
         }
 
         var pageSize = new Windows.Foundation.Size(ContentFrame.ActualWidth, ContentFrame.ActualHeight);
-        _detacher.Open(item, () => ViewModel.SelectAnotherThan(item), pageSize, MainAppWindow(), at);
+        _detacher.OpenAsync(item, () => ViewModel.SelectAnotherThan(item), pageSize, MainAppWindow(), at).Forget();
     }
 
     /// <summary>このサイドバーを載せているウィンドウを取得する</summary>

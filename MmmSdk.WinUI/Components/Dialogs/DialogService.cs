@@ -194,15 +194,26 @@ public sealed class DialogService : IDialogService, IDialogHost
     }
 
     /// <inheritdoc />
+    public bool IsClosingAll { get; private set; }
+
+    /// <inheritdoc />
     public void CloseAll(Window? keep)
     {
-        // 閉じる処理の中で、覚えている一覧が変わる (閉じた結果を待っていた処理が続く)ので、写しを取ってから閉じる
-        foreach (var window in _modals.Reverse<Window>().Concat(_tracked.Reverse<Window>()).Distinct().ToList())
+        IsClosingAll = true;
+        try
         {
-            if (window != keep)
+            // 閉じる処理の中で、覚えている一覧が変わる (閉じた結果を待っていた処理が続く)ので、写しを取ってから閉じる
+            foreach (var window in _modals.Reverse<Window>().Concat(_tracked.Reverse<Window>()).Distinct().ToList())
             {
-                window.Close();
+                if (window != keep)
+                {
+                    window.Close();
+                }
             }
+        }
+        finally
+        {
+            IsClosingAll = false;
         }
     }
 

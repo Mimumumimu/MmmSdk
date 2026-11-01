@@ -1,6 +1,6 @@
 // xterm.js とホスト (C# 側 WebView2)の橋渡し。
-// ホスト → JS : { type: "output", data } / { type: "focus" } / { type: "submit", data }
-// JS → ホスト : { type: "ready", cols, rows } / { type: "input", data } / { type: "resize", cols, rows } / { type: "written", length }
+// ホスト → JS : { type: "output", data } / { type: "focus" } / { type: "submit", data } / { type: "capture", id } / { type: "restore", data, cols, rows }
+// JS → ホスト : { type: "ready", cols, rows } / { type: "input", data } / { type: "resize", cols, rows } / { type: "written", length } / { type: "snapshot", id, data, cols, rows }
 (() => {
     "use strict";
 
@@ -19,6 +19,9 @@
 
     const fit = new FitAddon.FitAddon();
     term.loadAddon(fit);
+    // 画面の内容 (見えている範囲とスクロールの履歴)を文字列にして、別のウィンドウの端末へ引き継ぐために使う
+    const serializer = new SerializeAddon.SerializeAddon();
+    term.loadAddon(serializer);
     term.open(document.getElementById("terminal"));
     fit.fit();
 
@@ -42,7 +45,13 @@
     });
 
     term.onData(data => host.postMessage({ type: "input", data }));
-    term.onResize(({ cols, rows }) => host.postMessage({ type: "resize", cols, rows }));
+    // 引き継ぎの内容を書き戻している間は、大きさの変更をホストへ伝えない (シェルの画面の大きさを、一時的に変えないため)
+    let restoring = false;
+    term.onResize(({ cols, rows }) => {
+        if (!restoring) {
+            host.postMessage({ type: "resize", cols, rows });
+        }
+    });
 
     // サイズ変更の通知は 1 フレームに 1 回にまとめる (ドラッグ中に fit() を連打しない。onResize は、列・行が実際に変わったときだけ ConPTY へ伝える)
     let fitScheduled = false;
@@ -202,6 +211,27 @@
                 break;
             case "submit":
                 submit(message.data, message.marker);
+                break;
+            case "capture":
+                // 書き込み待ちの出力がすべて描かれてから、画面の内容を取り出す (空の書き込みの完了が、それまでの書き込みの完了のあとに来る)
+                term.write("", () => host.postMessage({
+                    type: "snapshot",
+                    id: message.id,
+                    data: serializer.serialize(),
+                    cols: term.cols,
+                    rows: term.rows,
+                }));
+                break;
+            case "restore":
+                // 取り出したときの大きさに合わせて書き戻し、終わったら今の大きさへ合わせる。
+                // 終わりに、今の大きさをホストへ必ず伝える (書き戻している間の大きさの変更は、伝えていないため)
+                restoring = true;
+                term.resize(message.cols, message.rows);
+                term.write(message.data, () => {
+                    restoring = false;
+                    fit.fit();
+                    host.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
+                });
                 break;
         }
     });

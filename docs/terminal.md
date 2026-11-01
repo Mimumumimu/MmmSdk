@@ -59,15 +59,32 @@
   - 効かないもの: カーソルを隠さないアプリ (bash など)・反転表示を偽のカーソルに使わない TUI
   - 出力の最後が行末の折り返し待ち (`x` が列数と同じ)だったときは、戻した位置が最後の桁になり、折り返し待ちは戻らない (描画の先頭で絶対位置を指定する TUI では問題にならない)
 - ブラウザとしての動きは止めてある。対象は再読み込み・右クリック・ズーム・新しいウィンドウ。ページの移動も、同梱の画面 (仮想ホスト)以外へは `NavigationStarting` で取り消す (`NewWindowRequested` の抑止と合わせて、外のページに切り替わらないようにする)
-- xterm.js・addon-fit (MIT。ライセンスファイルも同梱)は `MmmSdk.WinUI/Components/Terminal/Assets/`。SDK の csproj が、参照するアプリの出力フォルダー (`Assets/Terminal/`)へコピーする。**アプリは何も書かなくてよい**(アセットはフォルダー内に平らに置く。サブフォルダーを足すときは csproj のリンクの書き方を直す)
+- xterm.js・addon-fit・addon-serialize は MIT のライセンスで、ライセンスファイルも同梱し、`MmmSdk.WinUI/Components/Terminal/Assets/` に置く。SDK の csproj が、参照するアプリの出力フォルダー (`Assets/Terminal/`)へコピーする。**アプリは何も書かなくてよい**。アセットはフォルダー内に平らに置く。サブフォルダーを足すときは、csproj のリンクの書き方を直す
 - 仮想ホスト `terminal.mmmsdk.invalid` で `Assets/Terminal/` を読み込む。設定は `DenyCors`。守りは多重：ページの CSP (外部への通信・フレーム・フォームを禁止)・`AreHostObjectsAllowed = false`・ブラウザーの機能 (再読み込み・検索・印刷・ズーム・右クリックメニュー)を止める・メッセージの送信元の検査・Release で DevTools を無効化
 - Ctrl+C のコピーは、クリップボードへ書き込めたときだけ選択を解除する。拒否されたときは選択を残し、`console.error` に出す。画面には出さない。サイズ変更の通知は 1 フレームに 1 回にまとめる
 - ページの CSP は、xterm.js が `<style>` を足すため、style だけ inline を許可している
-- C# ↔ JS は JSON メッセージで、C# → JS は `output` / `submit` / `focus`、JS → C# は `ready` / `input` / `resize` / `written`。ページは `terminal.js`
+- C# ↔ JS は JSON メッセージで、C# → JS は `output` / `submit` / `focus` / `capture` / `restore`、JS → C# は `ready` / `input` / `resize` / `written` / `snapshot`。ページは `terminal.js`
 - 出力は細切れに届くので、UI スレッドへ渡す前にまとめる。xterm.js の書き込み待ちがあふれて出力が捨てられないよう、描画の受け取り (`written`)が返っていない文字数が 1M 文字を超えたら、受け取りが返るまで送らない
 - シェルが終了したあとは、何かキーを押すと再起動する (押されたキーは捨てる。終了待ちの間のキーも捨てて、二重に起動し直さない)
 - WebView2 を初期化できなかったとき (ランタイムが無い・起動できない。`COMException`)は、画面の場所に理由を文字で出す。ほかの機能は使い続けられる。`COMException` 以外の例外は、未処理例外の受け皿が受ける
 - シェルの起動に失敗したとき (`Win32Exception`・`COMException`・`InvalidOperationException`)は、端末に赤字で理由を出す
+
+## 別のウィンドウへの引き継ぎ (`IHandoverPage` / `TerminalHandover`)
+- ページを別のウィンドウへ移すとき、シェル (セッション)を終了せず、ターミナルの画面 (`TerminalControl`)だけを新しいウィンドウで作り直す。WebView2 を別のウィンドウへ移さない。移すと、タスクバーは日本語入力のままなのに、英字しか入らないため
+- 契約は `MmmSdk.WinUI.Components.Pages.IHandoverPage` で、ページが実装する。`PageDetacher` が、次の順で呼ぶ。実装しないページは、ページごと作り直す
+  1. `PrepareHandoverAsync`: 画面を出したまま、内容を取り出す。`TerminalControl.FreezeAndCaptureAsync` が、画面への出力を止め、xterm.js から内容を受け取る
+  2. `TakeHandover`: 古い画面を閉じて、`TerminalHandover` を受け取る。`TerminalControl.TakeHandover` が、止めているあいだにためた出力ごと取り出す
+  3. 新しいページの `ApplyHandover`: 新しい `TerminalControl` の `InitialHandover` に渡し、すぐセッションをつなぐ
+  - 2 と 3 は、UI スレッドの同じ処理の中で続ける。あいだに届いた出力を、捨てないため
+- `TerminalHandover` は、画面の内容 (`Snapshot`)・そのときの列数と行数・まだ画面へ送っていない出力 (`PendingOutput`)
+- 画面の内容は、`addon-serialize` の `serialize()` で、見えている範囲とスクロールの履歴を、端末へ書き込める文字列にしたもの
+  - `capture` を受けた xterm.js は、空の書き込みの完了を待ってから取り出す。それまでに書き込み待ちの出力が、すべて描かれるため
+  - 取り出しの返事を 3 秒待つ。超えたら、内容は引き継がず、出力だけを引き継ぐ
+- 新しい画面は、準備ができて `ready` を返したとき、続きの出力より先に `restore` を送る
+  - xterm.js は、取り出したときの大きさに合わせて書き込み、終わったら今の大きさへ合わせる
+  - 書き込んでいる間の大きさの変更は、シェルへ伝えない。終わったときに、今の大きさを必ず伝える
+- 準備の前に、さらに引き継ぐときは、前の内容と、ためた出力を、そのまま次へ渡す
+- 取り出しから新しい画面へつなぐまでの、ごく短いあいだに、背景のスレッドで届く出力は、捨てられる可能性がある。画面の内容は、シェルが描き直すと整う
 
 ## アプリでの使い方
 ```csharp

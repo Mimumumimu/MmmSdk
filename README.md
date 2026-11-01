@@ -78,7 +78,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService`。Windows 標準の音声合成を使う) |
 | `MmmSdk.WinUI.Components.Audio` | 無音を流し続けて、音声機器が休止するのを防ぐ (`IAudioKeepAlive` / `AudioKeepAlive`。`AudioGraph` を使う) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
-| `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの項目の右端の知らせの丸を、機能から出し入れする口 `INavigationService.SetBadge` (選ばれている項目と外している項目には出ない)・サイドバーの本体 (`NavigationHost`・`NavigationHostViewModel`・`PageProvider`。ページを別のウィンドウに外す `PageDetacher`・`DetachedPageWindow`と、移動の履歴と、タイトルバーに置く「戻る」「進む」のボタン `NavigationHistoryButtons`を含む。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく) |
+| `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・別のウィンドウへ移すとき画面だけを作り直して状態を引き継ぐ口 (`IHandoverPage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの項目の右端の知らせの丸を、機能から出し入れする口 `INavigationService.SetBadge` (選ばれている項目と外している項目には出ない)・サイドバーの本体 `NavigationHost`・`NavigationHostViewModel`・`PageProvider`、ページを別のウィンドウに外す `PageDetacher`・`DetachedPageWindow`、移動の履歴と、タイトルバーに置く「戻る」「進む」のボタン `NavigationHistoryButtons`。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)・機能のトレイメニューの項目の登録は `AddTrayMenuSource`。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
 | `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、出力に特定の文字列が出たことを見つける `TerminalOutputWatcher` と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
 | `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
@@ -108,7 +108,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - CommunityToolkit.Mvvm … `MmmSdk.WinUI` のみ
 - Microsoft.Data.SqlClient … `MmmSdk.Db.SqlServer` のみ
 - Microsoft.Data.Sqlite … `MmmSdk.Db.Sqlite` のみ
-- WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0 (ターミナル描画。MIT。`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱。ライセンスファイルも同じ場所)
+- WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0 / addon-serialize 0.14.0 を、ターミナル描画と、ページを別のウィンドウへ移すときの画面の引き継ぎに使う。いずれも MIT で、`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱し、ライセンスファイルも同じ場所に置く
 - Microsoft.Extensions.DependencyInjection.Abstractions (DI 登録用の拡張メソッド)
 - System.Text.Json (ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する)
 
@@ -659,3 +659,4 @@ git commit
 
 - xterm.js (MIT License)… [`MmmSdk.WinUI/Components/Terminal/Assets/xterm.LICENSE.txt`](./MmmSdk.WinUI/Components/Terminal/Assets/xterm.LICENSE.txt)
 - @xterm/addon-fit (MIT License)… [`MmmSdk.WinUI/Components/Terminal/Assets/addon-fit.LICENSE.txt`](./MmmSdk.WinUI/Components/Terminal/Assets/addon-fit.LICENSE.txt)
+- @xterm/addon-serialize (MIT License)… [`MmmSdk.WinUI/Components/Terminal/Assets/addon-serialize.LICENSE.txt`](./MmmSdk.WinUI/Components/Terminal/Assets/addon-serialize.LICENSE.txt)
