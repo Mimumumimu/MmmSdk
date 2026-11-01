@@ -18,8 +18,8 @@ public static class ShellLocator
 
     /// <summary>既定のシェル</summary>
     /// <remarks>
-    /// 最初に読んだときに PATH を探す (ディスクへ触れるので、遅い環境では時間がかかる)。UI スレッドで初めて読まないよう、起動時の準備でバックグラウンドから読んでおく。
-    /// 結果は保持するので、2 回目以降は探さない (アプリの起動中に PowerShell 7 を入れても、次の起動まで反映しない)。
+    /// 最初に読んだときに PATH を探す。ディスクへ触れるので、遅い環境では時間がかかる。UI スレッドで初めて読まないよう、起動時の準備でバックグラウンドから読んでおく。
+    /// 結果は保持するので、2 回目以降は探さない。アプリの起動中に PowerShell 7 を入れても、次の起動まで反映しない。
     /// </remarks>
     public static ShellInfo Default => DefaultShell.Value;
 
@@ -44,7 +44,7 @@ public static class ShellLocator
     /// <param name="fileName">実行ファイル名</param>
     /// <returns>最初に見つかったもののフルパス。無ければ null</returns>
     /// <remarks>
-    /// <c>.</c> などの相対パスの項目は飛ばす (カレントフォルダーの同名のファイルが選ばれるのを防ぐ)。前後の引用符は外す (PATH には <c>"C:\Program Files\x"</c> のように書かれることがある)。
+    /// <c>.</c> などの相対パスの項目は飛ばす。カレントフォルダーの同名のファイルが選ばれるのを防ぐため。前後の引用符は外す。PATH には <c>"C:\Program Files\x"</c> のように書かれることがある。
     /// </remarks>
     private static string? FindOnPath(string fileName)
     {

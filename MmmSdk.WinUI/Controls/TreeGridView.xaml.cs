@@ -15,12 +15,12 @@ namespace MmmSdk.WinUI.Controls;
 /// </summary>
 /// <remarks>
 /// <para>
-/// 行 (<see cref="ITreeGridRow"/>)は、使う側が作って <see cref="ItemsSource"/> に渡す (開閉に合わせた行の増減も、使う側が行う)。
-/// セルの見た目は、列の <see cref="TreeGridColumn.CellTemplate"/> で決まる (行がデータとして渡る)。行の高さは固定で、見えている行だけを作る (仮想化)。
+/// 行 (<see cref="ITreeGridRow"/>)は、使う側が作って <see cref="ItemsSource"/> に渡す。開閉に合わせた行の増減も、使う側が行う。
+/// セルの見た目は、列の <see cref="TreeGridColumn.CellTemplate"/> で決まる。行がデータとして渡る。行の高さは固定で、見えている行だけを作る仮想化を行う。
 /// </para>
 /// <para>
 /// 固定の列 (<see cref="TreeGridColumn.IsFrozen"/>)は、横にスクロールしても左に残り、見出しの行は、縦にスクロールしても上に残る。
-/// どちらも、スクロールの位置に合わせて、コンポジションの式で、要素を逆向きに動かして実現する (スクロールのたびに、コードは動かない)。
+/// どちらも、スクロールの位置に合わせて、コンポジションの式で、要素を逆向きに動かして実現する。スクロールのたびに、コードは動かない。
 /// </para>
 /// </remarks>
 public sealed partial class TreeGridView : UserControl
@@ -69,7 +69,7 @@ public sealed partial class TreeGridView : UserControl
     public string? ContextColumnKey { get; internal set; }
 
     /// <summary>直近の右クリック (押下)で当たった、入力できるセルそのもの (無ければ null)</summary>
-    /// <remarks>行のメニューの項目から、押した所のセルの下に入れ物を出すために使う (行のメニューの対象は行全体なので、行の左端の下に出てしまうのを防ぐ)。キーボードでメニューを開いたときは null。</remarks>
+    /// <remarks>行のメニューの項目から、押した所のセルの下に入れ物を出すために使う。行のメニューの対象は行全体なので、行の左端の下に出てしまうのを防ぐ。キーボードでメニューを開いたときは null。</remarks>
     public FrameworkElement? ContextCell { get; internal set; }
 
     /// <summary>行のない所の右クリックのメニュー</summary>
@@ -89,7 +89,7 @@ public sealed partial class TreeGridView : UserControl
     /// <summary>行の一覧を、表に付け直して、見える範囲の行の表示部品を作り直させる</summary>
     /// <remarks>
     /// 画面に出ている行の前に、行の塊を差し込む・抜くと、表 (<c>ItemsRepeater</c>)は、すでに作ってある表示部品を、ずれた位置のまま持ち、
-    /// スクロールするまで、見える範囲に行を作り直さないことがある (行はあるのに、表が空に見える)。一覧そのものは変わらない。
+    /// スクロールするまで、見える範囲に行を作り直さないことがある。行はあるのに、表が空に見える。一覧そのものは変わらない。
     /// 大きな塊を増減したあとに呼ぶ。行を 1 つずつ増減するだけなら、呼ばなくてよい。
     /// </remarks>
     public void RebindRows()
@@ -124,7 +124,7 @@ public sealed partial class TreeGridView : UserControl
 
     /// <summary>入力できる行の、固定の列の背景 (null なら、既定の色)</summary>
     /// <remarks>
-    /// 固定の列を、スクロールする列と、背景の色で区別したいときに使う (例: 初回だけ入力する列を、薄い色にする)。
+    /// 固定の列を、スクロールする列と、背景の色で区別したいときに使う。例は、初回だけ入力する列を、薄い色にする。
     /// 横にスクロールしたセルを隠すので、不透明な色にすること。
     /// </remarks>
     public Microsoft.UI.Xaml.Media.Brush? FrozenBackground
@@ -147,7 +147,7 @@ public sealed partial class TreeGridView : UserControl
         }));
 
     /// <summary>集計の行の背景 (null なら、既定の色)</summary>
-    /// <remarks>使う側のテーマの色を渡すときに使う (<c>{ThemeResource ...}</c>で渡すと、テーマの切り替えにも追従する)。</remarks>
+    /// <remarks>使う側のテーマの色を渡すときに使う。<c>{ThemeResource ...}</c> で渡すと、テーマの切り替えにも追従する。</remarks>
     public Microsoft.UI.Xaml.Media.Brush? SummaryBackground
     {
         get => (Microsoft.UI.Xaml.Media.Brush?)GetValue(SummaryBackgroundProperty);
@@ -174,7 +174,7 @@ public sealed partial class TreeGridView : UserControl
     /// <remarks>
     /// 使う側は、入力欄がまだ表の中にあるこの時点で、入力した値を確定する。
     /// フォーカスが外れた通知 (<c>LostFocus</c>)は、入力欄を外したあとに届く・届かないことがあり、そのときは、入力欄から行をたどれず、確定できないため。
-    /// Esc で取りやめるときは起きない (<see cref="EditCanceled"/>)。
+    /// Esc で取りやめるときは起きない。取りやめは <see cref="EditCanceled"/> で知らせる。
     /// </remarks>
     public event EventHandler<TreeGridCellEventArgs>? EditEnding;
 
@@ -262,14 +262,14 @@ public sealed partial class TreeGridView : UserControl
     /// <remarks>
     /// XAML の標準の移動に任せると、表全体が 1 つの止まる所になって Tab でセルの間を移れず、矢印キーは、見えないセルに移る。
     /// そこで、すべてのセル (入力できないセルも)を、行と列の並びで、自分で移す。移ったセルは、フォーカスと枠だけで、入力は始めない。
-    /// Tab は、入力中でも同じ (入力は、フォーカスが外れて確定する)。矢印キーは、セルそのものにフォーカスがあるときだけ (入力欄の中では、文字のカーソルを動かす)。
+    /// Tab は、入力中でも同じで、入力は、フォーカスが外れて確定する。矢印キーは、セルそのものにフォーカスがあるときだけで、入力欄の中では、文字のカーソルを動かす。
     /// Tab で、表の最後・最初のセルから先へは移らず、そのまま表の外へ出る。
     /// </remarks>
     private void OnScrollerKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         if (e.Key == Windows.System.VirtualKey.Escape)
         {
-            // Esc は、どのセルでも同じ: 入力を取りやめて (元の値に戻して)、セルに戻る
+            // Esc は、どのセルでも同じ: 入力を取りやめ、元の値に戻して、セルに戻る
             foreach (var presenter in _presenters)
             {
                 if (presenter.TryCancelEdit(e.OriginalSource as DependencyObject))
@@ -428,7 +428,7 @@ public sealed partial class TreeGridView : UserControl
 
     /// <summary>列の幅の変更だけを、表に反映する</summary>
     /// <remarks>
-    /// <see cref="RefreshColumns"/> と違い、セルを作り直さない (入力中のフォーカスを保つ)。
+    /// <see cref="RefreshColumns"/> と違い、セルを作り直さない。入力中のフォーカスを保つため。
     /// 列の表示・非表示・見出し・並びを変えたときは、<see cref="RefreshColumns"/> を呼ぶ。
     /// </remarks>
     public void RefreshColumnWidths()

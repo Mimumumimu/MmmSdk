@@ -16,7 +16,7 @@ public static class ThumbnailImage
 
     /// <summary>画像ファイルからサムネイルを作る</summary>
     /// <param name="path">画像ファイルのパス</param>
-    /// <returns>サムネイル (読み込みは後から終わる)。パスが空なら null</returns>
+    /// <returns>サムネイルで、読み込みは後から終わる。パスが空なら null</returns>
     public static BitmapImage? FromFile(string? path)
     {
         if (string.IsNullOrEmpty(path))

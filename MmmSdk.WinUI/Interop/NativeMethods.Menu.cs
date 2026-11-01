@@ -9,7 +9,7 @@ internal static partial class NativeMethods
     /// <summary>uxtheme の SetPreferredAppMode の序数</summary>
     /// <remarks>
     /// Win32 のメニューは既定では常にライトの見た目になる。uxtheme の非公開 API (序数指定)でシステムのダーク設定に従わせる。
-    /// Windows 10 1903 以降で使える (エクスプローラー等も使っている)。使えない環境 (1903 より前・見つからない)では何もしない (ライトのまま)。
+    /// Windows 10 1903 以降で使える。エクスプローラー等も使っている。使えない環境 (1903 より前・見つからない)では何もしない。ライトのまま。
     /// </remarks>
     private const int UxThemeOrdinalSetPreferredAppMode = 135;
     /// <summary>uxtheme の FlushMenuThemes の序数</summary>
@@ -63,8 +63,8 @@ internal static partial class NativeMethods
     /// <param name="ordinal">関数の序数</param>
     /// <returns>関数のアドレス。見つからない、または序数の意味が違う可能性のある古い Windows なら null</returns>
     /// <remarks>
-    /// uxtheme.dll は、ウィンドウを持つプロセスがすでに読み込んでいるので、新しく読み込まずに、読み込み済みのものを取る
-    /// (パスなしの LoadLibrary は、検索順で別の DLL を拾いうる)。呼び出しは型の初期化で 1 度だけ。
+    /// uxtheme.dll は、ウィンドウを持つプロセスがすでに読み込んでいるので、新しく読み込まずに、読み込み済みのものを取る。
+    /// パスなしの LoadLibrary は、検索順で別の DLL を拾いうる。呼び出しは型の初期化で 1 度だけ。
     /// </remarks>
     private static unsafe void* GetUxThemeFunction(int ordinal)
     {

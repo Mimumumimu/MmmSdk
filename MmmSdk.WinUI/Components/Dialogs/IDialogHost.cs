@@ -4,14 +4,14 @@ using Microsoft.UI.Xaml.Controls;
 namespace MmmSdk.WinUI.Components.Dialogs;
 
 /// <summary>
-/// ダイアログ・モーダルウィンドウの親を決める口 (アプリ固有の画面を開くサービスが使う)。
+/// ダイアログ・モーダルウィンドウの親を決める口。アプリ固有の画面を開くサービスが使う。
 /// </summary>
 /// <remarks>確認ダイアログを開く口は <see cref="IDialogService"/>。どちらも同じ <see cref="DialogService"/> が実装する。</remarks>
 public interface IDialogHost
 {
     /// <summary>ダイアログの親</summary>
     /// <remarks>
-    /// 最後に操作した (アクティブになった)ウィンドウ (登録した普通のウィンドウ・開いているモーダルウィンドウ)。まだ無ければ、いちばん手前のモーダルウィンドウ、それも無ければ最初に登録したウィンドウ。
+    /// 最後に操作した (アクティブになった)ウィンドウで、登録した普通のウィンドウ・開いているモーダルウィンドウ。まだ無ければ、いちばん手前のモーダルウィンドウ、それも無ければ最初に登録したウィンドウ。
     /// 普通のウィンドウは、見えているもの (<c>AppWindow.IsVisible</c>)だけを選ぶ。× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えないため。
     /// 見えているものが 1 つも無いときだけ、隠れたウィンドウ (最後に操作したもの、それも無ければ最初に登録したもの)を返す。このときは、
     /// 親の画面が見えないので、<c>ContentDialog</c> は見えないまま待ち続ける。呼ぶ側が、先に見えるウィンドウを出してから呼ぶこと。
@@ -23,8 +23,8 @@ public interface IDialogHost
     /// <param name="dialog">開く前のダイアログ</param>
     /// <remarks>
     /// 親の画面 (<c>XamlRoot</c>)と、親のテーマ (ライト・ダーク)を渡す。<c>ContentDialog</c> は親のテーマを引き継がないため、渡さないと、
-    /// 背景・タイトルと、中身の部品とでテーマが食い違い、ダークモードで読めなくなる。ダイアログは必ず、これを通して開く
-    /// (<c>Owner.Content.XamlRoot</c> を直接代入しない)。
+    /// 背景・タイトルと、中身の部品とでテーマが食い違い、ダークモードで読めなくなる。ダイアログは必ず、これを通して開く。
+    /// <c>Owner.Content.XamlRoot</c> を直接代入しない。
     /// </remarks>
     /// <exception cref="InvalidOperationException">親にできるウィンドウが 1 つも登録されていない。</exception>
     void Attach(ContentDialog dialog);
@@ -42,7 +42,7 @@ public interface IDialogHost
     Task<T> ShowModalAsync<T>(Window window, Func<Window, Task<T>> show);
 
     /// <summary>開いているウィンドウを閉じる (アプリの終了の前に呼ぶ)</summary>
-    /// <param name="keep">閉じずに残すウィンドウ (アプリのメインウィンドウ)。無ければ null</param>
+    /// <param name="keep">閉じずに残すウィンドウで、アプリのメインウィンドウ。無ければ null</param>
     /// <remarks>
     /// モーダルウィンドウを新しいものから、そのあと <see cref="TrackWindow"/> で登録した普通のウィンドウを新しいものから、閉じる。
     /// 各ウィンドウの閉じる処理 (後始末・結果の返却)を、DI のホストを破棄する前に、親子の順に済ませるため。

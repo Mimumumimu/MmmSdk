@@ -48,7 +48,7 @@
         PointerEntered="OnFramePointerEntered"
         PointerExited="OnFramePointerExited"
         Tapped="OnFrameTapped">
-        <!-- 枠の見た目 (通常・ポインタ上・フォーカス中)。色は ThemeResource なので、テーマの切り替えに追従する -->
+        <!-- 枠の見た目で、通常・ポインタ上・フォーカス中。色は ThemeResource なので、テーマの切り替えに追従する -->
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="CommonStates">
                 <VisualState x:Name="Normal" />

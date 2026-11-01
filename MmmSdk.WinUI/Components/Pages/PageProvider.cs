@@ -9,10 +9,10 @@ namespace MmmSdk.WinUI.Components.Pages;
 /// <param name="features">機能のオン・オフ</param>
 /// <param name="scopeFactory">ページごとのスコープを作る</param>
 /// <remarks>
-/// ページは初回の表示で、ページごとのスコープから DI で作り、以後は同じインスタンスを使う (入力中の内容やターミナルを保つため)。
-/// 機能がオフの間はページを作らず、オフにしたときは、作ったページを捨てる (<see cref="EvictDisabledPages"/>)。
-/// スコープごとに作るのは、捨てたページが持つ <c>IDisposable</c>(ターミナルのセッションなど)を、スコープの破棄で解放するため
-/// (ルートのプロバイダーから作ると、オン・オフのたびに増えて、Host の破棄まで残る)。残りのスコープは、この <c>Dispose</c>(Host の破棄)で破棄する。
+/// ページは初回の表示で、ページごとのスコープから DI で作り、以後は同じインスタンスを使う。入力中の内容やターミナルを保つため。
+/// 機能がオフの間はページを作らず、オフにしたときは、作ったページを捨てる。捨てるのは <see cref="EvictDisabledPages"/>。
+/// スコープごとに作るのは、捨てたページが持つ <c>IDisposable</c>(ターミナルのセッションなど)を、スコープの破棄で解放するため。
+/// ルートのプロバイダーから作ると、オン・オフのたびに増えて、Host の破棄まで残る。残りのスコープは、この <c>Dispose</c> で破棄する。呼ばれるのは Host の破棄のとき。
 /// </remarks>
 public sealed class PageProvider(IEnumerable<NavigationPage> pages, FeatureService features, IServiceScopeFactory scopeFactory) : IPageCache, IDisposable
 {

@@ -6,9 +6,9 @@ namespace MmmSdk.Db.SqlServer.Components.Connections;
 /// SQL Server への接続を作る。
 /// </summary>
 /// <remarks>
-/// 接続は操作のたびに開いて閉じる (実体の接続は ADO.NET の接続プールが使い回すので、開くコストは小さい)。
+/// 接続は操作のたびに開いて閉じる。実体の接続は ADO.NET の接続プールが使い回すので、開くコストは小さい。
 /// 呼ぶ側が <c>await using</c> で閉じる。到達確認の Ping はせず、<see cref="SqlServerConnectionOptions.ConnectTimeoutSeconds"/> で待つ。
-/// 接続の失敗は、画面に出せるメッセージつきの <see cref="SqlServerConnectionException"/> にして渡す (握りつぶさない)。
+/// 接続の失敗は、画面に出せるメッセージつきの <see cref="SqlServerConnectionException"/> にして渡す。握りつぶさない。
 /// </remarks>
 public sealed class SqlServerConnectionFactory
 {
@@ -51,7 +51,7 @@ public sealed class SqlServerConnectionFactory
     /// <summary>接続を作って開く</summary>
     /// <param name="cancellationToken">取り消し</param>
     /// <returns>開いた接続。呼ぶ側が閉じる</returns>
-    /// <exception cref="SqlServerConnectionException">接続できなかった (到達できない・認証の失敗・証明書の検証の失敗・データベースを開けないなど)。メッセージは画面に出せる。</exception>
+    /// <exception cref="SqlServerConnectionException">接続できなかった。原因は到達できない・認証の失敗・証明書の検証の失敗・データベースを開けないなど。メッセージは画面に出せる。</exception>
     public async Task<SqlConnection> OpenAsync(CancellationToken cancellationToken = default)
     {
         var connection = new SqlConnection(_connectionString);

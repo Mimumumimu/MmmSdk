@@ -33,7 +33,7 @@ public static class ShellCommands
     /// <remarks>
     /// cmd は、対話入力では引用符の中でも <c>%名前%</c> を環境変数に展開し、<c>%</c> を安全に打ち消す方法もない。
     /// 意図しないパスへ移動しないよう、cmd で <c>%</c> を含むパスは、コマンドを作らない。
-    /// WSL は、パスを Linux の形に変換してから送る (<see cref="TryConvertPath"/>)。
+    /// WSL は、パスを Linux の形に変換してから送る。変換は <see cref="TryConvertPath"/> が行う。
     /// </remarks>
     public static bool TryChangeDirectory(ShellInfo shell, string directory, out string command)
     {

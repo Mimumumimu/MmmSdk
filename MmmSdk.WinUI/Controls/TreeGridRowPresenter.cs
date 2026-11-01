@@ -12,7 +12,7 @@ namespace MmmSdk.WinUI.Controls;
 /// <remarks>
 /// 固定の列を並べた部分と、スクロールする列を並べた部分の 2 つを持つ。固定の部分は不透明で、スクロールの位置に合わせて逆向きに動かし、左に残す。
 /// セルは、列ごとに <see cref="ContentControl"/> を 1 つ作り、列の <see cref="TreeGridColumn.CellTemplate"/> に行を渡して描く。使い回すときは、行だけを差し替える。
-/// 表の中で使う部品で、単独では使わない (表の項目のテンプレートが作る)。
+/// 表の中で使う部品で、単独では使わない。表の項目のテンプレートが作る。
 /// </remarks>
 public sealed partial class TreeGridRowPresenter : Grid
 {
@@ -225,7 +225,7 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>行の背景を直す (集計の行は、固定の部分・スクロールする部分とも、集計の行の背景。入力できる行は、固定の部分だけ、固定の列の背景)</summary>
     /// <remarks>
     /// 入力できる行 (入力欄が並ぶ)と、入力できない集計の行を、背景の色で見分けられるようにする。
-    /// 使う側が色を渡していれば (<see cref="TreeGridView.SummaryBackground"/>・<see cref="TreeGridView.FrozenBackground"/>)、その色にする。
+    /// 使う側が色を渡していれば、その色にする。対象は <see cref="TreeGridView.SummaryBackground"/>・<see cref="TreeGridView.FrozenBackground"/>。
     /// </remarks>
     internal void UpdateSummary()
     {
@@ -442,7 +442,7 @@ public sealed partial class TreeGridRowPresenter : Grid
     }
 
     /// <summary>固定の部分を、スクロールの位置に合わせて動かす式を設定する (表を画面に出したあとから)</summary>
-    /// <remarks>横のスクロールの分だけ逆向きに動かして、左に残す。表がまだ画面に出ていなければ、何もしない (表が出たときに、もう一度呼ばれる)。</remarks>
+    /// <remarks>横のスクロールの分だけ逆向きに動かして、左に残す。表がまだ画面に出ていなければ、何もしない。表が出たときに、もう一度呼ばれる。</remarks>
     internal void TryAnchor()
     {
         if (_anchored || _owner is not { IsLoaded: true })
@@ -506,9 +506,9 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <param name="column">列</param>
     /// <param name="cell">セル</param>
     /// <remarks>
-    /// フォーカスの来たセルが「今のセル」になり、枠が出る (入力中も、入力できないセルも同じ)。
-    /// キーボードでフォーカスが来ただけでは、入力を始めない (メニュー・カレンダーが、閉じたあとに戻るフォーカスで開き直し続けるため)。
-    /// フォーカスのあるセルで Enter か Space を押すと、入力を始める (入力できないセルは、中のボタンを押す)。
+    /// フォーカスの来たセルが「今のセル」になり、枠が出る。入力中も、入力できないセルも同じ。
+    /// キーボードでフォーカスが来ただけでは、入力を始めない。メニュー・カレンダーが、閉じたあとに戻るフォーカスで開き直し続けるため。
+    /// フォーカスのあるセルで Enter か Space を押すと、入力を始める。入力できないセルは、中のボタンを押す。
     /// </remarks>
     private void AttachCell(TreeGridColumn column, ContentControl cell)
     {
@@ -696,7 +696,7 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>入力中のセルの中のキー入力 (Esc)で、入力を取りやめる</summary>
     /// <param name="source">キーを受けた要素</param>
     /// <returns>入力中のセルの中で、取りやめたら true</returns>
-    /// <remarks>使う側に知らせてから (入力欄を元の値に戻してもらう)、表示用に戻す。戻すときのフォーカスの外れでは、元の値なので、保存されない。</remarks>
+    /// <remarks>使う側に知らせて、入力欄を元の値に戻してもらってから、表示用に戻す。戻すときのフォーカスの外れでは、元の値なので、保存されない。</remarks>
     internal bool TryCancelEdit(DependencyObject? source)
     {
         if (_editing is not { } editing || _row is null || _owner is null || !IsInside(editing.Cell, source))

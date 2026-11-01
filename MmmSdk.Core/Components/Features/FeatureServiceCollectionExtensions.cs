@@ -25,7 +25,7 @@ public static class FeatureServiceCollectionExtensions
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 機能の <c>Add&lt;機能&gt;()</c> の中で、ページ・トレイメニュー・起動時の準備などの登録に、同じキーを渡す。
-    /// 設定ページの「機能」の一覧に並ぶ (利用者が決めた並びが無いときは、機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)の順)。
+    /// 設定ページの「機能」の一覧に並ぶ。利用者が決めた並びが無いときは、機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)の順。
     /// </remarks>
     public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName, bool defaultEnabled = true, Func<IServiceProvider, bool>? availableWhen = null)
         => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled, FeatureRegistrationScope.CurrentOrder, AvailableWhen: availableWhen));
@@ -47,9 +47,9 @@ public static class FeatureServiceCollectionExtensions
     /// <summary>起動時の準備を登録する</summary>
     /// <typeparam name="TTask">起動時の準備の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="featureKey">属する機能のキー (<see cref="AddFeature"/> で登録したもの)。オフにできない機能・共通の準備は null</param>
+    /// <param name="featureKey">属する機能のキーで、<see cref="AddFeature"/> で登録したもの。オフにできない機能・共通の準備は null</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
-    /// <remarks>登録した順に実行される。機能がオフの間は実行しない (オンにしたときに実行する)。</remarks>
+    /// <remarks>登録した順に実行される。機能がオフの間は実行しない。オンにしたときに実行する。</remarks>
     public static IServiceCollection AddStartupTask<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TTask>(this IServiceCollection services, string? featureKey = null)
         where TTask : class, IStartupTask
     {
@@ -61,10 +61,10 @@ public static class FeatureServiceCollectionExtensions
     /// <typeparam name="TPlugin">機能の入口の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <param name="order">機能の並び順の値 (小さいほど先。サイドバー・設定の機能の一覧・設定の部品の並びに使う。<paramref name="trayOrder"/> が null のときは、トレイメニューにも使う)</param>
-    /// <param name="trayOrder">トレイメニューの並び順の値 (小さいほど先。値が大きいほど下で、メニューが開く位置のカーソルに近い)。null なら <paramref name="order"/></param>
+    /// <param name="trayOrder">トレイメニューの並び順の値で、小さいほど先。値が大きいほど下で、メニューが開く位置のカーソルに近い。null なら <paramref name="order"/></param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
-    /// 画面の並びは <paramref name="order"/> と <paramref name="trayOrder"/> で決まり、登録の順には依らない (同じ値は登録順)。
+    /// 画面の並びは <paramref name="order"/> と <paramref name="trayOrder"/> で決まり、登録の順には依らない。同じ値は登録順。
     /// トレイメニューは下から開くので、サイドバー (上ほどよく使う)とは向きが逆になる。よく使う機能ほど、トレイの値を大きくする。
     /// 起動時の準備だけは、順序に依存するものがあるので、登録した順に実行する。
     /// </remarks>

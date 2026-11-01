@@ -9,7 +9,7 @@ namespace MmmSdk.WinUI.Components.Clipboards;
 /// 返事が遅いと、待っている間 UI スレッドで画面の操作 (キー・マウス)が処理され続け、貼り付けなどのイベントの途中で WinUI が内部で失敗して強制終了する。
 /// ここの判定は <c>IsClipboardFormatAvailable</c> で、OS が持つ形式の一覧を見るだけなので、待たされない。
 /// 判定は「載っているかもしれない」の目安で、取り出しは別に <c>Clipboard.GetContent()</c> で行う。
-/// 迷うものは「ある」と答える (見落とすと、取り出す処理を飛ばして動きが変わるため)。
+/// 迷うものは「ある」と答える。見落とすと、取り出す処理を飛ばして動きが変わるため。
 /// </remarks>
 public static class ClipboardFormats
 {

@@ -7,7 +7,7 @@ namespace MmmSdk.Core.Components.Paths;
 /// <summary>
 /// リンクのパス (URL・ファイル・フォルダ・実行ファイル)を既定のアプリで開く。
 /// </summary>
-/// <remarks>Windows 前提 (シェル実行で開く。<see cref="PathTarget"/> も Windows 前提)。Windows 以外から実装の型を使うと、ビルドで警告になる (呼び出す側は <see cref="IPathOpener"/> で受け取る)。</remarks>
+/// <remarks>Windows 前提で、シェル実行で開く。<see cref="PathTarget"/> も Windows 前提。Windows 以外から実装の型を使うと、ビルドで警告になる。呼び出す側は <see cref="IPathOpener"/> で受け取る。</remarks>
 [SupportedOSPlatform("windows")]
 public sealed class PathOpener : IPathOpener
 {

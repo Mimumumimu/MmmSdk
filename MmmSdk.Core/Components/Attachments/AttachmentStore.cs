@@ -5,7 +5,7 @@ namespace MmmSdk.Core.Components.Attachments;
 
 /// <summary>添付ファイルの一時保存先 (%TEMP%\アプリ名\session_日時\)の管理</summary>
 /// <remarks>
-/// 保存先ごとに 1 つ (Windows の %TEMP% と、WSL の /tmp (<see cref="ForWsl"/>))。
+/// 保存先ごとに 1 つで、Windows の %TEMP% と、WSL の /tmp。WSL は <see cref="ForWsl"/>。
 /// 保存するのは、元がファイルではないもの (貼り付けた画像など)だけ。ディスク上にあるファイルは、コピーせずに元のパスを使う想定なので、ファイルをコピーする口は持たない。
 /// <list type="bullet">
 /// <item>最初の添付でセッションフォルダを作り、以降は連番を付けて保存する (同名でも衝突しない)</item>
@@ -19,21 +19,21 @@ public sealed class AttachmentStore : IDisposable
     /// <summary>古い一時フォルダとみなす経過時間。</summary>
     /// <remarks>
     /// この時間より古いものは、前回までの残り (異常終了など)とみなして消す。
-    /// フォルダを共有するので、同時に動いている別ビルドの古いセッションも消えるが、想定内とする (添付は CLI が読み込めば用済みの一時ファイルのため)。
+    /// フォルダを共有するので、同時に動いている別ビルドの古いセッションも消えるが、想定内とする。添付は CLI が読み込めば用済みの一時ファイルのため。
     /// 作ったばかりのものは消さないよう、時間で線を引く。
     /// </remarks>
     private static readonly TimeSpan StaleAge = TimeSpan.FromDays(1);
 
     /// <summary>一時フォルダのルートを決める処理</summary>
-    /// <remarks>最初の添付のときに 1 度だけ呼ぶ (WSL のディストリビューション名の取得など、作るときに済ませなくてよい処理があるため)。</remarks>
+    /// <remarks>最初の添付のときに 1 度だけ呼ぶ。WSL のディストリビューション名の取得など、作るときに済ませなくてよい処理があるため。</remarks>
     private readonly Func<string> _resolveRoot;
     /// <summary>現在時刻の提供元</summary>
     private readonly TimeProvider _timeProvider;
     /// <summary>終了時の削除と、古い一時フォルダの掃除をするか</summary>
-    /// <remarks>WSL の /tmp では、しない (WSL の再起動で空になるのに任せる。ユーザーの決定)。</remarks>
+    /// <remarks>WSL の /tmp では、しない。WSL の再起動で空になるのに任せる。これはユーザーの決定。</remarks>
     private readonly bool _cleansUp;
     /// <summary>一時フォルダのルート</summary>
-    /// <remarks>同じアプリの別ビルドと共有する (パスを短く保つため、EXE ごとには分けない)。最初の添付まで null。</remarks>
+    /// <remarks>同じアプリの別ビルドと共有する。パスを短く保つため、EXE ごとには分けない。最初の添付まで null。</remarks>
     private string? _root;
     /// <summary>このインスタンスが作ったセッションフォルダ</summary>
     /// <remarks>終了時に削除する。</remarks>
@@ -71,7 +71,7 @@ public sealed class AttachmentStore : IDisposable
     /// <returns>WSL の /tmp に保存する一時保存先</returns>
     /// <remarks>
     /// WSL で動く CLI に渡すときは、保存先のパスを Linux の形 (<c>/tmp/アプリ名/...</c>。<see cref="WslPath"/>)にして渡す。
-    /// 終了時の削除と古い一時フォルダの掃除はしない (WSL の /tmp は、systemd が有効なら WSL の起動のたびに空になるため。ユーザーの決定)。送信前に取り除いた添付は、Windows と同じくすぐ消す。
+    /// 終了時の削除と古い一時フォルダの掃除はしない。WSL の /tmp は、systemd が有効なら WSL の起動のたびに空になるため。これはユーザーの決定。送信前に取り除いた添付は、Windows と同じくすぐ消す。
     /// ディストリビューション名は最初の添付のときに調べる。見つからない (WSL が入っていない)ときは、その添付が <see cref="IOException"/> で失敗する。
     /// </remarks>
     [SupportedOSPlatform("windows")]
@@ -106,7 +106,7 @@ public sealed class AttachmentStore : IDisposable
     /// セッションに何も残らなければフォルダごと削除する。
     /// 送信前の添付を取り除くためのものなので、今のセッションフォルダの外のファイル (送信済みのファイルを含む)は消さない。
     /// </remarks>
-    /// <exception cref="ArgumentException"><paramref name="filePath"/> が今のセッションフォルダの中ではない (呼ぶ側のバグ)。</exception>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> が今のセッションフォルダの中ではない。呼ぶ側のバグ。</exception>
     public void Remove(string filePath)
     {
         var fullPath = Path.GetFullPath(filePath);
@@ -147,7 +147,7 @@ public sealed class AttachmentStore : IDisposable
     /// <summary>次に保存するファイルのパスを決める</summary>
     /// <param name="fileName">元のファイル名</param>
     /// <returns>連番を付けた保存先のパス</returns>
-    /// <remarks>ファイル名は、フォルダの部分と使えない文字を取り除いてから使う (セッションフォルダの外に保存されないように)。</remarks>
+    /// <remarks>ファイル名は、フォルダの部分と使えない文字を取り除いてから使う。セッションフォルダの外に保存されないようにするため。</remarks>
     private string NextPath(string fileName)
     {
         if (_session is null)
@@ -184,7 +184,7 @@ public sealed class AttachmentStore : IDisposable
         var now = _timeProvider.GetLocalNow();
         var baseName = $"session_{now:yyyyMMdd_HHmmss_fff}";
         var session = Path.Combine(_root, baseName);
-        // 同じミリ秒にセッションを作っても (作り直し・フォルダを共有する別ビルド)、前のファイルを上書きしないよう、重なったら接尾辞を付ける
+        // 作り直し・フォルダを共有する別ビルドで同じミリ秒にセッションを作っても、前のファイルを上書きしないよう、重なったら接尾辞を付ける
         for (var suffix = 2; Directory.Exists(session); suffix++)
         {
             session = Path.Combine(_root, $"{baseName}_{suffix}");

@@ -9,9 +9,9 @@ namespace MmmSdk.WinUI.Components.Audio;
 /// 出力ノードだけの <see cref="AudioGraph"/> を動かして、音声機器を眠らせない。アプリ全体で 1 つ。
 /// </summary>
 /// <remarks>
-/// 入力ノードを持たせないので、音声エンジンが無音を流し続け、アプリのコールバックは無い (CPU をほぼ使わない)。
+/// 入力ノードを持たせないので、音声エンジンが無音を流し続け、アプリのコールバックは無い。CPU をほぼ使わない。
 /// グラフは出力機器に結び付くので、既定の出力機器が変わったとき・グラフが続けられなくなったとき (機器の取り外しなど)は、作り直す。
-/// 機器の変更は、流している間だけ受け取る (止めている間は、何にも触れない)。
+/// 機器の変更は、流している間だけ受け取る。止めている間は、何にも触れない。
 /// 開始・停止・作り直しは 1 つずつ順に行う。
 /// </remarks>
 public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
@@ -100,7 +100,7 @@ public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
 
     /// <summary>出力ノードだけのグラフを作って動かす</summary>
     /// <returns>動かせたら true。出力機器が無いなど、作れなかったら false</returns>
-    /// <remarks>作れないのは機器の状態による予測できる失敗なので、例外にしない (機器が変わったら、また試す)。</remarks>
+    /// <remarks>作れないのは機器の状態による予測できる失敗なので、例外にしない。機器が変わったら、また試す。</remarks>
     private async Task<bool> TryOpenGraphAsync()
     {
         var settings = new AudioGraphSettings(AudioRenderCategory.Media)

@@ -16,7 +16,7 @@ namespace MmmSdk.WinUI.Components.Tray;
 /// タスクトレイのアイコンと右クリックメニュー。Win32 の Shell_NotifyIcon を直接使う。メニューの項目は <see cref="ITrayMenuSource"/> から作る。
 /// </summary>
 /// <remarks>
-/// トレイからの通知を受けるため、専用の非表示ウィンドウを作る (メインウィンドウとは独立)。
+/// トレイからの通知を受けるため、専用の非表示ウィンドウを作る。メインウィンドウとは独立。
 /// メッセージ専用ウィンドウ (HWND_MESSAGE)にしないのは、エクスプローラー再起動の通知 (TaskbarCreated)がブロードキャストで、
 /// メッセージ専用ウィンドウには届かないため。UI スレッドで作り、UI スレッドで破棄する。
 /// </remarks>
@@ -77,7 +77,7 @@ public sealed class TrayIcon : IDisposable
         _dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
-    /// <summary>メインウィンドウを出すよう求められた (アイコンのクリック)。</summary>
+    /// <summary>メインウィンドウを出すよう求められた。きっかけはアイコンのクリック。</summary>
     public event EventHandler? OpenRequested;
 
     /// <summary>メニューの「終了」が選ばれた。</summary>
@@ -120,7 +120,7 @@ public sealed class TrayIcon : IDisposable
     }
 
     /// <summary>トレイに出すアイコン</summary>
-    /// <remarks>読めなければ Windows 標準のアプリアイコン (トレイから操作できなくなるのを避ける)。</remarks>
+    /// <remarks>読めなければ Windows 標準のアプリアイコン。トレイから操作できなくなるのを避けるため。</remarks>
     private HICON DisplayIcon => !_icon.IsNull ? _icon : PInvoke.LoadIcon(HINSTANCE.Null, PInvoke.IDI_APPLICATION);
 
     /// <summary>トレイから通知を出す</summary>
@@ -297,7 +297,7 @@ public sealed class TrayIcon : IDisposable
     /// <summary>右クリックメニューを出し、選ばれた項目の処理を行う。</summary>
     /// <param name="x">メニューを出す位置の X (画面座標)</param>
     /// <param name="y">メニューを出す位置の Y (画面座標)</param>
-    /// <remarks>メニューは開くたびに作る (各機能の最新の内容を出すため)。</remarks>
+    /// <remarks>メニューは開くたびに作る。各機能の最新の内容を出すため。</remarks>
     private unsafe void ShowMenu(int x, int y)
     {
         var menu = PInvoke.CreatePopupMenu();

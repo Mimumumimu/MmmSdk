@@ -8,7 +8,7 @@ namespace MmmSdk.WinUI.Controls;
 
 /// <summary>時刻の入力欄 (24 時間。1 つの枠の中に「時 : 分」の 2 区画)</summary>
 /// <remarks>
-/// 区画を押して直接打つ (2 桁打つと時から分へ移る)か、↑↓ キー・マウスホイールで 1 ずつ増減する (端まで行ったら反対の端へ回る)。
+/// 区画を押して直接打つ (2 桁打つと時から分へ移る)か、↑↓ キー・マウスホイールで 1 ずつ増減する。端まで行ったら反対の端へ回る。
 /// 打った値は区画を離れたときに確定し、空なら元の値に戻し、範囲を超えたら最大値に収める。ボタン類は置かない。
 /// </remarks>
 public sealed partial class TimeInputBox : UserControl
@@ -93,7 +93,7 @@ public sealed partial class TimeInputBox : UserControl
     /// <summary>時を 2 桁打ったら分へ移る</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">イベントの情報</param>
-    /// <remarks>フォーカス中のキー入力のときだけ (値の表示を更新したときは移らない)。</remarks>
+    /// <remarks>フォーカス中のキー入力のときだけ。値の表示を更新したときは移らない。</remarks>
     private void OnHourTextChanged(object sender, TextChangedEventArgs e)
     {
         if (HourBox.FocusState == FocusState.Keyboard || HourBox.FocusState == FocusState.Pointer)

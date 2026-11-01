@@ -83,8 +83,8 @@ public sealed partial class TerminalControl : UserControl
 
     /// <summary>WebView2 のデータ (キャッシュなど)の保存先フォルダー</summary>
     /// <remarks>
-    /// 読み込まれる前に設定する (WebView2 の初期化のときに 1 回だけ読む)。
-    /// null のときは WebView2 の既定 (EXE の隣の <c>&lt;EXE 名&gt;.WebView2</c>)。
+    /// 読み込まれる前に設定する。WebView2 の初期化のときに 1 回だけ読む。
+    /// null のときは WebView2 の既定で、EXE の隣の <c>&lt;EXE 名&gt;.WebView2</c>。
     /// 同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す。
     /// </remarks>
     public string? UserDataFolder { get; set; }
@@ -134,8 +134,8 @@ public sealed partial class TerminalControl : UserControl
 
     /// <summary>端末を閉じる (WebView2 のプロセスを解放する)</summary>
     /// <remarks>
-    /// 画面から取り除いて、もう使わないときに呼ぶ (タブを閉じる・ページを捨てるなど)。呼ばないと、WebView2 のプロセスが、アプリを終了するまで残る。
-    /// セッションを外し、WebView2 を閉じる。シェル (セッション)は終了しない (セッションの <see cref="IDisposable.Dispose"/> で終了する)。
+    /// 画面から取り除いて、もう使わないときに呼ぶ。例はタブを閉じる・ページを捨てる。呼ばないと、WebView2 のプロセスが、アプリを終了するまで残る。
+    /// セッションを外し、WebView2 を閉じる。シェル (セッション)は終了しない。終了するのはセッションの <see cref="IDisposable.Dispose"/>。
     /// 閉じたあとは再利用できない。何度呼んでもよい。UI スレッドから呼ぶ。
     /// </remarks>
     public void Close()
@@ -306,7 +306,7 @@ public sealed partial class TerminalControl : UserControl
     /// <returns>起動し直しの完了を表すタスク</returns>
     /// <remarks>
     /// 起動するシェル (<see cref="ITerminalSession.Shell"/>)を替えたあとに呼ぶ。動いているシェル (とその中の CLI)は終了する。
-    /// 表示の準備がまだのとき・<see cref="Session"/> が無いときは何もしない (準備ができたときに、そのときの設定で起動する)。
+    /// 表示の準備がまだのとき・<see cref="Session"/> が無いときは何もしない。準備ができたときに、そのときの設定で起動する。
     /// </remarks>
     public Task RestartSessionAsync()
     {
@@ -409,16 +409,16 @@ public sealed partial class TerminalControl : UserControl
     /// <param name="args">フォーカスの移動の情報</param>
     /// <remarks>
     /// <para>
-    /// 回避策。根本の原因は特定できていない (WinUI または WebView2 側の不具合と考えている)。
+    /// 回避策。根本の原因は特定できていない。WinUI または WebView2 側の不具合と考えている。
     /// 入力欄 (TextBox など)から WebView2 へ直接フォーカスが移ると、タスクバーの IME は日本語入力のままなのに、
-    /// WebView2 の入力欄 (xterm.js の textarea)につながらず、英字が入る (キー入力が IME に渡らない)。
+    /// WebView2 の入力欄 (xterm.js の textarea)につながらず、英字が入る。キー入力が IME に渡らない。
     /// 別のウィンドウへ切り替えて戻るか、ほかの部品 (ツリーなど)を一度経由すると、つながる。
     /// WebView2 側のフォーカスのイベント・IME のオン・オフの状態・XAML のフォーカスの状態は、直るときと直らないときで同じだった。
     /// </para>
     /// <para>
-    /// そこで、入力欄からのときだけ、見えない経由先 (<c>FocusRelay</c>)を挟んでから端末に移す (フォーカスの外れ・付け直しが 1 回ずつ増える)。
+    /// そこで、入力欄からのときだけ、見えない経由先 (<c>FocusRelay</c>)を挟んでから端末に移す。フォーカスの外れ・付け直しが 1 回ずつ増える。
     /// 経由先から WebView2 へ移るときは、元が入力欄ではないので、ここで再び経由させることはない。
-    /// WinUI・WebView2 の更新で直ったら、この処理と <c>FocusRelay</c> を外す (外して、入力欄 → ターミナルで日本語を打てれば確認できる)。
+    /// WinUI・WebView2 の更新で直ったら、この処理と <c>FocusRelay</c> を外す。外して、入力欄 → ターミナルで日本語を打てれば確認できる。
     /// </para>
     /// </remarks>
     private void OnWebViewGettingFocus(UIElement sender, GettingFocusEventArgs args)

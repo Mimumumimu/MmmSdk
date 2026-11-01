@@ -21,7 +21,7 @@ namespace MmmSdk.WinUI.Components.Notifications;
 
 /// <summary>デスクトップ通知のウィンドウ (見た目・表示内容と、ドラッグ・クリックで閉じる・位置の保存などの挙動)</summary>
 /// <remarks>
-/// 常に最前面で、フォーカスを奪わない (WS_EX_NOACTIVATE + 非アクティブ表示)。ウィンドウ全体のどこを掴んでもドラッグでき、
+/// 常に最前面で、フォーカスを奪わない。方式は WS_EX_NOACTIVATE + 非アクティブ表示。ウィンドウ全体のどこを掴んでもドラッグでき、
 /// 動かさずに離したら (移動量がシステムのドラッグしきい値未満)クリックとみなして閉じる。
 /// </remarks>
 public sealed partial class NotificationWindow : Window
@@ -32,7 +32,7 @@ public sealed partial class NotificationWindow : Window
     private const double ItemIndent = 12;
     /// <summary>ウィンドウの最低の高さ (DIP)</summary>
     private const double MinWindowHeight = 160;
-    /// <summary>ウィンドウの最大の高さ (DIP)。これを超える分は本文をスクロールする</summary>
+    /// <summary>ウィンドウの最大の高さで、単位は DIP。これを超える分は本文をスクロールする</summary>
     private const double MaxWindowHeight = 480;
     /// <summary>作業領域の端からの余白 (既定位置。物理ピクセル)</summary>
     private const int ScreenMargin = 16;
@@ -289,7 +289,7 @@ public sealed partial class NotificationWindow : Window
     /// <returns>作業領域に収まるようにずらした左上の位置</returns>
     /// <remarks>
     /// その位置にいちばん近いモニタの作業領域を使い、上下左右のはみ出しを内側へ寄せる。
-    /// 作業領域より大きいときは左上に合わせる。保存する位置は変えない (ユーザーが置いた位置を残す)。
+    /// 作業領域より大きいときは左上に合わせる。保存する位置は変えない。ユーザーが置いた位置を残す。
     /// </remarks>
     private PointInt32 KeepInWorkArea(PointInt32 position)
     {
@@ -302,7 +302,7 @@ public sealed partial class NotificationWindow : Window
     /// <summary>現在の位置を保存する</summary>
     /// <remarks>
     /// 閉じ方 (クリック・×・Alt+F4)に関わらず閉じるときと、ドラッグが終わったときに呼ぶ。
-    /// 保存に失敗 (ロック・権限・ディスク)しても、位置が戻らないだけで、通知は使える。<c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける (次の保存でやり直す)。
+    /// 保存に失敗 (ロック・権限・ディスク)しても、位置が戻らないだけで、通知は使える。<c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける。次の保存でやり直す。
     /// </remarks>
     private async void SavePosition()
     {
@@ -323,7 +323,7 @@ public sealed partial class NotificationWindow : Window
     /// <summary>押下を記録する</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">ポインタイベントの情報</param>
-    /// <remarks>右上のキャプションボタン領域・スクロールバーでの押下は対象外 (閉じるのは OS のボタンに任せる)。</remarks>
+    /// <remarks>右上のキャプションボタン領域・スクロールバーでの押下は対象外。閉じるのは OS のボタンに任せる。</remarks>
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var point = e.GetCurrentPoint(RootGrid);
@@ -358,7 +358,7 @@ public sealed partial class NotificationWindow : Window
     /// <param name="e">ポインタイベントの情報</param>
     /// <remarks>
     /// ウィンドウが動くとポインタの相対座標が変わるため、画面座標のカーソル位置で移動量を測る。
-    /// ドラッグになった時点でポインタをキャプチャする (リンクの押下を横取りしないよう、動かすまではしない)。
+    /// ドラッグになった時点でポインタをキャプチャする。リンクの押下を横取りしないよう、動かすまではしない。
     /// </remarks>
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
@@ -419,7 +419,7 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>ドラッグを終えて、位置を保存する</summary>
-    /// <remarks>ドラッグ中でなければ何もしない (離した通知とキャプチャ喪失の両方から呼ばれても 1 回だけ保存する)。</remarks>
+    /// <remarks>ドラッグ中でなければ何もしない。離した通知とキャプチャ喪失の両方から呼ばれても 1 回だけ保存する。</remarks>
     private void EndDrag()
     {
         if (!_dragging) return;
@@ -428,7 +428,7 @@ public sealed partial class NotificationWindow : Window
     }
 
     /// <summary>右上のキャプションボタン (×など)の領域か</summary>
-    /// <param name="position">ルート要素内の座標 (DIP)。</param>
+    /// <param name="position">ルート要素内の座標で、単位は DIP</param>
     /// <returns>キャプションボタンの領域なら true</returns>
     private bool IsOnCaptionButtons(Windows.Foundation.Point position)
     {

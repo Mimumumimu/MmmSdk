@@ -23,7 +23,7 @@ public static class WindowExtensions
     /// <remarks>
     /// 別の仮想デスクトップ (Win+Tab のデスクトップ)にあるときは、いま見ているデスクトップへ移してから、復元 (最小化しているとき)→ 表示 → 前面化の順に行う。
     /// 移さずに前面にすると、Windows がウィンドウのあるデスクトップへ切り替えてしまうため。
-    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある (<see cref="SetForeground"/>)。
+    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある。関連は <see cref="SetForeground"/>。
     /// </remarks>
     public static void BringToFront(this Window window)
     {
@@ -165,7 +165,7 @@ public static class WindowExtensions
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="isDialog">ダイアログ用の見た目 (<see cref="OverlappedPresenter.CreateForDialog"/>)にするか</param>
     /// <param name="isResizable">大きさを変えられるか</param>
-    /// <param name="minimumSize">最小の大きさ (物理ピクセル)。0 なら指定しない</param>
+    /// <param name="minimumSize">最小の大きさで、単位は物理ピクセル。0 なら指定しない</param>
     public static void UseFixedPresenter(this Window window, bool isDialog, bool isResizable, SizeInt32 minimumSize = default)
     {
         var presenter = isDialog ? OverlappedPresenter.CreateForDialog() : OverlappedPresenter.Create();
@@ -188,7 +188,7 @@ public static class WindowExtensions
     /// <param name="width">幅 (DIP)</param>
     /// <param name="height">高さ (DIP)</param>
     /// <param name="scale">DPI 倍率 (<see cref="GetDpiScale"/> や <c>XamlRoot.RasterizationScale</c>)</param>
-    /// <param name="roundUp">端数を切り上げるか (false なら切り捨て)。中身をちょうど収めたいときは true</param>
+    /// <param name="roundUp">端数を切り上げるか。false なら切り捨て。中身をちょうど収めたいときは true</param>
     public static void ResizeClientDip(this Window window, double width, double height, double scale, bool roundUp = false)
     {
         var w = roundUp ? Math.Ceiling(width * scale) : Math.Floor(width * scale);
@@ -199,7 +199,7 @@ public static class WindowExtensions
     /// <summary>ウィンドウの高さを、中身の高さにちょうど合わせる (幅は変えない)</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="content">中身の最上位の要素 (ウィンドウの内容。画面に載っていること)</param>
-    /// <param name="width">幅 (DIP)。中身の高さを測るときの幅</param>
+    /// <param name="width">幅で、単位は DIP。中身の高さを測るときの幅</param>
     /// <returns>大きさを変えたとき true。測れなかったとき (まだ画面に載る前・閉じたあと)は false で、何もしない</returns>
     /// <remarks>
     /// 中身が出入りする画面 (お知らせ・入力欄の切り替え)で、出入りのあとに測り直すために使う。
@@ -236,7 +236,7 @@ public static class WindowExtensions
     /// <summary>ウィンドウの DPI 倍率 (100% で 1.0)</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <returns>ウィンドウがあるモニターの DPI 倍率</returns>
-    /// <remarks>表示する前に大きさを決めるために使う (<c>XamlRoot</c> は表示するまで無いため)。</remarks>
+    /// <remarks>表示する前に大きさを決めるために使う。<c>XamlRoot</c> は表示するまで無いため。</remarks>
     public static double GetDpiScale(this Window window)
         => PInvoke.GetDpiForWindow((HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id)) / 96.0;
 }

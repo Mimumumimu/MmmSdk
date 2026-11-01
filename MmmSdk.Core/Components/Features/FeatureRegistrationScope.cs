@@ -4,7 +4,7 @@ namespace MmmSdk.Core.Components.Features;
 /// <remarks>
 /// <see cref="FeatureServiceCollectionExtensions.AddFeaturePlugin{TPlugin}(Microsoft.Extensions.DependencyInjection.IServiceCollection, int, int?)"/> が、機能の登録 (<see cref="IFeaturePlugin.Register"/>)の間だけ値を入れる。
 /// サイドバー・設定の部品・機能の一覧・トレイメニューの登録が、この値を並び順として記録する。
-/// 機能ごとに並び順の値を渡さなくてよいようにするための仕組み (並びはホストが 1 か所で決める)。登録は 1 つのスレッドで順に行う前提。
+/// 機能ごとに並び順の値を渡さなくてよいようにするための仕組みで、並びはホストが 1 か所で決める。登録は 1 つのスレッドで順に行う前提。
 /// </remarks>
 public static class FeatureRegistrationScope
 {

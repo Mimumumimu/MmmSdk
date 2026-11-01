@@ -11,8 +11,8 @@ namespace MmmSdk.WinUI.Components.Windowing;
 
 /// <summary>ウィンドウを親の上に擬似モーダルで出す</summary>
 /// <remarks>
-/// 表示中は親を操作できないようにし (Win32 のモーダルダイアログと同じく <c>EnableWindow</c> で親を無効にする。<c>OverlappedPresenter.IsModal</c> では親を操作できてしまった)、
-/// 閉じるときに親を戻して前面に出す。モーダルの上にさらにモーダルを重ねてもよい (親が自分を無効にし、閉じたら戻す)。
+/// 表示中は <c>EnableWindow</c> で親を無効にして、親を操作できないようにする。Win32 のモーダルダイアログと同じ方式で、<c>OverlappedPresenter.IsModal</c> では親を操作できてしまった。
+/// 閉じるときに親を戻して前面に出す。モーダルの上にさらにモーダルを重ねてもよい。親が自分を無効にし、閉じたら戻す。
 /// </remarks>
 public sealed class PseudoModal
 {
@@ -40,7 +40,7 @@ public sealed class PseudoModal
 
     /// <summary>親を設定する (表示の前に呼ぶ)</summary>
     /// <param name="owner">親のウィンドウ</param>
-    /// <remarks>常に親の手前に出るようにする。表示倍率も親に合わせて取っておく (初期サイズを決めるため)。</remarks>
+    /// <remarks>常に親の手前に出るようにする。表示倍率も親に合わせて取っておく。初期サイズを決めるため。</remarks>
     public void SetOwner(Window owner)
     {
         _owner = Win32Interop.GetWindowFromWindowId(owner.AppWindow.Id);
@@ -113,7 +113,7 @@ public sealed class PseudoModal
 
     /// <summary>親を操作できる状態に戻す</summary>
     /// <remarks>
-    /// 自分が消える前に戻す (無効のままだと、閉じたあとに親ではなく別のアプリが前面に来るため)。
+    /// 自分が消える前に戻す。無効のままだと、閉じたあとに親ではなく別のアプリが前面に来るため。
     /// 閉じ方 (コードから・×・Alt+F4)によって通る場所が違うので、何度呼んでもよい。
     /// </remarks>
     private void EnableOwner()

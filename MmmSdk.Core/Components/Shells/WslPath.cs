@@ -2,14 +2,14 @@ namespace MmmSdk.Core.Components.Shells;
 
 /// <summary>Windows のパスを、WSL の中から見たパス (Linux の形)に変換する</summary>
 /// <remarks>
-/// 文字列の変換だけで、ファイルには触れない (wslpath を呼ばない。パスごとに WSL のプロセスを起動すると遅いため)。
+/// 文字列の変換だけで、ファイルには触れない。wslpath を呼ばない。パスごとに WSL のプロセスを起動すると遅いため。
 /// <list type="bullet">
 /// <item>ドライブのパス (<c>D:\work\a.txt</c>)→ <c>/mnt/d/work/a.txt</c></item>
 /// <item>WSL のファイルの共有 (<c>\\wsl.localhost\Ubuntu\tmp\a.jpg</c>・<c>\\wsl$\Ubuntu\tmp\a.jpg</c>)→ <c>/tmp/a.jpg</c></item>
 /// <item>そのほかのネットワークのパス (<c>\\server\share\...</c>)は、WSL から同じ形では開けないので、変換できない</item>
 /// </list>
-/// ドライブの割り当て先は WSL の既定の <c>/mnt/</c> とする。制約: <c>/etc/wsl.conf</c> の <c>[automount] root</c> を変えた環境では、違うパスになる (この値は WSL の中からしか読めない)。
-/// WSL の共有のパスは、ディストリビューション名を見ずに変換する (シェルが動いているのと別のディストリビューションのパスを渡すと、違う場所を指す)。
+/// ドライブの割り当て先は WSL の既定の <c>/mnt/</c> とする。制約: <c>/etc/wsl.conf</c> の <c>[automount] root</c> を変えた環境では、違うパスになる。この値は WSL の中からしか読めない。
+/// WSL の共有のパスは、ディストリビューション名を見ずに変換する。シェルが動いているのと別のディストリビューションのパスを渡すと、違う場所を指す。
 /// </remarks>
 public static class WslPath
 {

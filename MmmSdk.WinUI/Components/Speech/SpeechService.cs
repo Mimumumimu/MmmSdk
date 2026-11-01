@@ -10,7 +10,7 @@ namespace MmmSdk.WinUI.Components.Speech;
 /// </summary>
 /// <param name="settings">汎用設定ストア (音量の保存)</param>
 /// <remarks>
-/// 合成器と再生器は 1 つを使い回す。新しく読むときは前の読み上げを差し替える (合成の途中で次の依頼が来たら、前の合成結果は捨てる)。
+/// 合成器と再生器は 1 つを使い回す。新しく読むときは前の読み上げを差し替える。合成の途中で次の依頼が来たら、前の合成結果は捨てる。
 /// 声は、OS の既定の音声が日本語ならそれを、そうでなければ入っている日本語の音声の先頭を使う。
 /// </remarks>
 public sealed class SpeechService(ISettingsStore settings) : ISpeechService, IDisposable

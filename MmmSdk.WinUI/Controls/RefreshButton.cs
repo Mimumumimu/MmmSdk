@@ -6,7 +6,7 @@ namespace MmmSdk.WinUI.Controls;
 /// <summary>ページの最新の内容を、今すぐ取り込む更新ボタン (アイコンだけ)</summary>
 /// <remarks>
 /// ページの見出しの行の右端に置く。押したときの処理は <c>Command</c> で受ける。
-/// 通常のボタンの見た目のまま、アイコンとツールチップだけを決める (どのページでも同じ見た目・同じ言葉にするため)。
+/// 通常のボタンの見た目のまま、アイコンとツールチップだけを決める。どのページでも同じ見た目・同じ言葉にするため。
 /// </remarks>
 public sealed partial class RefreshButton : Button
 {

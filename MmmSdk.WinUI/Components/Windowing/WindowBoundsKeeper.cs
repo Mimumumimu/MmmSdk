@@ -13,8 +13,8 @@ namespace MmmSdk.WinUI.Components.Windowing;
 /// 作ったときに、保存した位置と大きさを復元する。保存が無い、または今のモニター構成で十分に見えない (画面外になる)ときは、
 /// 既定の大きさ (論理サイズ。DPI に合わせる)にして、位置は指定した初期位置 (<see cref="DefaultWindowPlacement"/>。既定は Windows に任せる)にする。
 /// 位置・大きさが変わったら、動かし終わるのを待ってから (<see cref="SaveDelay"/>)保存する。
-/// 最小化・最大化・非表示の間は保存しない (最小化の座標や、最大化の大きさを、復元の対象にしないため)。
-/// UI スレッドで <see cref="Attach"/> する。ウィンドウに結び付いて動き、ウィンドウが閉じたら自分で後始末する (呼び出し側が持ち続けたり、破棄したりしなくてよい)。
+/// 最小化・最大化・非表示の間は保存しない。最小化の座標や、最大化の大きさを、復元の対象にしないため。
+/// UI スレッドで <see cref="Attach"/> する。ウィンドウに結び付いて動き、ウィンドウが閉じたら自分で後始末する。呼び出し側が持ち続けたり、破棄したりしなくてよい。
 /// </remarks>
 public sealed class WindowBoundsKeeper
 {
@@ -145,8 +145,8 @@ public sealed class WindowBoundsKeeper
     /// <param name="sender">イベントの送信元</param>
     /// <param name="args">イベントの情報</param>
     /// <remarks>
-    /// 保存に失敗 (ロック・権限・ディスク)しても、位置と大きさが戻らないだけで、ウィンドウは使える。<c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける (次の変更でやり直す)。
-    /// 設定を読めず保存できない状態では、何もしない (例外にならない)。
+    /// 保存に失敗 (ロック・権限・ディスク)しても、位置と大きさが戻らないだけで、ウィンドウは使える。<c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける。次の変更でやり直す。
+    /// 設定を読めず保存できない状態では、何もしない。例外にならない。
     /// </remarks>
     private async void OnTimerTick(DispatcherQueueTimer sender, object args)
     {

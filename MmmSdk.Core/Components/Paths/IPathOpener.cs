@@ -1,7 +1,7 @@
 namespace MmmSdk.Core.Components.Paths;
 
 /// <summary>
-/// リンクのパス (URL・ファイル・フォルダ・実行ファイル)を既定のアプリで開く (ViewModel などからモックで差し替えられるようにするための口)。
+/// リンクのパス (URL・ファイル・フォルダ・実行ファイル)を既定のアプリで開く。ViewModel などからモックで差し替えられるようにするための口。
 /// </summary>
 public interface IPathOpener
 {

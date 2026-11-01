@@ -182,8 +182,8 @@ public sealed partial class NavigationHostViewModel : ObservableObject
 
     /// <summary>機能のオン・オフ・並び順に合わせて、サイドバーの項目を作り直す</summary>
     /// <remarks>
-    /// 選択中の項目が消えるときは、先に上部の先頭の項目へ移す (ページの切り替えは、選択の変更で行われる)。
-    /// 子の項目は、サイドバーに出ている親の項目の直後に並べる (親がオフなら、子も出さない)。
+    /// 選択中の項目が消えるときは、先に上部の先頭の項目へ移す。ページの切り替えは、選択の変更で行われる。
+    /// 子の項目は、サイドバーに出ている親の項目の直後に並べる。親がオフなら、子も出さない。
     /// </remarks>
     public void Refresh()
     {
@@ -226,7 +226,7 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     /// <param name="desired">あるべき項目 (順序つき)</param>
     /// <param name="selected">選択中の項目 (外すと選択が外れるので、残したまま、まわりを並べ直す)</param>
     /// <remarks>
-    /// 並べ替えに <c>Move</c> は使わない (<c>NavigationView</c> が、移動の通知を画面に反映しなかったため)。
+    /// 並べ替えに <c>Move</c> は使わない。<c>NavigationView</c> が、移動の通知を画面に反映しなかったため。
     /// 追加と削除の通知だけで並べ直す。
     /// </remarks>
     private static void Sync(ObservableCollection<NavigationItem> target, List<NavigationItem> desired, NavigationItem? selected)
