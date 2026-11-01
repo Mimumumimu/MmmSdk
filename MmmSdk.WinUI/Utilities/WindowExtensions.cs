@@ -5,6 +5,7 @@ using MmmSdk.WinUI.Interop;
 using Windows.Graphics;
 using Windows.Win32;
 using Windows.Win32.Foundation;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Utilities;
 
@@ -22,7 +23,7 @@ public static class WindowExtensions
     /// <remarks>
     /// 別の仮想デスクトップ (Win+Tab のデスクトップ)にあるときは、いま見ているデスクトップへ移してから、復元 (最小化しているとき)→ 表示 → 前面化の順に行う。
     /// 移さずに前面にすると、Windows がウィンドウのあるデスクトップへ切り替えてしまうため。
-    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある (<see cref="SetForeground"/>)。
+    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある。関連は <see cref="SetForeground"/>。
     /// </remarks>
     public static void BringToFront(this Window window)
     {
@@ -34,6 +35,89 @@ public static class WindowExtensions
         window.AppWindow.Show(activateWindow: true);
         window.Activate();
         window.SetForeground();
+    }
+
+    /// <summary>ウィンドウが見えていて、アプリが前面にないときだけ、タスクバーのボタンを点滅させる</summary>
+    /// <param name="appWindow">対象のウィンドウ</param>
+    /// <returns>点滅させたとき true。トレイへ退避している・最小化している・アプリのウィンドウが前面にあるときは、何もせず false</returns>
+    /// <remarks>
+    /// 前面のウィンドウが自分のプロセスのものなら、別ウィンドウやモーダルを含め、アプリを使っている最中なので点滅させない。
+    /// 点滅は、アプリが前面に戻った時点で Windows が止める (<c>FLASHW_TIMERNOFG</c>)ので、止める呼び出しは要らない。
+    /// 最小化・トレイへの退避中は、タスクバーのボタンを使って気づいてもらう場面ではないため、対象にしない。
+    /// </remarks>
+    public static unsafe bool FlashTaskbarIfInactive(this AppWindow appWindow)
+    {
+        if (!appWindow.IsVisible || appWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized })
+        {
+            return false;
+        }
+
+        var foreground = PInvoke.GetForegroundWindow();
+        if (foreground != HWND.Null)
+        {
+            uint foregroundProcessId;
+            PInvoke.GetWindowThreadProcessId(foreground, &foregroundProcessId);
+            if (foregroundProcessId == (uint)Environment.ProcessId)
+            {
+                return false;
+            }
+        }
+
+        var info = new FLASHWINFO
+        {
+            cbSize = (uint)sizeof(FLASHWINFO),
+            hwnd = (HWND)Win32Interop.GetWindowFromWindowId(appWindow.Id),
+            dwFlags = FLASHWINFO_FLAGS.FLASHW_TRAY | FLASHWINFO_FLAGS.FLASHW_TIMERNOFG,
+        };
+        PInvoke.FlashWindowEx(in info);
+        return true;
+    }
+
+    /// <summary>【一時の計測】<see cref="BringToFront"/> と同じ手順で前面に出し、前面化の結果を文字列で返す</summary>
+    /// <param name="window">対象のウィンドウ</param>
+    /// <returns>前面化の前後の前面ウィンドウと、<c>SetForegroundWindow</c> の戻り値</returns>
+    /// <remarks>通知のクリックで画面が後ろに残る原因を調べるための一時の関数。原因が決まったら消す。</remarks>
+    public static string BringToFrontTraced(this Window window)
+    {
+        var hwnd = (HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id);
+        var before = DescribeForeground();
+        var minimized = window.AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized };
+
+        NativeMethods.MoveToCurrentVirtualDesktop((nint)hwnd);
+        if (window.AppWindow.Presenter is OverlappedPresenter { State: OverlappedPresenterState.Minimized } presenter)
+        {
+            presenter.Restore();
+        }
+        window.AppWindow.Show(activateWindow: true);
+        window.Activate();
+        var accepted = PInvoke.SetForegroundWindow(hwnd);
+
+        var after = DescribeForeground();
+        var isSelf = PInvoke.GetForegroundWindow() == hwnd;
+        return $"SetForegroundWindow={(bool)accepted} / 最小化={minimized} / 前面が自分={isSelf} / 前={before} / 後={after}";
+    }
+
+    /// <summary>【一時の計測】いまの前面ウィンドウを、ハンドルとプロセス名で表す</summary>
+    private static unsafe string DescribeForeground()
+    {
+        var foreground = PInvoke.GetForegroundWindow();
+        if (foreground == HWND.Null)
+        {
+            return "なし";
+        }
+
+        uint processId;
+        PInvoke.GetWindowThreadProcessId(foreground, &processId);
+        try
+        {
+            using var process = System.Diagnostics.Process.GetProcessById((int)processId);
+            return $"0x{(nint)foreground:X} {process.ProcessName}({processId})";
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            // 調べている間に終了した・権限が無いプロセス。名前だけ諦める
+            return $"0x{(nint)foreground:X} (プロセス不明 {processId})";
+        }
     }
 
     /// <summary>アプリのアイコンを付け、タイトルバーを自分で描く (コンテンツをタイトルバーまで広げる)</summary>
@@ -81,7 +165,7 @@ public static class WindowExtensions
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="isDialog">ダイアログ用の見た目 (<see cref="OverlappedPresenter.CreateForDialog"/>)にするか</param>
     /// <param name="isResizable">大きさを変えられるか</param>
-    /// <param name="minimumSize">最小の大きさ (物理ピクセル)。0 なら指定しない</param>
+    /// <param name="minimumSize">最小の大きさで、単位は物理ピクセル。0 なら指定しない</param>
     public static void UseFixedPresenter(this Window window, bool isDialog, bool isResizable, SizeInt32 minimumSize = default)
     {
         var presenter = isDialog ? OverlappedPresenter.CreateForDialog() : OverlappedPresenter.Create();
@@ -104,7 +188,7 @@ public static class WindowExtensions
     /// <param name="width">幅 (DIP)</param>
     /// <param name="height">高さ (DIP)</param>
     /// <param name="scale">DPI 倍率 (<see cref="GetDpiScale"/> や <c>XamlRoot.RasterizationScale</c>)</param>
-    /// <param name="roundUp">端数を切り上げるか (false なら切り捨て)。中身をちょうど収めたいときは true</param>
+    /// <param name="roundUp">端数を切り上げるか。false なら切り捨て。中身をちょうど収めたいときは true</param>
     public static void ResizeClientDip(this Window window, double width, double height, double scale, bool roundUp = false)
     {
         var w = roundUp ? Math.Ceiling(width * scale) : Math.Floor(width * scale);
@@ -115,7 +199,7 @@ public static class WindowExtensions
     /// <summary>ウィンドウの高さを、中身の高さにちょうど合わせる (幅は変えない)</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="content">中身の最上位の要素 (ウィンドウの内容。画面に載っていること)</param>
-    /// <param name="width">幅 (DIP)。中身の高さを測るときの幅</param>
+    /// <param name="width">幅で、単位は DIP。中身の高さを測るときの幅</param>
     /// <returns>大きさを変えたとき true。測れなかったとき (まだ画面に載る前・閉じたあと)は false で、何もしない</returns>
     /// <remarks>
     /// 中身が出入りする画面 (お知らせ・入力欄の切り替え)で、出入りのあとに測り直すために使う。
@@ -152,7 +236,7 @@ public static class WindowExtensions
     /// <summary>ウィンドウの DPI 倍率 (100% で 1.0)</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <returns>ウィンドウがあるモニターの DPI 倍率</returns>
-    /// <remarks>表示する前に大きさを決めるために使う (<c>XamlRoot</c> は表示するまで無いため)。</remarks>
+    /// <remarks>表示する前に大きさを決めるために使う。<c>XamlRoot</c> は表示するまで無いため。</remarks>
     public static double GetDpiScale(this Window window)
         => PInvoke.GetDpiForWindow((HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id)) / 96.0;
 }

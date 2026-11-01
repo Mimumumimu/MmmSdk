@@ -8,6 +8,6 @@ public enum ShellKind
     /// <summary>コマンドプロンプト (cmd)</summary>
     Cmd,
     /// <summary>WSL (wsl.exe で起動する、既定のディストリビューションの既定のシェル。bash など)</summary>
-    /// <remarks>コマンドは POSIX のシェルの書き方で作り、パスは Linux の形 (<c>/mnt/d/...</c>)に変換して渡す (<see cref="ShellCommands"/>)。</remarks>
+    /// <remarks>コマンドは POSIX のシェルの書き方で作り、パスは Linux の形 (<c>/mnt/d/...</c>)に変換して渡す。変換は <see cref="ShellCommands"/> が行う。</remarks>
     Wsl,
 }

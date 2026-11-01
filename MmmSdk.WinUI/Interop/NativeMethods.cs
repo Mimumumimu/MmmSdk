@@ -4,9 +4,9 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Interop;
 
-/// <summary>CsWin32 の API を組み合わせる小さな補助 (オーナー設定・フォーカスを奪わない表示・ドラッグなど)。ほかの用途は <c>NativeMethods.*.cs</c>(IME・メニュー)</summary>
+/// <summary>CsWin32 の API を組み合わせる小さな補助で、オーナー設定・フォーカスを奪わない表示・ドラッグなど。ほかの用途は <c>NativeMethods.*.cs</c>(IME・メニュー)</summary>
 /// <remarks>
-/// 宣言は CsWin32 が生成する (<c>NativeMethods.txt</c>)。手書きで残るのは、CsWin32 のメタデータに無い uxtheme の非公開 API (序数指定。<c>NativeMethods.Menu.cs</c>)と、
+/// 宣言は CsWin32 が生成し、定義は <c>NativeMethods.txt</c> に書く。手書きで残るのは、CsWin32 のメタデータに無い uxtheme の非公開 API を序数指定で呼ぶもの (<c>NativeMethods.Menu.cs</c>)と、
 /// 生成された API を組み合わせる小さな補助 (<c>NativeMethods.Ime.cs</c> など)だけ。
 /// </remarks>
 internal static partial class NativeMethods

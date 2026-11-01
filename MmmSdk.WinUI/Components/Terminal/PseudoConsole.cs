@@ -12,7 +12,7 @@ namespace MmmSdk.WinUI.Components.Terminal;
 /// ConPTY (Windows 擬似コンソール)にプロセスをつないで起動し、入出力のパイプを渡す。
 /// </summary>
 /// <remarks>
-/// 端末の描画・入力の解釈は持たない (出力は端末のエスケープシーケンスを含んだバイト列のまま)。
+/// 端末の描画・入力の解釈は持たない。出力は端末のエスケープシーケンスを含んだバイト列のまま。
 /// 使い終わったら、出力を読み続けたまま <see cref="Close"/> でシェルを終わらせ、読み取りが終わってから <see cref="Dispose"/> する。
 /// </remarks>
 public sealed class PseudoConsole : IDisposable
@@ -47,7 +47,7 @@ public sealed class PseudoConsole : IDisposable
     }
 
     /// <summary>プロセスへの入力 (書き込み用)</summary>
-    /// <remarks>書き込む内容は、端末が受け取るキー入力の文字列 (UTF-8)。<see cref="Close"/> で閉じる。</remarks>
+    /// <remarks>書き込む内容は、端末が受け取るキー入力の文字列で、UTF-8。<see cref="Close"/> で閉じる。</remarks>
     public Stream Input { get; }
 
     /// <summary>プロセスからの出力 (読み取り用)</summary>
@@ -66,7 +66,7 @@ public sealed class PseudoConsole : IDisposable
     /// <returns>起動した擬似コンソール</returns>
     /// <remarks>
     /// 失敗したときは、作った分をすべて解放してから例外を投げる。
-    /// <paramref name="commandLine"/> は、そのまま <c>CreateProcess</c> に渡す。実行ファイルのパスを引用符で囲まないと、パスの空白で区切られて、別のファイルが起動することがある (<c>ShellInfo.CommandLine</c> は囲んで作る)。
+    /// <paramref name="commandLine"/> は、そのまま <c>CreateProcess</c> に渡す。実行ファイルのパスを引用符で囲まないと、パスの空白で区切られて、別のファイルが起動することがある。<c>ShellInfo.CommandLine</c> は囲んで作る。
     /// </remarks>
     /// <exception cref="Win32Exception">パイプの作成またはプロセスの起動に失敗した</exception>
     /// <exception cref="COMException">擬似コンソールを作成できなかった</exception>
@@ -140,8 +140,8 @@ public sealed class PseudoConsole : IDisposable
     /// <remarks>
     /// 出力を読み続けていないと擬似コンソールを閉じる処理が戻らないことがあるため、別スレッドで閉じて、最大 3 秒だけ待つ。
     /// 呼ぶ側は出力を読み続けたまま呼び、読み取りが末尾になるのを待ってから <see cref="Dispose"/> する。
-    /// 同期で待つのは意図的 (<c>IAsyncDisposable</c> にすると、DI コンテナが <c>ConfigureAwait(false)</c> で待つため、
-    /// 後から破棄されるトレイアイコンなどの後始末が UI スレッドの外で動いてしまう)。
+    /// 同期で待つのは意図的。<c>IAsyncDisposable</c> にすると、DI コンテナが <c>ConfigureAwait(false)</c> で待つため、
+    /// 後から破棄されるトレイアイコンなどの後始末が UI スレッドの外で動いてしまう。
     /// </remarks>
     public void Close()
     {
@@ -153,7 +153,7 @@ public sealed class PseudoConsole : IDisposable
         Task.Run(() => PInvoke.ClosePseudoConsole(handle)).Wait(CloseTimeout);
     }
 
-    /// <summary>擬似コンソールを閉じ (まだなら)、パイプとプロセスのハンドルを解放する</summary>
+    /// <summary>擬似コンソールを、まだ閉じていなければ閉じ、パイプとプロセスのハンドルを解放する</summary>
     public void Dispose()
     {
         if (_disposed) return;

@@ -11,9 +11,9 @@ namespace MmmSdk.Core.Components.Secrets;
 /// 秘密を Windows の資格情報マネージャー (汎用資格情報)に保存する。
 /// </summary>
 /// <remarks>
-/// 項目の名前 (ターゲット名)とユーザー名には、渡された名前をそのまま使う。保存先は今の Windows ユーザーの、この PC の中だけ
-/// (<c>CRED_PERSIST_LOCAL_MACHINE</c>。ほかの PC に同期しない)。値は UTF-16 で保存する。
-/// 1 件の大きさには OS の上限がある (<c>CRED_MAX_CREDENTIAL_BLOB_SIZE</c>。512 × 5 バイト = 1280 文字)。
+/// 項目の名前 (ターゲット名)とユーザー名には、渡された名前をそのまま使う。保存先は今の Windows ユーザーの、この PC の中だけ。
+/// 設定は <c>CRED_PERSIST_LOCAL_MACHINE</c> で、ほかの PC に同期しない。値は UTF-16 で保存する。
+/// 1 件の大きさには OS の上限がある。値は <c>CRED_MAX_CREDENTIAL_BLOB_SIZE</c> で、512 × 5 バイト = 1280 文字。
 /// </remarks>
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed unsafe class CredentialSecretStore : ISecretStore

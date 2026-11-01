@@ -14,7 +14,7 @@ internal static partial class NativeMethods
     /// <param name="hWnd">自分のアプリのウィンドウのハンドル</param>
     /// <remarks>
     /// すでに同じデスクトップにあるとき、いま見ているデスクトップが分からないときは、何もしない。
-    /// 他のアプリのウィンドウは移せない (Windows の制限。移せるのは呼び出したアプリ自身のウィンドウだけ)。UI スレッド (STA)から呼ぶ。
+    /// 他のアプリのウィンドウは移せない。これは Windows の制限で、移せるのは呼び出したアプリ自身のウィンドウだけ。UI スレッド (STA)から呼ぶ。
     /// </remarks>
     public static unsafe void MoveToCurrentVirtualDesktop(nint hWnd)
     {

@@ -3,9 +3,9 @@ namespace MmmSdk.Core.Components.Scheduling;
 /// <summary>システム時刻の毎分 00 秒に、処理を呼ぶ</summary>
 /// <param name="timeProvider">現在時刻・タイマーの提供元</param>
 /// <remarks>
-/// 開始直後に 1 回、以後は毎分 00 秒に呼ぶ。固定間隔のタイマーではなく、次の 00 秒までの残り時間をその都度計算する単発タイマーを掛け直す
-/// (システム時刻の変更や、タイマーのずれに追従するため)。タイマーが 00 秒より少し早く来たときは、まだ前の分なので呼ばず、次の掛け直しに任せる
-/// (同じ分に 2 回呼ばない)。呼ばれる処理は、タイマーのスレッドで動く。
+/// 開始直後に 1 回、以後は毎分 00 秒に呼ぶ。固定間隔のタイマーではなく、次の 00 秒までの残り時間をその都度計算する単発タイマーを掛け直す。
+/// システム時刻の変更や、タイマーのずれに追従するため。タイマーが 00 秒より少し早く来たときは、まだ前の分なので呼ばず、次の掛け直しに任せる。
+/// 同じ分に 2 回呼ばない。呼ばれる処理は、タイマーのスレッドで動く。
 /// </remarks>
 public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
 {
@@ -69,7 +69,7 @@ public sealed class MinuteScheduler(TimeProvider timeProvider) : IDisposable
     }
 
     /// <summary>タイマーが来たら処理を呼んで、次の 00 秒に掛け直す</summary>
-    /// <remarks>処理中の想定外の例外は握りつぶさない (async void なのでアプリの未処理例外になる)。</remarks>
+    /// <remarks>処理中の想定外の例外は握りつぶさない。async void なので、握りつぶさないとアプリの未処理例外になる。</remarks>
     private async void OnTick()
     {
         try

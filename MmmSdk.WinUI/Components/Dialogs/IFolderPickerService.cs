@@ -6,6 +6,6 @@ public interface IFolderPickerService
 {
     /// <summary>フォルダ選択を開く</summary>
     /// <param name="startDirectory">最初に開くフォルダのパス。null・空・存在しないときは、既定の場所</param>
-    /// <returns>選ばれたフォルダのパス (末尾は <c>\</c>)。キャンセルなら null</returns>
+    /// <returns>選ばれたフォルダのパスで、末尾は <c>\</c>。キャンセルなら null</returns>
     Task<string?> PickFolderAsync(string? startDirectory = null);
 }

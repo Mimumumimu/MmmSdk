@@ -8,10 +8,10 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - ターミナルの資材は `Components/Terminal/Assets/` で、出力先 (`Assets/Terminal`)は csproj の `Link` で決まっていて、変えない
 
 ### プロジェクトの分け方
-プロジェクトは、次の 2 つの基準でだけ分ける。見やすさのために分けることはしない (見やすさは、層とフォルダで足りる)。
+プロジェクトは、次の 2 つの基準でだけ分ける。見やすさのために分けることはしない。見やすさは、層とフォルダで足りる。
 
 - **UI の有無**: `MmmSdk.Core`(Windows / WinUI に依存しない)と `MmmSdk.WinUI`(WinUI 3)
-- **依存先の違い**: 外部のドライバーなどを参照する部品は、`MmmSdk.Db.<製品名>` のように独立したプロジェクトにする (今は `MmmSdk.Db.SqlServer`・`MmmSdk.Db.Sqlite`。[db-sqlserver.md](db-sqlserver.md)・[db-sqlite.md](db-sqlite.md))。理由は 2 つ。`MmmSdk.Core` はトリミング・AOT 対応を宣言しているので、リフレクションを使うドライバーを混ぜると宣言が合わなくなる。ドライバーを使わないアプリには、その DLL が入らない
+- **依存先の違い**: 外部のドライバーなどを参照する部品は、`MmmSdk.Db.<製品名>` のように独立したプロジェクトにする。プロジェクトは `MmmSdk.Db.SqlServer`・`MmmSdk.Db.Sqlite` で、詳しくは [db-sqlserver.md](db-sqlserver.md)・[db-sqlite.md](db-sqlite.md) を見る。理由は 2 つ。`MmmSdk.Core` はトリミング・AOT 対応を宣言しているので、リフレクションを使うドライバーを混ぜると宣言が合わなくなる。ドライバーを使わないアプリには、その DLL が入らない
 
 `MmmSdk.WinUI` を、さらに複数のプロジェクトに分けない。CsWin32 が作る型は internal なので、WinUI 側を複数のプロジェクトに分けると、同じ API の宣言を各プロジェクトに持たせるか、Win32 の型を公開する Interop プロジェクトを作るしかなく、下の「Win32 の P/Invoke は CsWin32 で生成する」(同じ API の宣言を 2 か所に置かない)を崩す。分ける基準の「依存先の違い」「別パッケージでの配布」にも当たらない。
 
@@ -19,7 +19,7 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 アプリは「機能」で分け、SDK は「部品」で分けていて、分ける軸がもともと違う。
 
 ## Win32 の P/Invoke は CsWin32 で生成する
-- `Microsoft.Windows.CsWin32`(ソース生成)で作る。呼び出しは `PInvoke.<API>`(`Windows.Win32`)。使う API の名前を `NativeMethods.txt` に書く。設定は `NativeMethods.json`(`allowMarshaling: false`・`useSafeHandles: false`)。生成された API を組み合わせる小さな補助 (IME・メニューのダーク対応など)だけを、`Interop/NativeMethods*.cs` に残す
+- `Microsoft.Windows.CsWin32`(ソース生成)で作る。呼び出しは `PInvoke.<API>` で、名前空間は `Windows.Win32`。使う API の名前を `NativeMethods.txt` に書く。設定は `NativeMethods.json` に、`allowMarshaling: false`・`useSafeHandles: false` を書く。生成された API を組み合わせる小さな補助 (IME・メニューのダーク対応など)だけを、`Interop/NativeMethods*.cs` に残す
 - 理由
   - 型 (`HWND`・`HMENU`・`HICON` など)と列挙体 (`SYSTEM_METRICS_INDEX` など)で、取り違えと値の写し間違いをコンパイル時に止められる
   - 構造体・定数を Windows のメタデータから作るので、手書きの誤りがなくなる。使う API の一覧が `NativeMethods.txt` に残る
@@ -34,9 +34,9 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 
 ## 機能 (プラグイン)がホストへ入る口 (`Features` / `Pages` / `Hosting` / `Tray`)
 - アプリの機能を、機能ごとのライブラリ (プラグイン)に分けられるよう、機能がホスト (exe)へ入るための型を SDK に置く。機能はホストを参照できないため、機能もホストも SDK のこれらの型を参照する
-- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>(order)` で呼ぶ。`order` は、サイドバー・トレイ・設定の並び順の値で、登録の間だけ `FeatureRegistrationScope` が持つ)・機能の登録 `FeatureInfo` / `AddFeature` / `AddAlwaysOnFeature`(オフにできない機能。並び順だけ使う。`availableWhen` を渡すと、満たさない間は画面に出ない)。`AddFeature` の `availableWhen` は、機能が動く前提 (例: サーバーモード)を満たさない間、機能の一覧にも出さず常にオフにする条件 (利用者のオン・オフとは別。サイドバー・トレイ・設定の部品・起動時の準備が、`IsEnabled` で一斉に外れる)。条件の元の値が、画面を作ったあとで変わったとき (サインイン後に読み込む、ユーザーごとの許可など)は、`FeatureService.NotifyAvailabilityChanged` が、条件が付いた機能すべてに `Changed` を出して、サイドバーを作り直させる・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`・オン・オフの管理 `FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順 (設定ストアの `Feature.Order`。キーの配列。載っていない機能は登録の順で後ろに付く。`OrderOf` が画面の並びの値を返し、`SetOrderAsync` / `ResetOrderAsync` で保存・既定へ戻し、`OrderChanged` で通知する。トレイは使わない)。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。切り替えの確認・画面への反映はホストが持つ)・`FeatureChangeResult`
+- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>(order)` で呼ぶ。`order` は、サイドバー・トレイ・設定の並び順の値で、登録の間だけ `FeatureRegistrationScope` が持つ)・機能の登録 `FeatureInfo` / `AddFeature` / `AddAlwaysOnFeature` はオフにできない機能で、並び順だけ使う。`availableWhen` を渡すと、満たさない間は画面に出ない。`AddFeature` の `availableWhen` は、機能が動く前提 (例: サーバーモード)を満たさない間、機能の一覧にも出さず常にオフにする条件で、利用者のオン・オフとは別。サイドバー・トレイ・設定の部品・起動時の準備が、`IsEnabled` で一斉に外れる。条件の元の値が、画面を作ったあとで変わったとき (サインイン後に読み込む、ユーザーごとの許可など)は、`FeatureService.NotifyAvailabilityChanged` が、条件が付いた機能すべてに `Changed` を出して、サイドバーを作り直させる・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`・オン・オフの管理 `FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順は、設定ストアの `Feature.Order` に、キーの配列で持つ。載っていない機能は登録の順で後ろに付く。`OrderOf` が画面の並びの値を返し、`SetOrderAsync` / `ResetOrderAsync` で保存・既定へ戻し、`OrderChanged` で通知する。トレイは使わない。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。切り替えの確認・画面への反映はホストが持つ)・`FeatureChangeResult`
 - `MmmSdk.Core.Components.Hosting`: `AppEnvironment`(アプリの名前・データのフォルダー・キャッシュのフォルダー・アイコンのパス・WebView2 の保存先 `WebView2Directory`。ホストが 1 つ登録し、機能が DI から受け取る)
-- `MmmSdk.WinUI.Components.Pages`: サイドバーのページ `NavigationPage` / `NavigationItem` / `NavigationArea` / `AddNavigationPage` / `AddNavigationChildPage` (別のページの子の項目として、親の直後に字下げして並べる。開閉は無く、常に出す。子は 1 段だけで、サイドバーの上部だけ。親がオフの間は出さない。親は、同じ機能のページを型で指す。`NavigationView` の入れ子の項目は使わない (親を押すたびに子の開閉が切り替わり、「親を押すとページが開く」動きと合わないため))・設定の部品 `SettingsSection` / `AddSettingsSection`・ページの後始末 `IReleasablePage`・ホストが作ったページを調べる口 `IPageCache`・サイドバーの本体 `NavigationHost` (UserControl。`NavigationView` と、選んだ項目のページを出す `Frame`)・項目の一覧と選択を持つ `NavigationHostViewModel`・ページを DI のスコープごとに作って保つ `PageProvider`・外したページのウィンドウ `DetachedPageWindow` と、その管理 `PageDetacher` (項目をメインウィンドウの外へドラッグするか、マウスを乗せたときのボタンで、ページを別のウィンドウに外す。1 つのページは同時に 1 か所だけ。外すときは、そのウィンドウ用にページを新しく作り、メインに残る同じ機能のページは捨てる (WebView2 は、別のウィンドウへ移すと使えなくなるため。閉じたら、外したページを破棄して、メモリを持ち続けない)。外せるかは、登録の `canDetach` で機能が決める。ウィンドウの大きさは、機能ごとに `WindowBounds.DetachedPage.<項目のキー>` で覚える。並べ方は OS (スナップ)に任せ、分割表示は持たない)。登録された機能のオン・オフ・並び順 (`FeatureService`)に合わせて項目を作り直し、オフになった機能のページを捨てる。ウィンドウ (タイトルバー・トレイへの退避)は、アプリが持つ。アプリごとに同じ部品を書き写さず、機能 (バッチ処理)が増えても、ホストは機能の名前を持たずに済むようにするため、MmmTool と MmmBatch で共有する
+- `MmmSdk.WinUI.Components.Pages`: サイドバーのページ `NavigationPage` / `NavigationItem` / `NavigationArea` / `AddNavigationPage` / `AddNavigationChildPage` は、別のページの子の項目として、親の直後に字下げして並べる。開閉は無く、常に出す。子は 1 段だけで、サイドバーの上部だけ。親がオフの間は出さない。親は、同じ機能のページを型で指す。`NavigationView` の入れ子の項目は使わない。親を押すたびに子の開閉が切り替わり、「親を押すとページが開く」動きと合わないため。・設定の部品 `SettingsSection` / `AddSettingsSection`・ページの後始末 `IReleasablePage`・ページを別のウィンドウへ移すとき、スコープを捨てずに画面だけを作り直して引き継ぐ `IHandoverPage` ([terminal.md](terminal.md) の「別のウィンドウへの引き継ぎ」)・ホストが作ったページを調べる口 `IPageCache`・サイドバーの本体 `NavigationHost` (`NavigationView` と、選んだ項目のページを出す `Frame` を持つ UserControl)・項目の一覧と選択を持つ `NavigationHostViewModel`・ページを DI のスコープごとに作って保つ `PageProvider`・外したページのウィンドウ `DetachedPageWindow` と、その管理 `PageDetacher` が行う。項目をメインウィンドウの外へドラッグするか、マウスを乗せたときのボタンで、ページを別のウィンドウに外す。1 つのページは同時に 1 か所だけ。外すときは、そのウィンドウ用にページを新しく作る。`IHandoverPage` を持つページは、同じスコープから作って状態を引き継ぎ、閉じるときも、メインのページへ同じ形で引き継ぐ。それ以外は、メインに残る同じ機能のページを捨てて作り直し、閉じたら、外したページを破棄して、メモリを持ち続けない。WebView2 は、別のウィンドウへ移さない。移すと、日本語入力が効かず、英字しか入らないため。外せるかは、登録の `canDetach` で機能が決める。ウィンドウの大きさは、機能ごとに `WindowBounds.DetachedPage.<項目のキー>` で覚える。並べ方は OS (スナップ)に任せ、分割表示は持たない。登録された機能のオン・オフ・並び順 (`FeatureService`)に合わせて項目を作り直し、オフになった機能のページを捨てる。ウィンドウ (タイトルバー・トレイへの退避)は、アプリが持つ。アプリごとに同じ部品を書き写さず、機能 (バッチ処理)が増えても、ホストは機能の名前を持たずに済むようにするため、MmmTool と MmmBatch で共有する
 - `MmmSdk.WinUI.Components.Tray`: トレイメニューの項目の登録 `AddTrayMenuSource`(機能がオフの間は項目を出さない包みを内部に持つ)
 - 登録の拡張メソッドの型引数には、トリミング・AOT 対応のため `DynamicallyAccessedMembers(PublicConstructors)` を付ける (Core の `IsAotCompatible` の宣言に合わせる)
 - 最終形にどう近づくか: 機能とホストの境界をここに 1 か所に持つので、機能の追加・削除はホストの 1 行で済み、実行時に DLL を読み込むローダーを足しても、機能側は作り直さない
@@ -44,20 +44,26 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - 最終形にどう近づくか: 共通の部品はすべて SDK に集まる形に近づく。オン・オフの管理の部分をアプリから SDK へ移し、別のアプリが機能 (プラグイン)を載せるとき、`AddFeatureService()` を呼ぶだけで同じ管理を使える
 
 ## 部品の一覧
-名前空間ごとの中身。型の細かい一覧はコードを見る。DI 登録はプロジェクト直下 (`MmmSdk.Core` / `MmmSdk.WinUI`)。
+名前空間ごとの中身。型の細かい一覧はコードを見る。DI 登録はプロジェクト直下で、`MmmSdk.Core` / `MmmSdk.WinUI` にある。
 
 ### MmmSdk.Core
 - `MmmSdk.Core.Components.Storage`: JsonFileStore・ReadableJsonOptions・DataLoadResult・DataFileException・LoadStatus
-- `.Settings`: ISettingsStore・SettingsStoreExtensions・SettingsStoreStartup (設定の先読み。ホストが最初の起動時の準備として登録する)。インターフェースは型情報つきのメソッドだけで、基本型の専用メソッドは拡張メソッド。JSON 実装と `SettingsJsonContext` は `.Settings.Json`
+- `.Settings`: ISettingsStore・SettingsStoreExtensions・SettingsStoreStartup は設定の先読みで、ホストが最初の起動時の準備として登録する。インターフェースは型情報つきのメソッドだけで、基本型の専用メソッドは拡張メソッド。JSON 実装と `SettingsJsonContext` は `.Settings.Json`
 - `.WindowPositions`: WindowPositionService・WindowPosition・`WindowPositionJsonContext`・ScreenGeometry (画面との位置関係の純粋な計算)
-- `.Secrets`: ISecretStore・SecretStoreException (秘密の保存の口)・CredentialSecretStore (資格情報マネージャーで ISecretStore を実装する。CsWin32 の `CredRead` など)。Web 版のサーバーのように画面を持たないアプリからも使うので、Core に置き、`NativeMethods.txt` は Core にも持つ
+- `.Secrets`: ISecretStore・SecretStoreException (秘密の保存の口)・CredentialSecretStore は資格情報マネージャーで ISecretStore を実装し、CsWin32 の `CredRead` などを使う。Web 版のサーバーのように画面を持たないアプリからも使うので、Core に置き、`NativeMethods.txt` は Core にも持つ
 - `.Paths`: PathOpener・PathOpenException・PathTarget
-- `.Holidays`: JapaneseHolidays (日本の祝日の判定)。内閣府の「国民の祝日」の一覧 (`syukujitsu.csv`。ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない)を、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る (SDK の csproj。利用者が、最新の一覧に置き換えられるように。置き換えたら、次の起動から使う)。ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる (ファイルは変換せず、そのまま置くので、加工の記載は要らない)
+- `.TextLinks`: TextLinkFinder・TextLink。文章の中の `http://`・`https://` の URL を見つけ、リンクにしてよいものだけを位置つきで返す。末尾の句読点は含めず、`http` と `https` 以外・空白や引用符を含むもの・長すぎるものは返さない。ノートの HTML・メッセージの Web 版のサーバー・PC 版の `LinkedText` が、同じ結果を使う
+- `.Holidays`: JapaneseHolidays は日本の祝日の判定を行う。内閣府の「国民の祝日」の一覧 (`syukujitsu.csv`。ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない)を、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る。配るのは SDK の csproj で、利用者が、最新の一覧に置き換えられるようにするため。置き換えたら、次の起動から使う。ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる (ファイルは変換せず、そのまま置くので、加工の記載は要らない)
+- `.DaysOfWeek`: Weekdays と WeekdaySet
+  - `Weekdays` は曜日フラグで、月 = 1 から日 = 64 の足し算の数。JSON・DB の列と同じ値
+  - `WeekdaySet` は、変換・判定・表記
+  - 曜日を 1 つも選んでいないときと 7 つ全部のときは、どちらも毎日の意味で扱い、表記も「毎日」にする。同じ意味は、同じ見え方・同じ動きにするため。
+  - リマインダーの曜日指定と、作業管理の自動入力が共有する
 - `.Notifications`: NotificationItem
 - `.SingleInstance`: SingleInstanceGuard
 - `.Attachments`: AttachmentStore
 - `.Shells`: ShellInfo・ShellKind・ShellLocator・ShellCommands・WslPath・WslDistribution (シェルの決定と、シェル別のコマンド作り・パスの変換。WSL も含む)
-- `.Features` / `.Hosting`: 機能 (プラグイン)がホストへ自分を登録する口と、オン・オフと並び順の管理 (`FeatureService`)。上の「機能 (プラグイン)がホストへ入る口」。`Json/FeatureJsonContext` は機能の並び順の配列用 (internal)
+- `.Features` / `.Hosting`: 機能 (プラグイン)がホストへ自分を登録する口と、オン・オフと並び順の管理の `FeatureService`。上の「機能 (プラグイン)がホストへ入る口」。`Json/FeatureJsonContext` は機能の並び順の配列用 (internal)
 - `.Scheduling`: MinuteScheduler・DayChangeWatcher
 - `.Logging`: ErrorLog
 - `MmmSdk.Core.Utilities`: Forget・Debouncer・RestartableTimer・RecentListExtensions・FileSizeFormatter・RememberedDate (選んだ日付を選んだ日の間だけ覚える)
@@ -70,10 +76,15 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Clipboards`: IClipboardService・ClipboardService・ClipboardFormats (クリップボードのテキストの読み書きと、載っている中身の種類の判定。名前空間を `Clipboard` にすると `DataTransfer.Clipboard` の型名を隠すので複数形)
 - `.Attachments`: IImageConverter・ImageConverter・ThumbnailImage (添付の画像の変換とサムネイル)
 - `.Windowing`: PseudoModal・WindowBoundsKeeper・DefaultWindowPlacement
+- `.DaysOfWeek`: WeekdayPicker と WeekdayColors
+  - `WeekdayPicker` は、月〜日の 7 つのトグルボタンで、`Value` に曜日フラグが出る。土は青、日は赤の文字
+  - `WeekdayColors` は、土日の文字の色で、ライト・ダークの両方の値を持つ。スケジュールの日付も同じ色を使う
 - `.Errors`: ErrorState・FatalErrorHandler
 - `.WebViews`: WebView2Setup (WebView2 を、保存先を指定して初期化する。TerminalControl など、WebView2 を使う部品が共有する)
 - `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・TerminalOutputWatcher・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く
-- `.Pages`: 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (上の「機能 (プラグイン)がホストへ入る口」)。`IBusyCursor` は、ウィンドウ全体のマウスカーソルを砂時計にする口で、`NavigationHost`(サイドバーとページの全体)が、その状態に合わせてカーソルを変える (サイドバーを押した直後は、マウスがページの外にあるため、ページだけでは変えない)。`RunAsync` は、砂時計を描かせてから、UI スレッドで長く動く処理を始める。サイドバーの移動の履歴は `NavigationHostViewModel` が持ち、`NavigationHistoryButtons` (タイトルバーに置く「戻る」「進む」)と Alt+←・Alt+→ で使う。ショートカットはボタンに持たせ、キーフックは使わない (アプリが前面のときだけ効けばよいため)。`INavigationService` は、機能が、サイドバーの指定のページ (`Open<TPage>()`)を開いてもらう口で、通知のクリックなど、ページの外から使う。ホストのウィンドウを前面に出すのは、ホストアプリが `ShowRequested` を受けて行い (トレイへ隠れていても見せるため、ページを開くたびに知らせる)、機能がホストのウィンドウを知らなくて済む。ページが機能のオフなどで項目に無いときは、何もせず false を返す
+- `.Pages`: 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口で、上の「機能 (プラグイン)がホストへ入る口」と同じもの。`IBusyCursor` は、ウィンドウ全体のマウスカーソルを砂時計にする口で、`NavigationHost`(サイドバーとページの全体)が、その状態に合わせてカーソルを変える。サイドバーを押した直後は、マウスがページの外にあるため、ページだけでは変えない。`RunAsync` は、砂時計を描かせてから、UI スレッドで長く動く処理を始める。サイドバーの移動の履歴は `NavigationHostViewModel` が持ち、`NavigationHistoryButtons` (タイトルバーに置く「戻る」「進む」)と Alt+←・Alt+→ で使う。ショートカットはボタンに持たせ、キーフックは使わない。アプリが前面のときだけ効けばよいため。`INavigationService` は、機能が、サイドバーの指定のページ (`Open<TPage>()`)を開いてもらう口で、通知のクリックなど、ページの外から使う。ホストのウィンドウを前面に出すのは、ホストアプリが `ShowRequested` を受けて行う。トレイへ隠れていても見せるため、ページを開くたびに知らせる。そのため、機能がホストのウィンドウを知らなくて済む。ページが機能のオフなどで項目に無いときは、何もせず false を返す
+  - サイドバーの印: `INavigationService.SetBadge<TPage>(bool)` は、サイドバーの指定のページの項目の右端に、知らせの丸を出し入れする口。ページを開いていない間に、見てほしいことが起きたことを知らせる。選ばれている項目と、別のウィンドウに外している項目には出さない。標準の点のバッジ `InfoBadge` は小さくて気づきにくいため使わない。印の状態は、機能がオフの間も項目が持つ。
+- `.TextLinks`: LinkedText。`TextBlock` の添付プロパティ `Text` に文章を渡すと、URL を `Hyperlink` にして並べる。リンクを押すと、`LinkCommand` に URL を渡す。開く処理と失敗の表示は、受け取る側が持つ。`NavigateUri` は使わない。開けなかったときの表示を、アプリが決めるため。強調色の地の上などでは、`LinkForeground` で色を渡す
 - `.Tray`: TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem・`AddTrayMenuSource`。`TrayMenuRenderer` は internal。DI 登録は `AddMmmSdkWinUI` と同じ `SdkWinUIServiceCollectionExtensions` の `AddMmmSdkTray`
 - `MmmSdk.WinUI.Controls`: TimeInputBox・LinkArea・RefreshButton・OverflowRowLayout・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)
 - `MmmSdk.WinUI.Utilities`: WindowExtensions・WindowPlacement・NativeMessageBox・ImeControl・TextBoxExtensions・TreeViewExtensions・VisualTreeSearch・WarningBubble

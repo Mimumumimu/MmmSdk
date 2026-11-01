@@ -9,7 +9,7 @@ namespace MmmSdk.WinUI.Components.Tray;
 /// <param name="features">機能のオン・オフ。機能のキーが null のときは使わないので null</param>
 /// <remarks>
 /// <see cref="TrayServiceCollectionExtensions.AddTrayMenuSource{TSource}"/> が、登録のたびに使う。メニューは開くたびに作るので、切り替えはすぐ反映される。
-/// オフにできない機能 (キーが null)は、<see cref="IFeatureStatus"/> を受け取らない (トレイアイコンを作る時点で、機能のオン・オフの管理を作らないため)。
+/// オフにできない機能 (キーが null)は、<see cref="IFeatureStatus"/> を受け取らない。トレイアイコンを作る時点で、機能のオン・オフの管理を作らないため。
 /// </remarks>
 internal sealed class RegisteredTrayMenuSource(int order, string? featureKey, ITrayMenuSource inner, IFeatureStatus? features) : ITrayMenuSource
 {

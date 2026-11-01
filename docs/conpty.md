@@ -1,11 +1,11 @@
 # ConPTY (PseudoConsole)
 
-ターミナル画面の土台になる汎用部品 (`MmmSdk.WinUI.Components.Terminal`)。端末の描画・キー入力の解釈は持たない。呼び出し側は、出力 (端末のエスケープシーケンスを含む UTF-8 のバイト列)を端末のエミュレーターに渡す。
+ターミナル画面の土台になる汎用部品で、`MmmSdk.WinUI.Components.Terminal` にある。端末の描画・キー入力の解釈は持たない。呼び出し側は、出力 (端末のエスケープシーケンスを含む UTF-8 のバイト列)を端末のエミュレーターに渡す。
 
 ## 置き場所
-- セッション・画面 (`TerminalControl`)と同じ `Components/Terminal/` フォルダーに置く (「ターミナル」は ConPTY・xterm.js の実体を指す呼び方。[terminal.md](terminal.md) の「呼び方」)。この文書は、その土台の ConPTY だけを詳しく書く (シェル・セッション・画面は [terminal.md](terminal.md))
+- セッション・画面 (`TerminalControl`)と同じ `Components/Terminal/` フォルダーに置く。「ターミナル」は ConPTY・xterm.js の実体を指す呼び方で、[terminal.md](terminal.md) の「呼び方」にある。この文書は、その土台の ConPTY だけを詳しく書く (シェル・セッション・画面は [terminal.md](terminal.md))
 - 画面 (UI)は持たないが、Windows の API を呼ぶので、Windows に依存しない `MmmSdk.Core` ではなく `MmmSdk.WinUI` に置く
-- Win32 の宣言は CsWin32 が生成する (`NativeMethods.txt`)。宣言は internal で、公開するのは `PseudoConsole` だけ
+- Win32 の宣言は CsWin32 が生成する。定義は `NativeMethods.txt` に書く。宣言は internal で、公開するのは `PseudoConsole` だけ
 
 ## PseudoConsole
 - `Start(commandLine, workingDirectory, columns, rows)`: 入出力のパイプ 2 本を作り、`CreatePseudoConsole` で擬似コンソールを作って、プロセスを `PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE` でつないで起動する
@@ -24,4 +24,4 @@
 同期で待つのは意図的。`IAsyncDisposable` にすると、DI コンテナが `ConfigureAwait(false)` で待つため、後から破棄されるトレイアイコンなどの後始末が UI スレッドの外で動いてしまう。
 
 ## アプリでの使い方
-`PseudoConsoleSession`(`ITerminalSession` の実装。[terminal.md](terminal.md))が使う。出力の読み取り・デコード (UTF-8 の多バイト文字が読み取りの切れ目で分かれても復元する)・終了の通知・入力の確定はそちらが受け持つ。`commandLine` の実行ファイルのパスは、引用符で囲んで渡す (`ShellInfo.CommandLine` がそうしている)。
+`PseudoConsoleSession`(`ITerminalSession` の実装。[terminal.md](terminal.md))が使う。出力の読み取り・デコード (UTF-8 の多バイト文字が読み取りの切れ目で分かれても復元する)・終了の通知・入力の確定はそちらが受け持つ。`commandLine` の実行ファイルのパスは、引用符で囲んで渡す。`ShellInfo.CommandLine` がそうしている。

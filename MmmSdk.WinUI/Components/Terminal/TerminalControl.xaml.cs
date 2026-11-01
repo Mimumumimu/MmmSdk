@@ -42,6 +42,22 @@ public sealed partial class TerminalControl : UserControl
     /// <remarks>終了待ちの間に押されたキーで、二重に起動し直さないための印。UI スレッドだけで読み書きする。</remarks>
     private bool _isRestarting;
 
+    /// <summary>別のウィンドウへ引き継ぐために、画面への出力を止めているか (<see cref="FreezeAndCaptureAsync"/>)</summary>
+    /// <remarks>止めている間に届いた出力は、<see cref="_pendingOutput"/> にためる。UI スレッドだけで読み書きする。</remarks>
+    private bool _frozen;
+    /// <summary>画面の内容の取り出しを待っている依頼の番号 (返事と突き合わせる)</summary>
+    private int _captureId;
+    /// <summary>画面の内容の取り出しを待っているもの。無ければ null</summary>
+    private TaskCompletionSource<(string Data, int Columns, int Rows)>? _captureRequest;
+    /// <summary>取り出した画面の内容。取り出していなければ null</summary>
+    private (string Data, int Columns, int Rows)? _captured;
+    /// <summary>前の画面から引き継いだ内容。端末の準備ができたとき、書き戻す</summary>
+    private TerminalHandover? _initialHandover;
+
+    /// <summary>画面の内容の取り出しを待つ上限 (ミリ秒)</summary>
+    /// <remarks>端末の画面が応答しないときに、ウィンドウを移す操作が止まり続けないため。超えたときは、内容を引き継がずに、出力だけを引き継ぐ。</remarks>
+    private const int CaptureTimeoutMilliseconds = 3000;
+
     /// <summary>描画の受け取りを待たずに送ってよい文字数の上限</summary>
     private const int MaxUnconfirmedChars = 1024 * 1024;
 
@@ -83,11 +99,87 @@ public sealed partial class TerminalControl : UserControl
 
     /// <summary>WebView2 のデータ (キャッシュなど)の保存先フォルダー</summary>
     /// <remarks>
-    /// 読み込まれる前に設定する (WebView2 の初期化のときに 1 回だけ読む)。
-    /// null のときは WebView2 の既定 (EXE の隣の <c>&lt;EXE 名&gt;.WebView2</c>)。
+    /// 読み込まれる前に設定する。WebView2 の初期化のときに 1 回だけ読む。
+    /// null のときは WebView2 の既定で、EXE の隣の <c>&lt;EXE 名&gt;.WebView2</c>。
     /// 同じプロセスの WebView2 は、同じフォルダーなら同じ設定で作る必要があるので、アプリの中で 1 か所に決めて渡す。
     /// </remarks>
     public string? UserDataFolder { get; set; }
+
+    /// <summary>前の画面から引き継いだ内容 (<see cref="TakeHandover"/> の戻り値)</summary>
+    /// <remarks>
+    /// <see cref="Session"/> を渡す前に設定する。端末の準備ができたとき、内容を書き戻してから、続きの出力を描く。
+    /// 届いていなかった出力は、すぐ出力のたまりの先頭に入れる。設定できるのは、準備の前に 1 回だけ。
+    /// </remarks>
+    public TerminalHandover? InitialHandover
+    {
+        get => _initialHandover;
+        set
+        {
+            if (_webViewReady || _initialHandover is not null || value is null)
+            {
+                return;
+            }
+
+            _initialHandover = value;
+            lock (_pendingLock)
+            {
+                _pendingOutput.Insert(0, value.PendingOutput);
+            }
+        }
+    }
+
+    /// <summary>別のウィンドウへ引き継ぐために、画面への出力を止めて、画面の内容を取り出す</summary>
+    /// <returns>取り出しの完了を表すタスク</returns>
+    /// <remarks>
+    /// 画面は表示したままでよい。止めている間に届いた出力は、ためておく。
+    /// 端末の準備がまだのとき・閉じているときは、取り出す内容が無いので、出力を止めるだけ。
+    /// 終わったら、<see cref="TakeHandover"/> を呼ぶこと。UI スレッドから呼ぶ。
+    /// </remarks>
+    public async Task FreezeAndCaptureAsync()
+    {
+        _frozen = true;
+        if (!_webViewReady || _closed)
+        {
+            return;
+        }
+
+        var request = new TaskCompletionSource<(string Data, int Columns, int Rows)>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _captureRequest = request;
+        var id = ++_captureId;
+        PostMessage("capture", null, id: id);
+
+        if (await Task.WhenAny(request.Task, Task.Delay(CaptureTimeoutMilliseconds)) == request.Task)
+        {
+            _captured = request.Task.Result;
+        }
+        _captureRequest = null;
+    }
+
+    /// <summary>引き継ぎの情報を受け取って、この端末を閉じる</summary>
+    /// <returns>引き継ぎの情報。新しい <see cref="TerminalControl"/> の <see cref="InitialHandover"/> へ渡す</returns>
+    /// <remarks>
+    /// <see cref="FreezeAndCaptureAsync"/> のあとに呼ぶ。シェル (セッション)は終了しない。
+    /// 端末の準備の前で、前の画面から引き継いだ内容を書き戻せていないときは、その内容と届いた出力を、そのまま次へ渡す。
+    /// UI スレッドから呼ぶ。新しい端末へセッションをつなぐまで、同じ処理の中で続けること。続けないと、あいだに届いた出力が捨てられる。
+    /// </remarks>
+    public TerminalHandover TakeHandover()
+    {
+        string pending;
+        lock (_pendingLock)
+        {
+            pending = _pendingOutput.ToString();
+            _pendingOutput.Clear();
+        }
+
+        var handover = _captured is { } captured
+            ? new TerminalHandover(captured.Data, captured.Columns, captured.Rows, pending)
+            : _initialHandover is { } initial
+                ? new TerminalHandover(initial.Snapshot, initial.Columns, initial.Rows, pending)
+                : new TerminalHandover(null, 0, 0, pending);
+        _captured = null;
+        Close();
+        return handover;
+    }
 
     /// <summary>セッションが差し替わったら、イベントの購読を付け替える</summary>
     /// <param name="d">変更されたコントロール</param>
@@ -134,8 +226,8 @@ public sealed partial class TerminalControl : UserControl
 
     /// <summary>端末を閉じる (WebView2 のプロセスを解放する)</summary>
     /// <remarks>
-    /// 画面から取り除いて、もう使わないときに呼ぶ (タブを閉じる・ページを捨てるなど)。呼ばないと、WebView2 のプロセスが、アプリを終了するまで残る。
-    /// セッションを外し、WebView2 を閉じる。シェル (セッション)は終了しない (セッションの <see cref="IDisposable.Dispose"/> で終了する)。
+    /// 画面から取り除いて、もう使わないときに呼ぶ。例はタブを閉じる・ページを捨てる。呼ばないと、WebView2 のプロセスが、アプリを終了するまで残る。
+    /// セッションを外し、WebView2 を閉じる。シェル (セッション)は終了しない。終了するのはセッションの <see cref="IDisposable.Dispose"/>。
     /// 閉じたあとは再利用できない。何度呼んでもよい。UI スレッドから呼ぶ。
     /// </remarks>
     public void Close()
@@ -260,6 +352,16 @@ public sealed partial class TerminalControl : UserControl
                 _unconfirmedChars = Math.Max(0, _unconfirmedChars - message.GetProperty("length").GetInt32());
                 FlushOutput();
                 break;
+            case "snapshot":
+                // 待っている依頼への返事だけを受ける (待ちを諦めたあとに届いた古い返事は捨てる)
+                if (_captureRequest is { } request && message.GetProperty("id").GetInt32() == _captureId)
+                {
+                    request.TrySetResult((
+                        message.GetProperty("data").GetString() ?? "",
+                        message.GetProperty("cols").GetInt32(),
+                        message.GetProperty("rows").GetInt32()));
+                }
+                break;
         }
     }
 
@@ -267,6 +369,13 @@ public sealed partial class TerminalControl : UserControl
     private void OnTerminalReady()
     {
         _webViewReady = true;
+
+        // 前の画面から引き継いだ内容を、続きの出力より先に書き戻す (どちらも、端末の書き込みの順に処理される)
+        if (_initialHandover is { Snapshot: { } snapshot } initial)
+        {
+            PostMessage("restore", snapshot, cols: initial.Columns, rows: initial.Rows);
+        }
+        _initialHandover = null;
 
         if (Session is { IsStarted: true } session)
         {
@@ -306,7 +415,7 @@ public sealed partial class TerminalControl : UserControl
     /// <returns>起動し直しの完了を表すタスク</returns>
     /// <remarks>
     /// 起動するシェル (<see cref="ITerminalSession.Shell"/>)を替えたあとに呼ぶ。動いているシェル (とその中の CLI)は終了する。
-    /// 表示の準備がまだのとき・<see cref="Session"/> が無いときは何もしない (準備ができたときに、そのときの設定で起動する)。
+    /// 表示の準備がまだのとき・<see cref="Session"/> が無いときは何もしない。準備ができたときに、そのときの設定で起動する。
     /// </remarks>
     public Task RestartSessionAsync()
     {
@@ -379,7 +488,7 @@ public sealed partial class TerminalControl : UserControl
     /// <remarks>端末の描画が追いついていない (<see cref="MaxUnconfirmedChars"/> 超)ときは送らず、受け取りが返ってから送る。</remarks>
     private void FlushOutput()
     {
-        if (!_webViewReady)
+        if (!_webViewReady || _frozen)
         {
             return;
         }
@@ -409,16 +518,16 @@ public sealed partial class TerminalControl : UserControl
     /// <param name="args">フォーカスの移動の情報</param>
     /// <remarks>
     /// <para>
-    /// 回避策。根本の原因は特定できていない (WinUI または WebView2 側の不具合と考えている)。
+    /// 回避策。根本の原因は特定できていない。WinUI または WebView2 側の不具合と考えている。
     /// 入力欄 (TextBox など)から WebView2 へ直接フォーカスが移ると、タスクバーの IME は日本語入力のままなのに、
-    /// WebView2 の入力欄 (xterm.js の textarea)につながらず、英字が入る (キー入力が IME に渡らない)。
+    /// WebView2 の入力欄 (xterm.js の textarea)につながらず、英字が入る。キー入力が IME に渡らない。
     /// 別のウィンドウへ切り替えて戻るか、ほかの部品 (ツリーなど)を一度経由すると、つながる。
     /// WebView2 側のフォーカスのイベント・IME のオン・オフの状態・XAML のフォーカスの状態は、直るときと直らないときで同じだった。
     /// </para>
     /// <para>
-    /// そこで、入力欄からのときだけ、見えない経由先 (<c>FocusRelay</c>)を挟んでから端末に移す (フォーカスの外れ・付け直しが 1 回ずつ増える)。
+    /// そこで、入力欄からのときだけ、見えない経由先 (<c>FocusRelay</c>)を挟んでから端末に移す。フォーカスの外れ・付け直しが 1 回ずつ増える。
     /// 経由先から WebView2 へ移るときは、元が入力欄ではないので、ここで再び経由させることはない。
-    /// WinUI・WebView2 の更新で直ったら、この処理と <c>FocusRelay</c> を外す (外して、入力欄 → ターミナルで日本語を打てれば確認できる)。
+    /// WinUI・WebView2 の更新で直ったら、この処理と <c>FocusRelay</c> を外す。外して、入力欄 → ターミナルで日本語を打てれば確認できる。
     /// </para>
     /// </remarks>
     private void OnWebViewGettingFocus(UIElement sender, GettingFocusEventArgs args)
@@ -478,7 +587,10 @@ public sealed partial class TerminalControl : UserControl
     /// <param name="type">メッセージの種類</param>
     /// <param name="data">メッセージの内容。無ければ null</param>
     /// <param name="marker">送信の完了を待つ合図の文字列。無ければ null</param>
-    private void PostMessage(string type, string? data, string? marker = null)
+    /// <param name="id">依頼の番号。返事と突き合わせる。無ければ null</param>
+    /// <param name="cols">端末の列数。無ければ null</param>
+    /// <param name="rows">端末の行数。無ければ null</param>
+    private void PostMessage(string type, string? data, string? marker = null, int? id = null, int? cols = null, int? rows = null)
     {
         // トリミング有効の発行でも動くよう、リフレクションを使わずに JSON を組み立てる
         using var buffer = new MemoryStream();
@@ -493,6 +605,18 @@ public sealed partial class TerminalControl : UserControl
             if (marker is not null)
             {
                 writer.WriteString("marker", marker);
+            }
+            if (id is { } idValue)
+            {
+                writer.WriteNumber("id", idValue);
+            }
+            if (cols is { } colsValue)
+            {
+                writer.WriteNumber("cols", colsValue);
+            }
+            if (rows is { } rowsValue)
+            {
+                writer.WriteNumber("rows", rowsValue);
             }
             writer.WriteEndObject();
         }

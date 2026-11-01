@@ -11,7 +11,7 @@ public static class TextBoxExtensions
     /// <remarks>
     /// 高さを固定した複数行の <see cref="TextBox"/> は、末尾で Enter を押したときなどに、キャレットは動くのに表示がスクロールされないことがある。
     /// キャレットが表示の中にあるときは何もしないので、<see cref="TextBox"/> 自身のスクロールとは重ならない。
-    /// 選択位置が変わるたびに、レイアウトが済んだあとで確かめる。縦方向だけを扱う (折り返す入力欄を想定)。
+    /// 選択位置が変わるたびに、レイアウトが済んだあとで確かめる。縦方向だけを扱う。想定するのは折り返す入力欄。
     /// 詳しい決まり (位置の取り方など)は、SDK の docs/controls.md の「TextBoxExtensions」。
     /// </remarks>
     public static void KeepCaretVisible(this TextBox textBox)
@@ -43,7 +43,7 @@ public static class TextBoxExtensions
         // 予約してから実行するまでに、文字が変わっている (送信で空になるなど)ことがあるので、今の文字数に収める
         var index = Math.Min(textBox.SelectionStart + textBox.SelectionLength, textBox.Text.Length);
 
-        // 位置の Y は、文章全体の中での位置 (今のスクロール量を含まない)。見えている範囲の中の位置は、スクロール量を引いて求める
+        // 位置の Y は、文章全体の中での位置で、今のスクロール量を含まない。見えている範囲の中の位置は、スクロール量を引いて求める
         // (表示の中の位置として扱うと、見えているのに外と判断して、逆にスクロールしてしまう)
         Windows.Foundation.Rect caret;
         try

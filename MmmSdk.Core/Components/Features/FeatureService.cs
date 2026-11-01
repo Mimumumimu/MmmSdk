@@ -11,7 +11,7 @@ namespace MmmSdk.Core.Components.Features;
 /// <param name="settings">汎用設定ストア</param>
 /// <param name="services">起動時の準備を作る DI のサービスプロバイダー</param>
 /// <remarks>
-/// 状態は設定ストアに、機能のキーごとに保存する。保存が無い機能は、登録の初期値 (既定はオン)。
+/// 状態は設定ストアに、機能のキーごとに保存する。保存が無い機能は、登録の初期値で、既定はオン。
 /// 切り替えはすぐ反映する。画面 (サイドバー・メニュー・設定の画面など)は、<see cref="Changed"/> または <see cref="IsEnabled"/> で見る。
 /// 機能の登録 (<see cref="FeatureServiceCollectionExtensions.AddFeature"/> 等)は各機能が行い、このクラスは特定の機能を知らない。
 /// </remarks>
@@ -25,7 +25,7 @@ public sealed class FeatureService(
     /// <summary>登録された機能 (登録の並び順の値の順。同じ値は登録順)</summary>
     private readonly IReadOnlyList<FeatureInfo> _registered = [.. features.OrderBy(f => f.Order)];
 
-    /// <summary>機能 (オフにできない機能も含む)。利用者が決めた並び順の順</summary>
+    /// <summary>機能で、オフにできない機能も含む。利用者が決めた並び順の順</summary>
     /// <remarks>保存した並び (<see cref="SetOrderAsync"/>)に載っている機能が先、載っていない機能 (あとから足したもの)は、登録の並び順の値の順で、その後ろ。</remarks>
     public IReadOnlyList<FeatureInfo> Features
     {
@@ -51,7 +51,7 @@ public sealed class FeatureService(
 
     /// <summary>機能がオンか</summary>
     /// <param name="featureKey">機能のキー。null (どの機能にも属さない)・オフにできない機能なら常にオン</param>
-    /// <returns>オンなら true。保存が無いときは、登録の初期値 (<see cref="FeatureInfo.DefaultEnabled"/>)。使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)を満たさない機能は、常に false</returns>
+    /// <returns>オンなら true。保存が無いときは、登録の初期値で、<see cref="FeatureInfo.DefaultEnabled"/> の値。使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)を満たさない機能は、常に false</returns>
     public bool IsEnabled(string? featureKey)
     {
         if (featureKey is null)
@@ -113,7 +113,7 @@ public sealed class FeatureService(
     }
 
     /// <summary>機能の並び順を、登録時の並び (<see cref="FeatureInfo.Order"/>の順)に戻す</summary>
-    /// <returns>戻したら true (保存した並びが無く、すでに登録の順のときも true)。読み取り専用のため保存しなかったら false</returns>
+    /// <returns>戻したら true で、保存した並びが無く、すでに登録の順のときも true。読み取り専用のため保存しなかったら false</returns>
     public async Task<bool> ResetOrderAsync()
     {
         if (settings.Contains(OrderKey) && !await settings.RemoveAsync(OrderKey))
@@ -128,8 +128,8 @@ public sealed class FeatureService(
     /// <summary>オンの機能の起動時の準備を、登録順に実行する</summary>
     /// <returns>準備の完了を表すタスク</returns>
     /// <remarks>
-    /// 呼ぶスレッドで順に実行する。ホストは、設定ストアの先読みを最初の起動時の準備として登録しておく (
-    /// オン・オフの判定を、読み込み済みの設定で行うため)。
+    /// 呼ぶスレッドで順に実行する。ホストは、設定ストアの先読みを最初の起動時の準備として登録しておく。
+    /// オン・オフの判定を、読み込み済みの設定で行うため。
     /// </remarks>
     public async Task StartAsync()
     {
@@ -146,7 +146,7 @@ public sealed class FeatureService(
     /// <remarks>
     /// オフにするときは、先に確認 (<see cref="IFeatureDisableConfirmation"/>)を取る。
     /// オンにするときは、その機能の起動時の準備を実行してから <see cref="Changed"/> を出す。
-    /// オフにするときは、保存してから <see cref="Changed"/> を出す (受け取った側がページを捨てる)。
+    /// オフにするときは、保存してから <see cref="Changed"/> を出す。受け取った側がページを捨てる。
     /// </remarks>
     public async Task<FeatureChangeResult> SetEnabledAsync(string featureKey, bool enabled)
     {

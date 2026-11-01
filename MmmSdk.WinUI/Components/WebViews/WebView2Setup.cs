@@ -4,7 +4,7 @@ using Microsoft.Web.WebView2.Core;
 namespace MmmSdk.WinUI.Components.WebViews;
 
 /// <summary>
-/// WebView2 の初期化 (保存先の指定つき)。ターミナルなど、WebView2 を使う部品が共有する。
+/// WebView2 の初期化で、保存先の指定つき。ターミナルなど、WebView2 を使う部品が共有する。
 /// </summary>
 public static class WebView2Setup
 {

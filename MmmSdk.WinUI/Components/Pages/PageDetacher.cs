@@ -1,4 +1,5 @@
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml.Controls;
 using MmmSdk.Core.Components.Hosting;
 using MmmSdk.Core.Components.WindowPositions;
 using MmmSdk.WinUI.Components.Dialogs;
@@ -10,7 +11,8 @@ namespace MmmSdk.WinUI.Components.Pages;
 
 /// <summary>サイドバーの項目のページを、別のウィンドウに外して持つ</summary>
 /// <remarks>
-/// 外すときは、外すウィンドウ用にページを新しく作り、メインに残る同じ機能のページは捨てる。ウィンドウを閉じると、外したページを破棄する。
+/// 外すときは、外すウィンドウ用にページを新しく作る。引き継げるページ (<see cref="IHandoverPage"/>)は、同じスコープから作って、シェルなどの状態と画面の内容を引き継ぐ。それ以外は、メインに残る同じ機能のページを捨てて、作り直す。
+/// 閉じるとき、引き継げるページは、メインのページへ作り直して渡す。それ以外は、外したページを破棄する。
 /// 閉じたあと、サイドバーで項目を押すと、メインの表示領域に、新しく作ったページが出る。
 /// 1 つの機能のページは同時に 1 か所にしか出せないので、外している間は、メインの表示領域に出さない。
 /// 機能をオフにしたときは、ページを捨てる前に、外したウィンドウも閉じる。
@@ -27,6 +29,10 @@ public sealed class PageDetacher
 
     /// <summary>ボタンで外したとき、メインウィンドウの左上からずらす距離 (DIP)</summary>
     private const double CascadeOffsetDip = 40;
+
+    /// <summary>メインのウィンドウ (外すときに渡されたもの)</summary>
+    /// <remarks>ウィンドウを閉じて、メインのページへ引き継ぐとき、ページが載るウィンドウとして渡す。</remarks>
+    private AppWindow? _mainWindow;
 
     /// <summary>外したページと、そのウィンドウ (項目のキー → 項目・ウィンドウ)</summary>
     private readonly Dictionary<string, (NavigationItem Item, DetachedPageWindow Window)> _windows = [];
@@ -73,13 +79,15 @@ public sealed class PageDetacher
     /// <param name="pageSizeDip">メインの表示領域の大きさ。大きさを覚えていないときの、ウィンドウの大きさに使う</param>
     /// <param name="main">メインのウィンドウ</param>
     /// <param name="at">ウィンドウを置く位置。ドラッグで離した位置を、物理ピクセルで渡す。無ければ、メインウィンドウから少しずらして置く</param>
+    /// <returns>外す処理の完了を表すタスク</returns>
     /// <remarks>
     /// すでに外している項目は、前に出すだけ。
-    /// ページは、外すウィンドウ用に新しく作る。WebView2 を持つページは、別のウィンドウへ移すと使えなくなるため。
-    /// メインに残る同じ機能のページは、先に捨てる。同じ機能のページが 2 つ生きたままにならず、メモリも持ち続けない。
-    /// ウィンドウを閉じたら、外したページを破棄する。
+    /// ページは、外すウィンドウ用に新しく作る。WebView2 を持つページは、別のウィンドウへ付け替えると、日本語入力が効かなくなるため。
+    /// 引き継げるページ (<see cref="IHandoverPage"/>)は、スコープを捨てず、同じスコープから新しいページを作り、画面の内容を引き継ぐ。
+    /// ウィンドウを閉じるときも、同じ形でメインのページへ戻す。
+    /// 引き継げないページは、メインに残る同じ機能のページを先に捨てて、新しく作る。同じ機能のページが 2 つ生きたままにならず、メモリも持ち続けない。ウィンドウを閉じたら、外したページを破棄する。
     /// </remarks>
-    public void Open(NavigationItem item, Action unparent, Windows.Foundation.Size pageSizeDip, AppWindow main, PointInt32? at)
+    public async Task OpenAsync(NavigationItem item, Action unparent, Windows.Foundation.Size pageSizeDip, AppWindow main, PointInt32? at)
     {
         if (_windows.ContainsKey(item.Key))
         {
@@ -88,15 +96,44 @@ public sealed class PageDetacher
         }
 
         item.IsDetached = true;
+        _mainWindow = main;
+
+        // 引き継げるページは、画面を出したまま、内容を取り出す (画面が隠れたあとだと、隠れた WebView2 の応答に頼ることになるため)
+        var source = _pages.FindMainHandoverPage(item.Key);
+        if (source is not null)
+        {
+            await source.PrepareHandoverAsync();
+        }
+
         unparent();
-        _pages.Evict(item.Key);
-        if (_pages.CreateDetachedPage(item) is not { } page)
+
+        Page? page;
+        if (source is not null && _pages.FindMainHandoverPage(item.Key) == source)
+        {
+            // 古い画面を閉じてから新しいページへ渡すまで、続けて行う (あいだに届いたシェルの出力を、捨てないため)
+            var handover = source.TakeHandover();
+            page = _pages.RebuildAsDetached(item.Key);
+            (page as IHandoverPage)?.ApplyHandover(handover, null);
+        }
+        else
+        {
+            _pages.Evict(item.Key);
+            page = _pages.CreateDetachedPage(item);
+        }
+
+        if (page is null)
         {
             item.IsDetached = false;
             return;
         }
 
         var window = new DetachedPageWindow(page, item.Title, _environment.Name, _environment.IconPath);
+        if (page is IHandoverPage detachedSource)
+        {
+            window.BeforeClosingAsync = () => ReturnToMainAsync(item.Key, window, detachedSource);
+            window.SkipBeforeClosing = () => _dialogs.IsClosingAll;
+        }
+
         _windows[item.Key] = (item, window);
         window.Closed += (_, _) =>
         {
@@ -111,6 +148,27 @@ public sealed class PageDetacher
         // 外す直前に、メインの表示領域が別の項目へ移り、そのあとで、フォーカスをメインウィンドウの表示領域へ置く処理が、順番待ちで走る。
         // 先に前へ出すと、その処理で、メインウィンドウが前に出直すので、同じ優先度の順番待ちの最後に回す
         window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, window.BringToFront);
+    }
+
+    /// <summary>外したウィンドウを閉じるとき、引き継げるページを、メインのページへ作り直して渡す</summary>
+    /// <param name="key">項目のキー</param>
+    /// <param name="window">閉じるウィンドウ</param>
+    /// <param name="source">外していたページ</param>
+    /// <returns>引き継ぎの完了を表すタスク</returns>
+    /// <remarks>メインのページは、サイドバーで項目を押したときに出る。それまでの出力は、新しいページが画面の準備ができるまでためる。</remarks>
+    private async Task ReturnToMainAsync(string key, DetachedPageWindow window, IHandoverPage source)
+    {
+        await source.PrepareHandoverAsync();
+
+        // 取り出しを待つあいだに機能がオフになったときは、引き継がない。ページは、このあと閉じたウィンドウの後始末で破棄する
+        if (window.BeforeClosingAsync is null)
+        {
+            return;
+        }
+
+        var handover = source.TakeHandover();
+        window.ReleasePage();
+        (_pages.RebuildAsMain(key) as IHandoverPage)?.ApplyHandover(handover, _mainWindow);
     }
 
     /// <summary>ウィンドウの大きさと位置を決める</summary>
@@ -151,6 +209,8 @@ public sealed class PageDetacher
         if (_windows.TryGetValue(key, out var entry))
         {
             entry.Item.IsDetached = false;
+            // 機能をオフにするので、メインのページへ引き継がずに閉じる (ページはこのあと捨てる)
+            entry.Window.BeforeClosingAsync = null;
             entry.Window.Close();
         }
     }

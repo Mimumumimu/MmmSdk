@@ -12,12 +12,12 @@ using static MmmSdk.WinUI.Interop.NativeMethods;
 namespace MmmSdk.WinUI.Components.Tray;
 
 /// <summary>
-/// トレイメニューの項目を自分で描く (オーナードロー)。
+/// トレイメニューの項目を自分で描く。方式はオーナードロー。
 /// </summary>
 /// <remarks>
 /// Win32 の標準メニューは文字のフォント・大きさ・色をアプリから変えられないため、項目の大きさの計測と描画を引き受ける。
-/// 枠 (外周・影)は Windows が描く (ダーク／ライトは uxtheme で合わせてある)。
-/// メニューを開くたびに作り、閉じたら破棄する (その時点の DPI・テーマで描くため)。
+/// 枠 (外周・影)は Windows が描く。ダーク／ライトは uxtheme で合わせてある。
+/// メニューを開くたびに作り、閉じたら破棄する。その時点の DPI・テーマで描くため。
 /// </remarks>
 internal sealed unsafe class TrayMenuRenderer : IDisposable
 {
@@ -29,7 +29,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     private const int FontSizePoint = 12;
 
     /// <summary>実際に使う文字のフォント (<see cref="FontFaces"/> のうち、入っている最初のもの)</summary>
-    /// <remarks>列挙は重いので、メニューを開くたびではなく、最初に 1 度だけ求める (起動後にインストールされたフォントは、次の起動まで使わない)。</remarks>
+    /// <remarks>列挙は重いので、メニューを開くたびではなく、最初に 1 度だけ求める。起動後にインストールされたフォントは、次の起動まで使わない。</remarks>
     private static readonly string FontFace = FindInstalledFont(FontFaces) ?? FontFaces[^1];
 
     /// <summary>サブメニューの矢印に使うアイコンフォント</summary>
@@ -40,7 +40,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     /// <remarks>文字のフォント (<see cref="FontFace"/>)と同じく、最初に 1 度だけ求める。</remarks>
     private static readonly string? IconFontFace = FindInstalledFont(IconFontFaces);
 
-    /// <summary>右向きの山形 (ChevronRight)。</summary>
+    /// <summary>右向きの山形で、ChevronRight。</summary>
     private const string ChevronGlyph = "";
 
     #region 寸法 (96 DPI のときの px)
@@ -71,7 +71,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     #endregion
 
     /// <summary>項目ごとの描画内容</summary>
-    /// <remarks>itemData には「添字 + 1」を入れる (0 は未設定と区別するため)。</remarks>
+    /// <remarks>itemData には「添字 + 1」を入れる。0 は未設定と区別するため。</remarks>
     private readonly List<Entry> _entries = [];
 
     /// <summary>DPI の倍率 (96 DPI を 1.0 とする)</summary>
@@ -82,7 +82,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     private readonly HFONT _font;
 
     /// <summary>矢印用のフォント</summary>
-    /// <remarks>入っていなければ null のハンドル (矢印は Windows に描かせる)。</remarks>
+    /// <remarks>入っていなければ null のハンドルで、矢印は Windows に描かせる。</remarks>
     private readonly HFONT _iconFont;
     /// <summary>背景のブラシ</summary>
     private readonly HBRUSH _backgroundBrush;
@@ -94,7 +94,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     private readonly int _lineHeight;
 
     /// <summary>指定位置のモニターの DPI と現在のテーマで描く準備をする</summary>
-    /// <param name="x">メニューを出す位置の X (この位置のモニターの DPI で描く)。</param>
+    /// <param name="x">メニューを出す位置の X。この位置のモニターの DPI で描く。</param>
     /// <param name="y">メニューを出す位置の Y。</param>
     public TrayMenuRenderer(int x, int y)
     {
@@ -352,7 +352,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
     #region 配色
 
-    /// <summary>アプリのダークモード設定 (Windows の「アプリ モード」)。</summary>
+    /// <summary>アプリのダークモード設定で、Windows の「アプリ モード」。</summary>
     /// <returns>ダークモードなら true。読めなければ false</returns>
     /// <remarks>メニューの枠は uxtheme がこの設定に従うので、中身も同じ設定に合わせる。</remarks>
     private static bool IsDarkMode()
@@ -367,7 +367,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         }
     }
 
-    /// <summary>色 (COLORREF。0x00BBGGRR)。</summary>
+    /// <summary>色で、COLORREF の 0x00BBGGRR。</summary>
     /// <param name="Background">背景</param>
     /// <param name="Hover">選択中の項目の背景</param>
     /// <param name="Separator">区切り線</param>

@@ -12,9 +12,9 @@ namespace MmmSdk.WinUI.Utilities;
 
 /// <summary>入力した直後に、要素の下へ短く出して、自然に消える警告の吹き出し</summary>
 /// <remarks>
-/// 入力のじゃまをしないよう、フォーカスを取らず、クリックも受けない (吹き出しの下の要素を、そのまま押せる)。
+/// 入力のじゃまをしないよう、フォーカスを取らず、クリックも受けない。吹き出しの下の要素を、そのまま押せる。
 /// 決まった秒数のあとにフェードして消える。<see cref="Hide"/> か、次の <see cref="Show"/> では、すぐ消える。
-/// 色は、テーマの標準の注意の色 (<c>SystemFillColorCautionBrush</c>・<c>SystemFillColorCautionBackgroundBrush</c>)。
+/// 色は、テーマの標準の注意の色で、<c>SystemFillColorCautionBrush</c>・<c>SystemFillColorCautionBackgroundBrush</c>。
 /// ライト・ダーク・ハイコントラストへの切り替えに、標準のとおり追従する。
 /// </remarks>
 public sealed class WarningBubble
@@ -56,7 +56,7 @@ public sealed class WarningBubble
     /// <param name="target">出す場所の要素 (入力したセルなど。この要素の左下に合わせる)</param>
     /// <param name="message">警告の文</param>
     /// <param name="duration">出しておく時間。省略すると 4 秒</param>
-    /// <remarks>すでに出ている吹き出しは、すぐ消す。要素が画面の下端・右端にかかるときは、収まる位置にずらす (下に収まらなければ、要素の上に出す)。</remarks>
+    /// <remarks>すでに出ている吹き出しは、すぐ消す。要素が画面の下端・右端にかかるときは、収まる位置にずらす。下に収まらなければ、要素の上に出す。</remarks>
     public void Show(FrameworkElement target, string message, TimeSpan? duration = null)
     {
         Hide(animate: false);

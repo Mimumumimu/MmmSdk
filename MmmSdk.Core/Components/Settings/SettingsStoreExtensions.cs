@@ -137,9 +137,9 @@ public static class SettingsStoreExtensions
         => store.SetAsync(key, value, BuiltInTypeInfo<double>(), cancellationToken);
 
     /// <summary>基本型の <see cref="JsonTypeInfo{T}"/> を返す</summary>
-    /// <typeparam name="T">基本型 (string / bool / int / long / double)。呼ぶのは、型ごとの専用のメソッドだけ</typeparam>
+    /// <typeparam name="T">基本型で、string / bool / int / long / double。呼ぶのは、型ごとの専用のメソッドだけ</typeparam>
     /// <returns>型のソース生成メタデータ</returns>
-    /// <exception cref="InvalidOperationException">基本型以外で呼んだとき (このクラスのプログラムの誤り)。</exception>
+    /// <exception cref="InvalidOperationException">基本型以外で呼んだとき。このクラスのプログラムの誤り。</exception>
     private static JsonTypeInfo<T> BuiltInTypeInfo<T>()
         => SettingsJsonContext.Readable.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>
             ?? throw new InvalidOperationException($"{typeof(T)} は JsonTypeInfo を渡さずに使えません。");

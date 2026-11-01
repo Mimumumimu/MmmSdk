@@ -12,10 +12,10 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
 {
     /// <summary>ファイル操作の同時実行を防ぐロック (ファイル名ごと)</summary>
     /// <remarks>
-    /// 同じファイルの読み込みと書き込みで取る (読み込みと壊れたファイルの退避の間に、書き込みが割り込まないように)。別のファイルは待たせない。
-    /// 待つ処理 (await)をまたいで持つので、継続を元のスレッド (UI スレッド)に戻さない (<c>ConfigureAwait(false)</c>)。
+    /// 同じファイルの読み込みと書き込みで取る。読み込みと壊れたファイルの退避の間に、書き込みが割り込まないようにするため。別のファイルは待たせない。
+    /// 待つ処理 (await)をまたいで持つので、継続を元のスレッド (UI スレッド)に戻さない。戻さないのは <c>ConfigureAwait(false)</c> で行う。
     /// 戻すと、UI スレッドが同じファイルの同期の <see cref="Read{T}"/> でこのロックを待っている間に、継続が UI スレッドを待って、デッドロックする。
-    /// ファイル名の大文字小文字は区別しない (Windows のファイルシステムに合わせる)。
+    /// ファイル名の大文字小文字は区別しない。Windows のファイルシステムに合わせる。
     /// </remarks>
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileLocks = new(StringComparer.OrdinalIgnoreCase);
 
@@ -127,7 +127,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <returns>そのファイル用のロック</returns>
     /// <remarks>不正なファイル名 (フォルダを含むなど)は、ロックを作る前に <see cref="GetPath"/> で拒否する。</remarks>
-    /// <exception cref="ArgumentException"><paramref name="fileName"/> が不正 (呼ぶ側のバグ)。</exception>
+    /// <exception cref="ArgumentException"><paramref name="fileName"/> が不正。呼ぶ側のバグ。</exception>
     private SemaphoreSlim GetFileLock(string fileName)
     {
         GetPath(fileName);
@@ -214,7 +214,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <param name="error">JSON として読めなかった原因の例外</param>
     /// <returns>ユーザーへ表示するメッセージ</returns>
     /// <remarks>
-    /// 同じフォルダに <c>名前.broken-yyyyMMdd-HHmmss.拡張子</c> で名前を変えて残す (自動では消さない)。
+    /// 同じフォルダに <c>名前.broken-yyyyMMdd-HHmmss.拡張子</c> で名前を変えて残す。自動では消さない。
     /// 元のファイルは無くなるので、呼ぶ側は「ファイルが無いとき」と同じように作り直す。
     /// </remarks>
     /// <exception cref="DataFileException">退避できなかった。</exception>
@@ -247,7 +247,7 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <returns>データフォルダと結合したパス</returns>
     /// <remarks>ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入ると、データフォルダの外を読み書きできてしまう。<c>:</c> が入ると、代替データストリーム (<c>x.json:ads</c>)として、見えない場所に読み書きできてしまう。そのため、ファイル名だけを受け付ける。</remarks>
-    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダや <c>:</c> を含んでいる (呼ぶ側のバグ)。</exception>
+    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダや <c>:</c> を含んでいる。呼ぶ側のバグ。</exception>
     private string GetPath(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName || fileName is "." or ".." || fileName.Contains(':'))

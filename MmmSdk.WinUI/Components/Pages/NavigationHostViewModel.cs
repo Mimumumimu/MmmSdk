@@ -37,6 +37,12 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     [ObservableProperty]
     public partial NavigationItem? SelectedItem { get; set; }
 
+    /// <summary>登録されたページの項目を、キーで探す</summary>
+    /// <param name="key">項目のキー (ページの型名)</param>
+    /// <returns>見つかった項目。未登録なら null</returns>
+    /// <remarks>機能がオフでサイドバーに無い項目も探す。項目は登録ごとに 1 つなので、オンに戻したとき同じ項目が並ぶ。</remarks>
+    public NavigationItem? FindRegisteredItem(string key) => _pages.Select(page => page.Item).FirstOrDefault(item => item.Key == key);
+
     #region 移動の履歴 (戻る・進む)
 
     /// <summary>履歴に残す項目の最大数 (古いものから捨てる)</summary>
@@ -90,6 +96,21 @@ public sealed partial class NavigationHostViewModel : ObservableObject
         else
         {
             SelectedItem = MenuItems.Concat(FooterItems).FirstOrDefault(i => i != detached && !i.IsDetached);
+        }
+    }
+
+    /// <summary>選択が変わったら、項目の「選ばれている」を合わせる</summary>
+    /// <param name="oldValue">前の選択</param>
+    /// <param name="newValue">新しい選択</param>
+    partial void OnSelectedItemChanged(NavigationItem? oldValue, NavigationItem? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.IsSelected = false;
+        }
+        if (newValue is not null)
+        {
+            newValue.IsSelected = true;
         }
     }
 
@@ -161,8 +182,8 @@ public sealed partial class NavigationHostViewModel : ObservableObject
 
     /// <summary>機能のオン・オフ・並び順に合わせて、サイドバーの項目を作り直す</summary>
     /// <remarks>
-    /// 選択中の項目が消えるときは、先に上部の先頭の項目へ移す (ページの切り替えは、選択の変更で行われる)。
-    /// 子の項目は、サイドバーに出ている親の項目の直後に並べる (親がオフなら、子も出さない)。
+    /// 選択中の項目が消えるときは、先に上部の先頭の項目へ移す。ページの切り替えは、選択の変更で行われる。
+    /// 子の項目は、サイドバーに出ている親の項目の直後に並べる。親がオフなら、子も出さない。
     /// </remarks>
     public void Refresh()
     {
@@ -205,7 +226,7 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     /// <param name="desired">あるべき項目 (順序つき)</param>
     /// <param name="selected">選択中の項目 (外すと選択が外れるので、残したまま、まわりを並べ直す)</param>
     /// <remarks>
-    /// 並べ替えに <c>Move</c> は使わない (<c>NavigationView</c> が、移動の通知を画面に反映しなかったため)。
+    /// 並べ替えに <c>Move</c> は使わない。<c>NavigationView</c> が、移動の通知を画面に反映しなかったため。
     /// 追加と削除の通知だけで並べ直す。
     /// </remarks>
     private static void Sync(ObservableCollection<NavigationItem> target, List<NavigationItem> desired, NavigationItem? selected)

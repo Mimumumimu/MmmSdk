@@ -4,8 +4,8 @@ namespace MmmSdk.WinUI.Components.Errors;
 
 /// <summary>画面に出すエラー 1 件の状態 (メッセージと、表示中か)</summary>
 /// <remarks>
-/// ViewModel が <c>Error</c> として 1 つ持ち、XAML の <c>InfoBar</c> に結び付ける
-/// (<c>IsOpen="{x:Bind ViewModel.Error.IsOpen, Mode=TwoWay}"</c>、<c>Message="{x:Bind ViewModel.Error.Message, Mode=OneWay}"</c>)。
+/// ViewModel が <c>Error</c> として 1 つ持ち、XAML の <c>InfoBar</c> に結び付ける。
+/// 例は <c>IsOpen="{x:Bind ViewModel.Error.IsOpen, Mode=TwoWay}"</c>、<c>Message="{x:Bind ViewModel.Error.Message, Mode=OneWay}"</c>。
 /// <c>InfoBar</c> の閉じるボタンは TwoWay の結び付けで <see cref="IsOpen"/> を false にするので、閉じる処理は書かなくてよい。
 /// </remarks>
 public sealed partial class ErrorState : ObservableObject
@@ -15,7 +15,7 @@ public sealed partial class ErrorState : ObservableObject
     public partial string? Message { get; private set; }
 
     /// <summary>エラーを表示中か</summary>
-    /// <remarks>ユーザーが <c>InfoBar</c> を閉じると false になる (メッセージは残る)。</remarks>
+    /// <remarks>ユーザーが <c>InfoBar</c> を閉じると false になる。メッセージは残る。</remarks>
     [ObservableProperty]
     public partial bool IsOpen { get; set; }
 

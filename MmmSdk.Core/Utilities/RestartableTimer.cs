@@ -4,7 +4,7 @@ namespace MmmSdk.Core.Utilities;
 /// <param name="interval">待つ間隔</param>
 /// <remarks>
 /// 定期的な取り込みの途中で、利用者が手動で取り込んだときに、直後に自動の取り込みが重ならないよう、<see cref="Restart"/> で間隔を数え直す。
-/// 間隔は、前の待ちが終わった時点から数える (処理に時間がかかっても、次の待ちが短くならない)。
+/// 間隔は、前の待ちが終わった時点から数える。処理に時間がかかっても、次の待ちが短くならない。
 /// スレッドセーフではないので、同じスレッド (UI スレッド)から使う。
 /// </remarks>
 public sealed class RestartableTimer(TimeSpan interval)

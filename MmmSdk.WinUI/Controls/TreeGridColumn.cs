@@ -6,7 +6,7 @@ namespace MmmSdk.WinUI.Controls;
 
 /// <summary><see cref="TreeGridView"/> の列の定義</summary>
 /// <remarks>
-/// 列を変えたら (表示・非表示など)、<see cref="TreeGridView.RefreshColumns"/> を呼ぶ。
+/// 列を変えたら、<see cref="TreeGridView.RefreshColumns"/> を呼ぶ。変えるのは表示・非表示など。
 /// 固定の列 (<see cref="IsFrozen"/>)は、表の左に置き、横にスクロールしても動かない。固定の列は、固定でない列より前に並べる。
 /// </remarks>
 public sealed class TreeGridColumn
@@ -22,9 +22,9 @@ public sealed class TreeGridColumn
 
     /// <summary>見出しに文字ではなく出す部品を作る関数 (null なら、<see cref="Header"/> の文字を出す)</summary>
     /// <remarks>
-    /// 見出しを作り直すたび (<see cref="TreeGridView.RefreshColumns"/>・<see cref="TreeGridView.RefreshColumnWidths"/>)に、新しい部品を作って渡す
-    /// (同じ部品を、前の見出しから外さずに、別の見出しへ入れられないため)。日付の軸のように、列の幅の中に自分で描く見出しに使う。
-    /// 見出しの高さは、表全体で 1 つ (<see cref="TreeGridView.HeaderHeight"/>)。
+    /// 見出しを作り直すたび (<see cref="TreeGridView.RefreshColumns"/>・<see cref="TreeGridView.RefreshColumnWidths"/>)に、新しい部品を作って渡す。
+    /// 同じ部品を、前の見出しから外さずに、別の見出しへ入れられないため。日付の軸のように、列の幅の中に自分で描く見出しに使う。
+    /// 見出しの高さは、表全体で 1 つで、<see cref="TreeGridView.HeaderHeight"/> で決まる。
     /// </remarks>
     public Func<UIElement>? HeaderFactory { get; set; }
 
@@ -55,7 +55,7 @@ public sealed class TreeGridColumn
 
     /// <summary>集計の行でも、このセルの背景に集計の行の色と行の色 (<see cref="ITreeGridRow.RowTint"/>)を付けず、表の面の色のままにするか</summary>
     /// <remarks>
-    /// 集計の行でも入力できるセルを、入力できる行のセルと同じ見た目にするために使う。スクロールする列だけで使える (固定の列は、固定の部分の背景が不透明なため)。
+    /// 集計の行でも入力できるセルを、入力できる行のセルと同じ見た目にするために使う。スクロールする列だけで使える。固定の列は、固定の部分の背景が不透明なため。
     /// 使う側が <see cref="TreeGridView.SummaryBackground"/> を渡しているときだけ働く。
     /// </remarks>
     public bool KeepsBaseBackground { get; set; }
@@ -63,12 +63,12 @@ public sealed class TreeGridColumn
     /// <summary>セルがフォーカスを受けるか (既定は true)</summary>
     /// <remarks>
     /// false の列は、キーボードのフォーカス・「今のセル」の枠・Tab や矢印キーの移動の対象にならず、押してもフォーカスを移さない。
-    /// 日付の軸のような、表示だけで、幅が表の表示領域より広い列に使う (フォーカスが来ると、その列の左端までスクロールが動いてしまうため)。
+    /// 日付の軸のような、表示だけで、幅が表の表示領域より広い列に使う。フォーカスが来ると、その列の左端までスクロールが動いてしまうため。
     /// </remarks>
     public bool IsFocusable { get; set; } = true;
 
     /// <summary>クリックされたとき、入力欄に切り替えず、<see cref="TreeGridView.CellInvoked"/> で知らせる列か</summary>
-    /// <remarks>メニューやカレンダーなど、使う側が、セルの下に選択の入れ物を出す列に使う (その列は <see cref="EditTemplate"/> を持たない)。</remarks>
+    /// <remarks>メニューやカレンダーなど、使う側が、セルの下に選択の入れ物を出す列に使う。その列は <see cref="EditTemplate"/> を持たない。</remarks>
     public bool IsInvokable { get; set; }
 
     /// <summary>クリックで入力できる列か (入力用の見た目か、<see cref="IsInvokable"/> のどちらかがある)</summary>
@@ -77,7 +77,7 @@ public sealed class TreeGridColumn
     /// <summary>入力するときのセルの見た目 (null なら、入力できない列)</summary>
     /// <remarks>
     /// 左クリック・キーボードでセルに移ったとき・<see cref="TreeGridView.FocusCell(ITreeGridRow, string)"/> で、<see cref="CellTemplate"/> からこちらに切り替わり、入力欄にフォーカスが入る。
-    /// 右クリックでは切り替わらない (メニューだけを出すため)。入力が終わったら、使う側が <see cref="TreeGridView.EndEdit"/> を呼ぶか、フォーカスが外れると、表示用に戻る。
+    /// 右クリックでは切り替わらない。メニューだけを出すため。入力が終わったら、使う側が <see cref="TreeGridView.EndEdit"/> を呼ぶか、フォーカスが外れると、表示用に戻る。
     /// </remarks>
     public DataTemplate? EditTemplate { get; set; }
 }

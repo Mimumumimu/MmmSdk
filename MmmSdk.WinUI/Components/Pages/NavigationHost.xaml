@@ -37,6 +37,7 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <FontIcon FontSize="16" Glyph="{x:Bind Glyph}" />
                     <TextBlock
@@ -66,6 +67,14 @@
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Glyph="&#xE8A7;"
                         Visibility="{x:Bind local:NavigationHost.VisibleWhenDetached(IsDetached), Mode=OneWay}" />
+                    <!-- HasBadge が真のとき、知らせの印を右端に出す。色は標準の注意色で、OS のアクセント色に連動させない。標準の点のバッジは直径 6 前後で、気づきにくかった -->
+                    <Ellipse
+                        Grid.Column="3"
+                        Width="12"
+                        Height="12"
+                        VerticalAlignment="Center"
+                        Fill="{ThemeResource SystemFillColorCautionBrush}"
+                        Visibility="{x:Bind local:NavigationHost.VisibleWhenBadge(ShowsBadge), Mode=OneWay}" />
                 </Grid>
             </DataTemplate>
         </NavigationView.MenuItemTemplate>

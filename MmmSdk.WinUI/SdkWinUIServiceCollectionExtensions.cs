@@ -16,8 +16,8 @@ public static class SdkWinUIServiceCollectionExtensions
     /// <param name="services">登録先のサービスコレクション</param>
     /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
     /// <remarks>
-    /// 先に <c>AddMmmSdkCore</c> を呼んでおくこと (位置の保存・リンクを開く処理を使う)。
-    /// <see cref="DialogService"/> は、<see cref="IDialogService"/>(確認ダイアログ)と <see cref="IDialogHost"/>(親の決定)のどちらからも同じインスタンスを受け取れる (親にするウィンドウの登録を共有するため)。アプリは具象型ではなく、この 2 つの口に依存する。
+    /// 先に <c>AddMmmSdkCore</c> を呼んでおくこと。位置の保存・リンクを開く処理を使うため。
+    /// <see cref="DialogService"/> は、<see cref="IDialogService"/>(確認ダイアログ)と <see cref="IDialogHost"/>(親の決定)のどちらからも同じインスタンスを受け取れる。親にするウィンドウの登録を共有するため。アプリは具象型ではなく、この 2 つの口に依存する。
     /// 通知ウィンドウはユーザーが閉じたら作り直すので、ウィンドウと ViewModel は Transient で登録する。
     /// </remarks>
     public static IServiceCollection AddMmmSdkWinUI(this IServiceCollection services)
@@ -43,9 +43,9 @@ public static class SdkWinUIServiceCollectionExtensions
     /// <param name="options">アプリごとの設定</param>
     /// <returns>連続して呼べるよう、渡したサービスコレクション</returns>
     /// <remarks>
-    /// トレイを使うアプリだけが呼ぶ (<see cref="AddMmmSdkWinUI"/> には含まれない)。
-    /// <see cref="TrayIcon"/> は Singleton。メニューの項目は、<see cref="ITrayMenuSource"/> を <c>AddTrayMenuSource</c> で登録した機能の並び順の値の順に並ぶ (直接登録した元は値 0 で、登録順)。
-    /// <see cref="TrayIcon"/> は UI スレッドで解決すること (UI スレッドのディスパッチャーを覚えるため)。
+    /// トレイを使うアプリだけが呼ぶ。<see cref="AddMmmSdkWinUI"/> には含まれない。
+    /// <see cref="TrayIcon"/> は Singleton。メニューの項目は、<see cref="ITrayMenuSource"/> を <c>AddTrayMenuSource</c> で登録した機能の並び順の値の順に並ぶ。直接登録した元は値 0 で、登録順。
+    /// <see cref="TrayIcon"/> は UI スレッドで解決すること。UI スレッドのディスパッチャーを覚えるため。
     /// </remarks>
     public static IServiceCollection AddMmmSdkTray(this IServiceCollection services, TrayIconOptions options)
     {

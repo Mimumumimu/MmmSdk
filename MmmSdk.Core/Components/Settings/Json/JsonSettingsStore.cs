@@ -10,10 +10,10 @@ namespace MmmSdk.Core.Components.Settings.Json;
 /// </summary>
 /// <param name="store">JSON ファイルの読み書き</param>
 /// <remarks>
-/// 内部では「キー → JSON 要素」の辞書をメモリに持ち、取得時に目的の型へ変換する。最初のアクセスで 1 度だけ読み込む (<see cref="EnsureLoadedAsync"/> で先に非同期で読んでおくと、最初のアクセスで UI スレッドを止めない)。
-/// ファイルが無い・空・壊れているときは空として扱う。壊れていたファイルは退避してから作り直す (<see cref="RecoveryMessage"/> に残す)。
-/// ロック・権限などで読めなかったときは空として扱うが、元のファイルを上書きしないよう、保存はしない (<see cref="IsReadOnly"/>)。一時的なロックだったかもしれないので、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存する。
-/// 保存は、変更後のコピーをファイルに書き、成功してからメモリの辞書を差し替える (保存に失敗したとき、メモリだけが新しい状態にならない)。
+/// 内部では「キー → JSON 要素」の辞書をメモリに持ち、取得時に目的の型へ変換する。最初のアクセスで 1 度だけ読み込む。<see cref="EnsureLoadedAsync"/> で先に非同期で読んでおくと、最初のアクセスで UI スレッドを止めない。
+/// ファイルが無い・空・壊れているときは空として扱う。壊れていたファイルは退避してから作り直す。残すのは <see cref="RecoveryMessage"/>。
+/// ロック・権限などで読めなかったときは空として扱うが、元のファイルを上書きしないよう、保存はしない。判定は <see cref="IsReadOnly"/>。一時的なロックだったかもしれないので、保存のたびに 1 度だけ読み直し、読めれば、そのまま保存する。
+/// 保存は、変更後のコピーをファイルに書き、成功してからメモリの辞書を差し替える。保存に失敗したとき、メモリだけが新しい状態にならないため。
 /// </remarks>
 public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
 {
@@ -160,7 +160,7 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>保存したら true。読み取り専用 (読み込みに失敗している)ため保存しなかったら false</returns>
     /// <remarks>書き換えたあとの内容を保存の順番どおりに書く。何も変わらなかったときも書くが、実害はない。</remarks>
-    /// <exception cref="DataFileException">保存に失敗した (ロック・権限など)。このときメモリの辞書は変えない。</exception>
+    /// <exception cref="DataFileException">保存に失敗した。原因はロック・権限など。このときメモリの辞書は変えない。</exception>
     private async Task<bool> UpdateAsync(Action<Dictionary<string, JsonElement>> change, CancellationToken cancellationToken)
     {
         await _saveLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -216,7 +216,7 @@ public sealed class JsonSettingsStore(IJsonFileStore store) : ISettingsStore
     /// <summary>ファイルを読み込んで、辞書と読み込みの結果を更新する。呼ぶ側は <c>_gate</c> を取っておくこと</summary>
     /// <remarks>
     /// 読めなかったとき (<see cref="DataFileException"/>)は、結果を失敗にして、辞書は空のまま (すでに読めていた辞書は残す)にする。
-    /// 壊れたファイルを退避したときのメッセージは、読み直しても残す (最初の読み込みで起きた退避を、画面で知らせ続けるため)。
+    /// 壊れたファイルを退避したときのメッセージは、読み直しても残す。最初の読み込みで起きた退避を、画面で知らせ続けるため。
     /// </remarks>
     private void Load()
     {

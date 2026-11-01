@@ -11,6 +11,6 @@ public interface IFeatureDisableConfirmation
     string FeatureKey { get; }
 
     /// <summary>オフにしてよいかを確かめる</summary>
-    /// <returns>オフにしてよければ true (確認が要らないとき、確認で了承されたとき)。取りやめるときは false</returns>
+    /// <returns>オフにしてよければ true で、確認が要らないとき、確認で了承されたとき。取りやめるときは false</returns>
     Task<bool> ConfirmAsync();
 }

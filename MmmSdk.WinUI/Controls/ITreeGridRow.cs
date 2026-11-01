@@ -4,9 +4,9 @@ namespace MmmSdk.WinUI.Controls;
 
 /// <summary><see cref="TreeGridView"/> の 1 行 (見えている行を 1 つにならした一覧の要素)</summary>
 /// <remarks>
-/// 開閉の状態と、開閉に合わせた行の増減は、使う側が持つ (表は、字下げと開閉ボタンを描き、押されたことを <see cref="TreeGridView.RowToggleRequested"/> で知らせるだけ)。
+/// 開閉の状態と、開閉に合わせた行の増減は、使う側が持つ。表は、字下げと開閉ボタンを描き、押されたことを <see cref="TreeGridView.RowToggleRequested"/> で知らせるだけ。
 /// セルは、普段は表示用の見た目だけを出し、入力するときだけ、その列の入力用の見た目 (<see cref="TreeGridColumn.EditTemplate"/>)に切り替わる。
-/// 値が変わったときは <see cref="INotifyPropertyChanged.PropertyChanged"/> を発火する (表が、字下げと開閉ボタンを描き直す)。
+/// 値が変わったときは <see cref="INotifyPropertyChanged.PropertyChanged"/> を発火する。表が、字下げと開閉ボタンを描き直す。
 /// </remarks>
 public interface ITreeGridRow : INotifyPropertyChanged
 {
@@ -28,6 +28,6 @@ public interface ITreeGridRow : INotifyPropertyChanged
 
     /// <summary>このセルを、入力できるか (<see cref="TreeGridColumn.EditTemplate"/> を持つ列だけが対象)</summary>
     /// <param name="columnKey">列のキー</param>
-    /// <returns>入力できるなら true (既定)。計算値の表示など、入力できないセルは false</returns>
+    /// <returns>入力できるなら true で、既定。計算値の表示など、入力できないセルは false</returns>
     bool CanEdit(string columnKey) => true;
 }

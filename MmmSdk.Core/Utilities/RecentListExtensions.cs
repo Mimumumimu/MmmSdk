@@ -3,7 +3,7 @@ namespace MmmSdk.Core.Utilities;
 /// <summary>「最近使った順」のリスト (先頭が最新)の操作</summary>
 public static class RecentListExtensions
 {
-    /// <summary>項目を先頭に入れる (同じ項目があれば先頭へ移す)。最大件数を超えた古いものは捨てる</summary>
+    /// <summary>項目を先頭に入れる。同じ項目があれば先頭へ移す。最大件数を超えた古いものは捨てる</summary>
     /// <typeparam name="T">項目の型</typeparam>
     /// <param name="list">最近使った順のリスト (先頭が最新)</param>
     /// <param name="item">先頭に入れる項目</param>

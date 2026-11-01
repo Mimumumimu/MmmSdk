@@ -1,6 +1,6 @@
 # SQLite のデータベースファイル
 
-`MmmSdk.Db.Sqlite`(`net10.0`)の設計。SQLite のデータベースファイルを開いて、版を上げる汎用の部品で、表・SQL・業務の知識は持たない。外部のドライバー `Microsoft.Data.Sqlite` を参照する。独立したプロジェクトにするのは、`MmmSdk.Core` がトリミング・AOT 対応を宣言していて、`Microsoft.Data.Sqlite` が含むネイティブ DLL (`e_sqlite3.dll`)がその宣言と合わないため (ドライバーを使わないアプリには、その DLL が入らない。[architecture.md](architecture.md) の「依存先の違い」。`MmmSdk.Db.SqlServer` と同じ理由)。
+`MmmSdk.Db.Sqlite`(`net10.0`)の設計。SQLite のデータベースファイルを開いて、版を上げる汎用の部品で、表・SQL・業務の知識は持たない。外部のドライバー `Microsoft.Data.Sqlite` を参照する。独立したプロジェクトにするのは、`MmmSdk.Core` がトリミング・AOT 対応を宣言していて、`Microsoft.Data.Sqlite` が含むネイティブ DLL (`e_sqlite3.dll`)がその宣言と合わないため。ドライバーを使わないアプリには、その DLL が入らない。理由は `MmmSdk.Db.SqlServer` と同じで、[architecture.md](architecture.md) の「依存先の違い」にある。
 
 ## 型
 名前空間は `MmmSdk.Db.Sqlite.Components.Connections`。
@@ -8,7 +8,7 @@
 | 型 | 内容 |
 | --- | --- |
 | `SqliteDatabaseOptions` | 設定。`FilePath`(ファイルのパス)・`Migrations`(版を上げるスクリプト)・`SchemaSql`(あるべき表と索引の SQL で、無ければ点検しない)・`ColumnRenames`(列の名前の変更)・`ColumnReplacements`(列の置き換え)・`BusyTimeoutSeconds`(ロックを待つ秒数。既定は 30) |
-| `SqliteMigration` | 版を上げるスクリプト 1 つ(`Version`・`Sql`) |
+| `SqliteMigration` | 版を上げるスクリプト 1 つ (`Version`・`Sql`) |
 | `SqliteColumnRename` | 列の名前の変更 1 つ (`Table`・`OldName`・`NewName`) |
 | `SqliteColumnReplacement` | 列の置き換え 1 つ (`Table`・`OldName`・`NewName`・`NewValueSql`) |
 | `SqliteDatabase` | ファイルを開いて処理を実行する入口。`RunAsync`(接続を開いて処理)・`RunInTransactionAsync`(書き込みのトランザクションの中で処理)・`RecoveryMessage`(壊れたファイルを退避したときのメッセージ) |
@@ -30,7 +30,7 @@ await database.RunInTransactionAsync(async (connection, transaction) =>
 ```
 
 ## 決まり
-- **開くとき**: 最初の 1 度だけ、フォルダとファイルを作り、`PRAGMA user_version` より新しい版のスクリプトを順に 1 つのトランザクションで実行して、`user_version` を更新する。スクリプトは何度流しても壊れない形(`IF NOT EXISTS`)にする
+- **開くとき**: 最初の 1 度だけ、フォルダとファイルを作り、`PRAGMA user_version` より新しい版のスクリプトを順に 1 つのトランザクションで実行して、`user_version` を更新する。スクリプトは何度流しても壊れない形 (`IF NOT EXISTS`)にする
 - **あるべき形の点検**: `SchemaSql` があるときは、版の更新のあと、同じトランザクションの中で、実際の DB と比べて、足りないものを足す (`SqliteSchemaRepair`)
   - 足りない列は、`CREATE TABLE` に書いた定義のまま `ALTER TABLE ... ADD COLUMN` で足す。`CHECK` も含む。列は表の末尾に付く。
   - そのあと、`SchemaSql` を流して、足りない表と索引を作る。列を使う索引は、列を足してからでないと作れないため、この順にする。
@@ -50,7 +50,7 @@ await database.RunInTransactionAsync(async (connection, transaction) =>
   - 点検のあとに行う。新しい列を、あるべき形の定義 (新しい `CHECK` つき)で足してから、値を移すため。名前の変更が点検の前なのは、新しい名前の空の列を足させないためで、順序が逆になる。
   - 古い列を、索引・ビュー・トリガーが使っていると、落とせない。
   - `DROP COLUMN` は SQLite 3.35 以降の機能で、Microsoft.Data.Sqlite が同梱する SQLite は、これを満たす。
-- **壊れたファイル**: DB として開けない(`SQLITE_NOTADB`・`SQLITE_CORRUPT`)ときは、同じフォルダの `名前.broken-yyyyMMdd-HHmmss.db`(同じ秒なら `-2` 以降)へ名前を変えて退避し、空の DB を作り直して `RecoveryMessage` に知らせる。自動では消さない。ロック・権限などの IO エラーは退避できないので、`DataFileException` にして止める
-- **接続**: 処理のたびに開いて閉じる。接続プールは使わない(閉じた接続がファイルを掴んだままにならず、退避やバックアップのコピーが妨げられない)。ジャーナルは既定の方式(`DELETE`)で、ファイルが 1 つのまま残る
-- **書き込み**: `RunInTransactionAsync` は書き込みの許可を最初に取る(`BEGIN IMMEDIATE`)。読んでから書く処理の途中で、ほかの書き込みに割り込まれない。ロックは `BusyTimeoutSeconds` まで待つ
-- 外部キーは使わない(SQLite は既定でも無効のまま)
+- **壊れたファイル**: DB として開けない (`SQLITE_NOTADB`・`SQLITE_CORRUPT`)ときは、同じフォルダの `名前.broken-yyyyMMdd-HHmmss.db`(同じ秒なら `-2` 以降)へ名前を変えて退避し、空の DB を作り直して `RecoveryMessage` に知らせる。自動では消さない。ロック・権限などの IO エラーは退避できないので、`DataFileException` にして止める
+- **接続**: 処理のたびに開いて閉じる。接続プールは使わない。閉じた接続がファイルを掴んだままにならず、退避やバックアップのコピーが妨げられない。ジャーナルは既定の方式 (`DELETE`)で、ファイルが 1 つのまま残る
+- **書き込み**: `RunInTransactionAsync` は書き込みの許可を最初に取る。方式は `BEGIN IMMEDIATE`。読んでから書く処理の途中で、ほかの書き込みに割り込まれない。ロックは `BusyTimeoutSeconds` まで待つ
+- 外部キーは使わない (SQLite は既定でも無効のまま)

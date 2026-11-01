@@ -6,10 +6,10 @@ namespace MmmSdk.Core.Components.Holidays;
 /// <summary>日本の国民の祝日・休日の判定</summary>
 /// <remarks>
 /// 内閣府が公開している「国民の祝日」の一覧 (<c>syukujitsu.csv</c>。1955 年から、公開されている最後の年まで)を、
-/// アプリの <c>Assets/Holidays/syukujitsu.csv</c> から読む (ダウンロードしたままの Shift_JIS のファイル。UTF-8 でも読める)。外へは通信しない。
+/// アプリの <c>Assets/Holidays/syukujitsu.csv</c> から読む。ダウンロードしたままの Shift_JIS のファイルで、UTF-8 でも読める。外へは通信しない。
 /// ファイルを、内閣府の最新の一覧に置き換えると、次にアプリを起動したときから、新しい年の祝日が使える。
 /// ファイルが無い・読めないときと、一覧に無い年 (最後の年より先)は、祝日として扱わない。
-/// 出典: 内閣府「国民の祝日について」(https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html)。
+/// 出典: 内閣府「国民の祝日について」で、https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html にある。
 /// 公共データ利用規約 (第 1.0 版)に従い、出典を、配布物のライセンスの一覧に書く。
 /// </remarks>
 public static class JapaneseHolidays

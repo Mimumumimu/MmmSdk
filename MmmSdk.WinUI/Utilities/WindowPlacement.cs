@@ -13,7 +13,7 @@ public static class WindowPlacement
     /// <param name="size">ウィンドウの大きさ (物理ピクセル)</param>
     /// <param name="workArea">収める作業領域</param>
     /// <returns>作業領域に収まるようにずらした左上の位置</returns>
-    /// <remarks>計算は <see cref="ScreenGeometry.ClampToWorkArea"/>(型の変換だけをここで行う)。</remarks>
+    /// <remarks>計算は <see cref="ScreenGeometry.ClampToWorkArea"/> で行い、型の変換だけをここで行う。</remarks>
     public static PointInt32 ClampToWorkArea(PointInt32 position, SizeInt32 size, RectInt32 workArea)
     {
         var clamped = ScreenGeometry.ClampToWorkArea(

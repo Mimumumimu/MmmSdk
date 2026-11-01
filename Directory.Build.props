@@ -1,17 +1,17 @@
 <Project>
   <!-- SDK の全プロジェクト共通の設定。プロジェクト固有の設定 (対象フレームワーク・WinUI 等)は各 csproj に書く -->
   <PropertyGroup>
-    <!-- SDK のバージョン (major.minor.patch。アプリとは別に上げる)。ファイル・アセンブリのバージョンはここから自動で 4 桁 (0.1.0.0)になる -->
+    <!-- SDK のバージョン (major.minor.patch)で、アプリとは別に上げる。ファイル・アセンブリのバージョンはここから自動で 4 桁 (0.1.0.0)になる -->
     <Version>0.1.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- XML ドキュメントコメントの検査 (書き漏れ・参照切れを警告にする)。未使用 using の検査 (IDE0005)にも必要 -->
+    <!-- XML ドキュメントコメントの検査で、書き漏れ・参照切れを警告にする。未使用 using の検査 (IDE0005)にも必要 -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- .editorconfig のコードスタイルをビルド時にも検査する -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!--
-      全プロジェクトを x64 専用にする (Core も含めて AnyCPU を使わない)。
-      Platforms は VS で選べる一覧なので、既定の Platform も x64 にする (-p:Platform を付けないビルドで AnyCPU にならないように。CsWin32 は AnyCPU では一部の API を作れない)
+      全プロジェクトを x64 専用にする。Core も含めて AnyCPU を使わない。
+      Platforms は VS で選べる一覧なので、既定の Platform も x64 にする。-p:Platform を付けないビルドで AnyCPU にならないようにするため。CsWin32 は AnyCPU では一部の API を作れない
     -->
     <Platforms>x64</Platforms>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>

@@ -23,7 +23,7 @@ public sealed class WindowPositionService(ISettingsStore store) : IWindowPositio
     }
 
     /// <inheritdoc />
-    /// <remarks>設定ストアが読み取り専用 (読み込みに失敗している)のときは、保存しない (位置が残らなくても困らないので、呼ぶ側には知らせない)。</remarks>
+    /// <remarks>設定ストアが読み取り専用 (読み込みに失敗している)のときは、保存しない。位置が残らなくても困らないので、呼ぶ側には知らせない。</remarks>
     public Task SaveAsync(string key, WindowPosition position) =>
         store.SetAsync(KeyPrefix + key, position, WindowPositionJsonContext.Readable.WindowPosition);
 

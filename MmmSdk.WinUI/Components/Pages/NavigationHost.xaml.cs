@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using MmmSdk.Core.Components.Features;
+using MmmSdk.Core.Utilities;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Win32;
@@ -258,7 +259,7 @@ public sealed partial class NavigationHost : UserControl
         }
 
         var pageSize = new Windows.Foundation.Size(ContentFrame.ActualWidth, ContentFrame.ActualHeight);
-        _detacher.Open(item, () => ViewModel.SelectAnotherThan(item), pageSize, MainAppWindow(), at);
+        _detacher.OpenAsync(item, () => ViewModel.SelectAnotherThan(item), pageSize, MainAppWindow(), at).Forget();
     }
 
     /// <summary>このサイドバーを載せているウィンドウを取得する</summary>
@@ -274,6 +275,11 @@ public sealed partial class NavigationHost : UserControl
     /// <param name="isDetached">外しているか</param>
     /// <returns>外しているなら表示</returns>
     public static Visibility VisibleWhenDetached(bool isDetached) => isDetached ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>知らせがある項目にだけ、知らせの印を出すための表示の切り替え</summary>
+    /// <param name="hasBadge">知らせがあるか</param>
+    /// <returns>知らせがあるなら表示</returns>
+    public static Visibility VisibleWhenBadge(bool hasBadge) => hasBadge ? Visibility.Visible : Visibility.Collapsed;
 
     /// <summary>外せる項目で、まだ外していないものにだけ、外すボタンを置くための表示の切り替え</summary>
     /// <param name="canDetach">外せる項目か</param>

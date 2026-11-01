@@ -5,9 +5,9 @@ using System.Text.RegularExpressions;
 namespace MmmSdk.Core.Components.Paths;
 
 /// <summary>
-/// リンクのパスの解釈 (環境変数の展開・種類の判定)。
+/// リンクのパスの解釈で、環境変数の展開・種類の判定。
 /// </summary>
-/// <remarks>Windows 前提 (実行ファイルの拡張子・環境変数の展開が Windows の流儀。Windows 以外から使うと、ビルドで警告になる)。</remarks>
+/// <remarks>Windows 前提。実行ファイルの拡張子・環境変数の展開が Windows の流儀で、Windows 以外から使うと、ビルドで警告になる。</remarks>
 [SupportedOSPlatform("windows")]
 public static partial class PathTarget
 {
@@ -26,7 +26,7 @@ public static partial class PathTarget
 
     /// <summary>URL のパーセントエンコードのうち、日本語などの非 ASCII の文字を戻した、表示用の文字列</summary>
     /// <param name="path">入力されたパス</param>
-    /// <returns>URL のときは表示用の URL (環境変数を展開済み)。URL でないときは null</returns>
+    /// <returns>URL のときは表示用の URL で、環境変数を展開済み。URL でないときは null</returns>
     /// <remarks>
     /// 表示だけに使う。開くときは元のパスをそのまま使う。
     /// `%20` や `%2F` のような ASCII の文字は、戻すと意味が変わる (区切りになる) ので、エンコードのまま残す。

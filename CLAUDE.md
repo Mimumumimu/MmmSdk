@@ -4,7 +4,7 @@
 
 ## 作業の進め方
 
-- 各チャットの最初の応答の前に、`/csharp-dotnet` スキルを Skill ツールで読み込み、そのルールに従う (コメントの書き方など)。`MmmSdk.WinUI` を触る・答えるときだけ、`/winui3-mvvm` も読み込む。
+- 各チャットの最初の応答の前に、`/csharp-dotnet` スキルを Skill ツールで読み込み、そのルールに従う。コメントの書き方など。`MmmSdk.WinUI` を触る・答えるときだけ、`/winui3-mvvm` も読み込む。
 - アプリ側の取り込み方: アプリ側は Git サブモジュール (`external/MmmSdk`)として取り込み、プロジェクト参照でつなぐ。SDK の変更は、サブモジュールの中でコミット・push (先に)→ アプリ側で参照先の更新をコミット。サブモジュールの中で作業するときは、先に master ブランチに切り替える (detached HEAD にしない)
 - コミット・push は、ユーザーが明示的に指示するまで行わない
 - 機能の区切りで、変更した部分の README・docs を更新してから終える。これからやることが残るときは、末尾に「未実装・残りの作業」の見出しを作って書く (実装したら消し、説明は docs に移す)
@@ -13,18 +13,18 @@
 
 - プロジェクト: `MmmSdk.Core`(`net10.0`。Windows / WinUI を参照しない)と `MmmSdk.WinUI`(WinUI 3 のクラスライブラリ。Core を参照)と、外部のドライバーを持つ部品の独立したプロジェクト `MmmSdk.Db.<製品名>`(今は `MmmSdk.Db.SqlServer` と `MmmSdk.Db.Sqlite`。`net10.0`)
 - プロジェクトは、UI の有無 (Core / WinUI)と、依存先の違い (リフレクションを使うドライバーなど、Core のトリミング・AOT 対応の宣言と合わないものは `MmmSdk.Db.<製品名>` に分ける)でだけ分け、フォルダの見やすさのためには増やさない (CsWin32 が作る型は internal なので、WinUI を複数のプロジェクトに分けると宣言が散らばる。[architecture.md](docs/architecture.md))
-- プロジェクトの直下は「Components / Controls / Utilities」の 3 つの層に分け、その中を部品ごとにする (アプリの機能別フォルダと同じ考え方。層ごとの `Views/` `Services/` 等は作らない)。名前空間はフォルダどおり
-  - 層の基準: `Components/<部品>/` = 何をするための部品かを名前で言えるもの (保存・設定・通知・トレイ・ターミナル など)。その部品の型 (サービス・画面・データ・その部品専用の static や拡張メソッド・その部品の中で使うコントロール)を一式まとめて置く / `Controls/` = どの部品にも属さない、XAML に置いて使う汎用のコントロール (WinUI のみ) / `Utilities/` = どの部品にも属さない、汎用の小さな道具 (拡張メソッド・小さなヘルパー。static に限らない。サブフォルダは作らず平置き)
+- プロジェクトの直下は「Components / Controls / Utilities」の 3 つの層に分け、その中を部品ごとにする。アプリの機能別フォルダと同じ考え方で、層ごとの `Views/` `Services/` 等は作らない。名前空間はフォルダどおり。
+  - 層の基準: `Components/<部品>/` = 何をするための部品かを名前で言えるもので、保存・設定・通知・トレイ・ターミナル など。その部品の型 (サービス・画面・データ・その部品専用の static や拡張メソッド・その部品の中で使うコントロール)を一式まとめて置く / `Controls/` = どの部品にも属さない、XAML に置いて使う汎用のコントロール (WinUI のみ) / `Utilities/` = どの部品にも属さない、汎用の小さな道具で、拡張メソッド・小さなヘルパー。static に限らない。サブフォルダは作らず平置き。
   - 迷ったら「その型は、ある部品の一部か」で決め、一部ならその部品のフォルダに置く (例: `ReadableJsonOptions` は Storage、`ScreenGeometry` は WindowPositions、`SettingsStoreExtensions` は Settings、`TerminalControl` は Terminal、`ThumbnailImage` は Attachments)
   - Core と WinUI で同じテーマの部品は同じフォルダ名にする。`Interop/` は土台なので層の外。DI 登録 (`Sdk*ServiceCollectionExtensions.cs`)はプロジェクト直下
   - 部品ごとの中身の一覧は [docs/architecture.md](docs/architecture.md) の「部品の一覧」
-- DI は拡張メソッドで登録する：`AddMmmSdkCore(dataDirectory)`(IJsonFileStore・ISettingsStore・IWindowPositionService・IPathOpener・ISecretStore。実装の型ではなくインターフェースで受け取る)→ `AddMmmSdkWinUI()`(通知ダイアログ・DialogService・ファイル/フォルダー選択・クリップボード・読み上げ・無音の出力。Core を先に登録すること)。トレイを使うアプリは別に `AddMmmSdkTray(options)`、サイドバーを使うアプリは別に `AddNavigationHost()`(`AddFeatureService()` を先に登録すること)
+- DI は拡張メソッドで登録する：`AddMmmSdkCore(dataDirectory)` は、IJsonFileStore・ISettingsStore・IWindowPositionService・IPathOpener・ISecretStore を登録する。実装の型ではなくインターフェースで受け取る。次に呼ぶ `AddMmmSdkWinUI()` は、通知ダイアログ・DialogService・ファイル/フォルダー選択・クリップボード・読み上げ・無音の出力を登録する。Core を先に登録すること。トレイを使うアプリは別に `AddMmmSdkTray(options)`、サイドバーを使うアプリは別に `AddNavigationHost()` を呼ぶ。`AddFeatureService()` を先に登録すること。
 - ビルドの共通設定 (`Directory.Build.props` / `Directory.Packages.props` / `.editorconfig`)はリポジトリ直下に持つ。一般の決まりは `csharp-dotnet` スキルの「ビルドと発行の設定」に従う。アプリに取り込まれても MSBuild は近いこちらを使うので、アプリの設定とは混ざらない。アプリと共通のパッケージは SDK を先に上げる。
   - SDK 固有: `Directory.Build.props` の `AppendRuntimeIdentifierToOutputPath` で、出力先に win-x64 の段を作らない (RID の段があると、アプリの VS の「発行」が RID を渡したときだけ出力先が変わり、DLL を見つけられずに失敗する)
-- バージョンは `Directory.Build.props` の `Version`(ファイル・アセンブリのバージョンは自動で決まる)。アプリとは別に上げる。版の数字は、ほかの場所に書かない
-- Win32 の P/Invoke は CsWin32 (`Microsoft.Windows.CsWin32`。ソース生成。生成される型は internal)で書く。使う API の名前を、その部品のあるプロジェクトの `NativeMethods.txt` (`MmmSdk.WinUI` と `MmmSdk.Core` にある)に足し (用途ごとにまとめる。同じ API を 2 つに書かない)、呼び出しは `PInvoke.<API>`(`Windows.Win32`)。設定は `NativeMethods.json`(`allowMarshaling: false`・`useSafeHandles: false`。ハンドルは `HWND` などの構造体)。`Interop/NativeMethods*.cs` には、生成された API を組み合わせる小さな補助 (IME・メニューのダーク対応・フォーカスを奪わない表示など)だけを置く (internal。アプリは Win32 の宣言を持たないので、SDK の 1 か所にだけある)。GDI (メニュー項目のフォント・描画)も CsWin32 で、手書きの `LibraryImport` は SDK に残っていない
-- Core と WinUI の置き分け: BCL だけで書ける処理は、Windows 専用でも Core に置く (`[SupportedOSPlatform("windows")]` を付ける。例: `Paths`・`SingleInstance`)。WinUI の型が要るものは WinUI に置く (例: `Tray`・`NativeMessageBox`)。P/Invoke (CsWin32)は、画面を持たないアプリ (Web 版のサーバー)からも使う部品なら Core (例: `Secrets`)、そうでなければ WinUI (例: `Terminal`(PseudoConsole))に置く。Core はアプリの Core からも呼べる形を保つ
-- JSON のソース生成の Context は部品ごと (`SettingsJsonContext` / `WindowPositionJsonContext` / `FeatureJsonContext`。いずれも internal)。アプリ固有の型の登録はアプリ側の Context で行い、`ISettingsStore` / `JsonFileStore` には `JsonTypeInfo<T>` を渡す。シリアライザの設定は `ReadableJsonOptions.Create()`(public)に 1 か所だけ書き、SDK とアプリの Context がそれを使う
+- バージョンは `Directory.Build.props` の `Version`。ファイル・アセンブリのバージョンは自動で決まる。アプリとは別に上げる。版の数字は、ほかの場所に書かない。
+- Win32 の P/Invoke は CsWin32 (`Microsoft.Windows.CsWin32`)で書く。ソース生成で、生成される型は internal。使う API の名前を、その部品のあるプロジェクトの `NativeMethods.txt` (`MmmSdk.WinUI` と `MmmSdk.Core` にある)に足す。用途ごとにまとめ、同じ API を 2 つに書かない。呼び出しは `PInvoke.<API>` で、名前空間は `Windows.Win32`。設定は `NativeMethods.json` で、`allowMarshaling: false`・`useSafeHandles: false` にする。ハンドルは `HWND` などの構造体。`Interop/NativeMethods*.cs` には、生成された API を組み合わせる小さな補助 (IME・メニューのダーク対応・フォーカスを奪わない表示など)だけを置く。internal で、アプリは Win32 の宣言を持たないので、SDK の 1 か所にだけある。GDI (メニュー項目のフォント・描画)も CsWin32 で、手書きの `LibraryImport` は SDK に残っていない。
+- Core と WinUI の置き分け: BCL だけで書ける処理は、Windows 専用でも Core に置く。`[SupportedOSPlatform("windows")]` を付ける。例は `Paths`・`SingleInstance`。WinUI の型が要るものは WinUI に置く。例は `Tray`・`NativeMessageBox`。P/Invoke (CsWin32)は、画面を持たないアプリ (Web 版のサーバー)からも使う部品なら Core に置く。例は `Secrets`。そうでなければ WinUI (例: `Terminal`(PseudoConsole))に置く。Core はアプリの Core からも呼べる形を保つ。
+- JSON のソース生成の Context は部品ごとで、`SettingsJsonContext` / `WindowPositionJsonContext` / `FeatureJsonContext` がある。いずれも internal。アプリ固有の型の登録はアプリ側の Context で行い、`ISettingsStore` / `JsonFileStore` には `JsonTypeInfo<T>` を渡す。シリアライザの設定は `ReadableJsonOptions.Create()`(public)に 1 か所だけ書き、SDK とアプリの Context がそれを使う。
 
 ## 設計の基本姿勢
 
@@ -37,8 +37,8 @@
 
 ## 意図した仕様 (直さない・指摘しない)
 
-- 画像の変換 (`ImageConverter`)と添付ファイルの大きさに、上限は設けない (ユーザーの決定)。レビューで「大きな画像を元の解像度のまま展開する・添付に上限が無い」と指摘・提案しない (理由は [docs/controls.md](docs/controls.md))
-- 添付の一時フォルダ (`AttachmentStore`)は、同じアプリの別ビルド (Debug / Release など)と共有し、古いものの掃除で、同時に動いている別ビルドの 1 日より古いセッションも消える (ユーザーの決定)。レビューで「別ビルドのフォルダを消しうる」と指摘・提案しない (理由は [docs/controls.md](docs/controls.md))
+- 画像の変換 (`ImageConverter`)と添付ファイルの大きさに、上限は設けない。これはユーザーの決定。レビューで「大きな画像を元の解像度のまま展開する・添付に上限が無い」と指摘・提案しない。理由は [docs/controls.md](docs/controls.md) にある。
+- 添付の一時フォルダ (`AttachmentStore`)は、同じアプリの別ビルド (Debug / Release など)と共有し、古いものの掃除で、同時に動いている別ビルドの 1 日より古いセッションも消える。これはユーザーの決定。レビューで「別ビルドのフォルダを消しうる」と指摘・提案しない。理由は [docs/controls.md](docs/controls.md) にある。
 - 通知ウィンドウのリンクのクリック判定の方式は変えない (ユーザーの決定。[docs/notification-dialog.md](docs/notification-dialog.md) の「リンクのクリック判定」)
 
 ## ドキュメント

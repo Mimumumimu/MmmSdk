@@ -6,13 +6,13 @@ namespace MmmSdk.WinUI.Components.Dialogs;
 
 /// <summary>ダイアログの親を決めて、ダイアログ・モーダルウィンドウを開く</summary>
 /// <remarks>
-/// 最後に操作した (アクティブになった)ウィンドウの上に表示する。対象は、<see cref="TrackWindow"/> で登録した普通のウィンドウと、開いているモーダルウィンドウ (<see cref="ShowModalAsync"/>)。
-/// 操作したウィンドウの上に出すので、別のウィンドウでモーダルが開いていても、操作したほうの上に出る (メイン画面の一覧から開いた入力画面が、リマインダーのメイン画面から開いた一覧の上に出ない)。
+/// 最後に操作した (アクティブになった)ウィンドウの上に表示する。対象は、<see cref="TrackWindow"/> で登録した普通のウィンドウと、開いているモーダルウィンドウ。開くのは <see cref="ShowModalAsync"/>。
+/// 操作したウィンドウの上に出すので、別のウィンドウでモーダルが開いていても、操作したほうの上に出る。メイン画面の一覧から開いた入力画面が、リマインダーのメイン画面から開いた一覧の上に出ない。
 /// まだアクティブになったことがないとき (開く直前のモーダルなど)は、いちばん手前のモーダルウィンドウ、無ければ登録した普通のウィンドウの順に選ぶ。
-/// 親にするのは、見えているウィンドウだけ (× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えない)。見えているものが無いときだけ、隠れたウィンドウを返す (<see cref="Owner"/>)。
+/// 親にするのは、見えているウィンドウだけ。× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えない。見えているものが無いときだけ、隠れたウィンドウを返す。返すのは <see cref="Owner"/>。
 /// 確認ダイアログは、同時に 1 つしか開けない (<c>ContentDialog</c> は、同じ画面に 2 つ同時に開くと例外になる)ので、順番に開く。
-/// モーダルウィンドウは開いている間だけ覚えておき、その上で開くダイアログの親にする (一覧の上に入力画面・確認を重ねるため)。
-/// アプリ固有の画面は、アプリ側のサービスが <see cref="IDialogHost"/> の <see cref="Owner"/> と <see cref="ShowModalAsync"/> (ウィンドウ)、<see cref="Attach"/> (<c>ContentDialog</c>。親の画面とテーマを渡す)を使って開く (具象型ではなく、<see cref="IDialogHost"/> / <see cref="IDialogService"/> に依存する)。UI スレッドから呼ぶ。
+/// モーダルウィンドウは開いている間だけ覚えておき、その上で開くダイアログの親にする。一覧の上に入力画面・確認を重ねるため。
+/// アプリ固有の画面は、アプリ側のサービスが <see cref="IDialogHost"/> の <see cref="Owner"/> と <see cref="ShowModalAsync"/> でウィンドウを、<see cref="Attach"/> で <c>ContentDialog</c> を開く。<see cref="Attach"/> には親の画面とテーマを渡す。開くときは、具象型ではなく、<see cref="IDialogHost"/> / <see cref="IDialogService"/> に依存する。UI スレッドから呼ぶ。
 /// </remarks>
 public sealed class DialogService : IDialogService, IDialogHost
 {
@@ -22,7 +22,7 @@ public sealed class DialogService : IDialogService, IDialogHost
     /// <summary>親の候補にした普通のウィンドウ (登録順。閉じられたら外す)</summary>
     private readonly List<Window> _tracked = [];
 
-    /// <summary>最後に操作した (アクティブになった)ウィンドウ (普通のウィンドウ・モーダルウィンドウ)。無い・閉じられたら null</summary>
+    /// <summary>最後に操作した (アクティブになった)ウィンドウで、普通のウィンドウ・モーダルウィンドウ。無い・閉じられたら null</summary>
     private Window? _lastActive;
 
     /// <summary>確認ダイアログを順番に開くためのロック</summary>
@@ -104,7 +104,7 @@ public sealed class DialogService : IDialogService, IDialogHost
                 Content = message,
                 PrimaryButtonText = primaryText,
                 CloseButtonText = closeText,
-                // 取り消しにくい操作なので、既定のボタンを置かない (Enter で誤って実行しない)。
+                // 取り消しにくい操作なので、既定のボタンを置かない。Enter で誤って実行しないため。
                 // キャンセルを既定にすると、キャンセルが強調色になり、主な操作に見えてしまうため、どちらも強調しない
                 DefaultButton = ContentDialogButton.None,
             };
@@ -194,15 +194,26 @@ public sealed class DialogService : IDialogService, IDialogHost
     }
 
     /// <inheritdoc />
+    public bool IsClosingAll { get; private set; }
+
+    /// <inheritdoc />
     public void CloseAll(Window? keep)
     {
-        // 閉じる処理の中で、覚えている一覧が変わる (閉じた結果を待っていた処理が続く)ので、写しを取ってから閉じる
-        foreach (var window in _modals.Reverse<Window>().Concat(_tracked.Reverse<Window>()).Distinct().ToList())
+        IsClosingAll = true;
+        try
         {
-            if (window != keep)
+            // 閉じる処理の中で、覚えている一覧が変わる (閉じた結果を待っていた処理が続く)ので、写しを取ってから閉じる
+            foreach (var window in _modals.Reverse<Window>().Concat(_tracked.Reverse<Window>()).Distinct().ToList())
             {
-                window.Close();
+                if (window != keep)
+                {
+                    window.Close();
+                }
             }
+        }
+        finally
+        {
+            IsClosingAll = false;
         }
     }
 

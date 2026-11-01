@@ -3,7 +3,7 @@ namespace MmmSdk.WinUI.Controls;
 /// <summary><see cref="TreeGridView"/> に渡す行の一覧を、あるべき並びに、差分だけで合わせる</summary>
 /// <remarks>
 /// 行を作り直さず、同じ行を使い回して並びだけを直すので、入力欄の位置・フォーカス・スクロールの位置が保たれる。
-/// 行を動かす通知 (<c>Move</c>)は使わない (表が扱わないことがあるため。外して入れ直す)。
+/// 行を動かす通知 (<c>Move</c>)は使わない。表が扱わないことがあるため、外して入れ直す。
 /// </remarks>
 public static class TreeGridRowSync
 {

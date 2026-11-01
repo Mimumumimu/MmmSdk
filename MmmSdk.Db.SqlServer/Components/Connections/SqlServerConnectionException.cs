@@ -6,7 +6,7 @@ namespace MmmSdk.Db.SqlServer.Components.Connections;
 /// SQL Server に接続できなかったときの例外。メッセージはそのまま画面に出せる。
 /// </summary>
 /// <param name="message">画面に出せるメッセージ</param>
-/// <param name="innerException">元の例外 (<see cref="SqlException"/>)。ログに残す</param>
+/// <param name="innerException">元の例外で、<see cref="SqlException"/>。ログに残す</param>
 /// <remarks>原因で処理を分けたいとき (たとえば、証明書の検証の失敗のときだけ、別の接続を試す)は、メッセージの文字を調べず、<see cref="IsUntrustedCertificate"/> を使う。</remarks>
 public sealed class SqlServerConnectionException(string message, SqlException innerException) : Exception(message, innerException)
 {
