@@ -76,9 +76,12 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Clipboards`: IClipboardService・ClipboardService・ClipboardFormats (クリップボードのテキストの読み書きと、載っている中身の種類の判定。名前空間を `Clipboard` にすると `DataTransfer.Clipboard` の型名を隠すので複数形)
 - `.Attachments`: IImageConverter・ImageConverter・ThumbnailImage (添付の画像の変換とサムネイル)
 - `.Windowing`: PseudoModal・WindowBoundsKeeper・DefaultWindowPlacement
-- `.DaysOfWeek`: WeekdayPicker と WeekdayColors
+- `.DaysOfWeek`: WeekdayPicker と WeekdayColors と CalendarHolidayColoring
   - `WeekdayPicker` は、月〜日の 7 つのトグルボタンで、`Value` に曜日フラグが出る。土は青、日は赤の文字
-  - `WeekdayColors` は、土日の文字の色で、ライト・ダークの両方の値を持つ。スケジュールの日付も同じ色を使う
+  - `WeekdayColors` は、土日の文字の色で、ライト・ダークの両方の値を持つ。スケジュールの日付と、日付を選ぶカレンダーの線も、同じ色を使う
+  - `CalendarHolidayColoring` は、`CalendarDatePicker` に付ける添付プロパティ `IsEnabled`。開いたカレンダーの日の下に、土曜は青、日曜と祝日 (`JapaneseHolidays`)は赤の線を付ける。アプリの既定のスタイルで全部の選択欄に効かせる
+  - 日の数字の文字の色は変えない。日の数字は内部の描画で、日ごとに色を変えられないため
+  - 日ごとに指定できる `SetDensityColors` の線を使う
 - `.Errors`: ErrorState・FatalErrorHandler
 - `.WebViews`: WebView2Setup (WebView2 を、保存先を指定して初期化する。TerminalControl など、WebView2 を使う部品が共有する)
 - `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・TerminalOutputWatcher・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く
