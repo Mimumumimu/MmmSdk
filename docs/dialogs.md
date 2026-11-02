@@ -64,7 +64,7 @@
 - テンプレートが適用される前 (`Loaded` より前)は見つからない
 
 ## WindowExtensions (`MmmSdk.WinUI.Utilities`)
-- `SetForeground`: ウィンドウを前面に出す。`Activate` のあとに呼ぶ。別のアプリが前面にあると、Windows の制限で前面にならないことがある
+- `SetForeground` (`Window` と `AppWindow` の拡張): ウィンドウを前面に出す。`Window` 版は `Activate` のあとに呼ぶ。`AppWindow` 版は、`Window` を持たない画面の部品が、`XamlRoot.ContentIslandEnvironment.AppWindowId` から取った `AppWindow` で呼ぶ。別のアプリが前面にあると、Windows の制限で前面にならないことがある
 - `FlashTaskbarIfInactive` (`AppWindow` の拡張): ウィンドウが見えていて、前面のウィンドウが同じプロセスのものでないときだけ、タスクバーのボタンを点滅させて `true` を返す。最小化中・トレイへの退避中・アプリが前面にあるときは何もしない (`false`)
   - 前面に戻ると Windows が点滅を止める (`FLASHW_TIMERNOFG`)ので、止める口は無い
   - 前面のウィンドウが同じプロセスのものなら、別ウィンドウやモーダルでも前面とみなす。アプリを使っている最中に点滅させないため
