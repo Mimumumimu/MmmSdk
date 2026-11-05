@@ -122,6 +122,27 @@ public sealed partial class TreeGridView : UserControl
     /// <summary>クリックで選ぶ列 (<see cref="TreeGridColumn.IsInvokable"/>)のセルが、クリックされた</summary>
     public event EventHandler<TreeGridCellEventArgs>? CellInvoked;
 
+    /// <summary>セルの中の要素に付けて、その中のクリックでは、入力を始めない場所にする (添付プロパティ)</summary>
+    /// <remarks>
+    /// 名前のセルの右端の、押せる印を並べた領域のように、印と印のすき間のクリックでも、入力を始めたくない所に付ける。
+    /// 要素がクリックを受けるよう、背景は透明で塗っておくこと。背景が無いと、すき間のクリックは、要素に当たらない。
+    /// </remarks>
+    public static readonly DependencyProperty NoEditAreaProperty = DependencyProperty.RegisterAttached(
+        "NoEditArea",
+        typeof(bool),
+        typeof(TreeGridView),
+        new PropertyMetadata(false));
+
+    /// <summary><see cref="NoEditAreaProperty"/> の値を読む</summary>
+    /// <param name="element">要素</param>
+    /// <returns>入力を始めない場所なら true</returns>
+    public static bool GetNoEditArea(DependencyObject element) => (bool)element.GetValue(NoEditAreaProperty);
+
+    /// <summary><see cref="NoEditAreaProperty"/> の値を書く</summary>
+    /// <param name="element">要素</param>
+    /// <param name="value">入力を始めない場所にするなら true</param>
+    public static void SetNoEditArea(DependencyObject element, bool value) => element.SetValue(NoEditAreaProperty, value);
+
     /// <summary>入力できる行の、固定の列の背景 (null なら、既定の色)</summary>
     /// <remarks>
     /// 固定の列を、スクロールする列と、背景の色で区別したいときに使う。例は、初回だけ入力する列を、薄い色にする。

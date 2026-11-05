@@ -601,8 +601,14 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>行の上を左クリックしたとき、その位置のセルを入力用にする</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">タップの情報</param>
+    /// <remarks>セルの中のボタン (使う側が置いた、押すと動く部品)が押されたときは、そのボタンの処理に任せて、入力は始めない。このイベントは、ボタンが処理済みにしても届くため、ここで除く。</remarks>
     private void OnRowTapped(object sender, TappedRoutedEventArgs e)
     {
+        if (IsInsideButton(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
         if (FindEditableCellAt(e.GetPosition(this)) is { } target)
         {
             StartEdit(target.Column, target.Cell);
@@ -770,6 +776,21 @@ public sealed partial class TreeGridRowPresenter : Grid
         for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
         {
             if (ReferenceEquals(current, parent))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>要素が、ボタンか、入力を始めない場所 (<see cref="TreeGridView.NoEditAreaProperty"/>)の中にあるか</summary>
+    /// <param name="element">調べる要素 (null でもよい)</param>
+    /// <returns>ボタン (押すと動く部品)か入力を始めない場所の、自身か中なら true</returns>
+    private static bool IsInsideButton(DependencyObject? element)
+    {
+        for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is Microsoft.UI.Xaml.Controls.Primitives.ButtonBase || TreeGridView.GetNoEditArea(current))
             {
                 return true;
             }
