@@ -207,7 +207,7 @@ public sealed partial class NavigationHostViewModel : ObservableObject
 
     /// <summary>場所ごとの、オンの機能の項目 (子の項目を除く)を取得する</summary>
     /// <param name="area">サイドバーの中の場所</param>
-    /// <returns>並び順の項目 (機能の並びは利用者が決めた順。同じ値は登録順)</returns>
+    /// <returns>並び順の項目。機能の並びは利用者が決めた順で、同じ値は登録順</returns>
     private List<NavigationItem> EnabledItems(NavigationArea area)
         => [.. _pages.Where(p => p.ParentKey is null && p.Area == area && _features.IsEnabled(p.FeatureKey))
             .OrderBy(p => _features.OrderOf(p.FeatureKey, p.Order))
@@ -215,7 +215,7 @@ public sealed partial class NavigationHostViewModel : ObservableObject
 
     /// <summary>親の項目の下に出す、オンの機能の子の項目を取得する</summary>
     /// <param name="parent">親の項目</param>
-    /// <returns>並び順の項目 (機能の並びは利用者が決めた順。同じ値は登録順)</returns>
+    /// <returns>並び順の項目。機能の並びは利用者が決めた順で、同じ値は登録順</returns>
     private List<NavigationItem> ChildItems(NavigationItem parent)
         => [.. _pages.Where(p => p.ParentKey == parent.Key && _features.IsEnabled(p.FeatureKey))
             .OrderBy(p => _features.OrderOf(p.FeatureKey, p.Order))

@@ -9,30 +9,30 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 
 - JSON ファイルの読み書き (一時ファイル経由で置き換えるため、書き込み途中で失敗してもファイルが壊れない)
 - 壊れた JSON ファイルの自動退避 (`名前.broken-yyyyMMdd-HHmmss.json` に名前を変えて残し、空として読み込む)
-- アプリ共通の汎用設定ストア (キー → 任意の型の値。1 ファイルに集約・スレッドセーフ)
+- アプリ共通の汎用設定ストア。キー → 任意の型の値で、1 ファイルに集約・スレッドセーフ
 - ウィンドウ位置の保存・復元、画面外に出たウィンドウの判定
 - URL・ファイル・フォルダー・実行ファイルを既定のアプリで開く処理と、パスの種類の判定 (環境変数の展開つき)
-- デスクトップ通知のダイアログ (フォーカスを奪わない常に最前面のウィンドウ。ドラッグ移動・位置保存・クリックで閉じる・本文のリンク)
-- 日本語の読み上げ (Windows 標準の音声合成。読み上げ中に次を呼ぶと差し替える)
+- デスクトップ通知のダイアログ。フォーカスを奪わない常に最前面のウィンドウで、ドラッグ移動・位置保存・クリックで閉じる・本文のリンクに対応
+- 日本語の読み上げ。Windows 標準の音声合成で、読み上げ中に次を呼ぶと差し替える
 - 確認ダイアログ・ファイル/フォルダー選択 (親ウィンドウを自動で決める)と、ウィンドウを親の上に擬似モーダルで出す部品
 - 同一 EXE の多重起動の防止
 - アプリの初期化 (XAML の読み込み)より前でも出せる標準のメッセージボックス
 - エラーのログ (日付ごとのファイル)と、復旧できないエラーの処理は、ログ → ダイアログ → 終了の順。未処理の例外の最後の受け皿
 - ターミナル (ConPTY でシェルを動かし、WebView2 上の xterm.js で描く画面)と、既定のシェルの決定 (PowerShell 7 → Windows PowerShell)・シェル別のコマンド作り
 - ConPTY (Windows 擬似コンソール)にプロセスをつないで起動する部品 (ターミナルの土台)
-- タスクトレイのアイコンと右クリックメニュー (Win32 を直接使う。メニューは自前描画でダーク/ライト対応)
+- タスクトレイのアイコンと右クリックメニュー。Win32 を直接使い、メニューは自前描画でダーク/ライト対応
 - 時刻の入力欄 (`TimeInputBox`)・押せる領域 (`LinkArea`)・木構造の表 (`TreeGridView`)・IME のオン/オフ、添付ファイルの一時保存先の管理
 - ビジュアルツリーから要素を探す処理 (コントロールのテンプレート内の要素に触るため)
-- SQL Server への接続 (通信の暗号化は常に必須。SQL 認証・Windows 認証。接続の失敗は、原因ごとに画面に出せるメッセージの例外にする。別プロジェクトなので、使わないアプリには DLL が入らない)
+- SQL Server への接続。通信の暗号化は常に必須で、SQL 認証と Windows 認証に対応する。接続の失敗は、原因ごとに画面に出せるメッセージの例外にする。別プロジェクトなので、使わないアプリには DLL が入らない
 
 ## 構成
 
 | プロジェクト | 対象 |
 | --- | --- |
-| `MmmSdk.Core` | `net10.0`(WinUI に依存しない。トリミング・AOT 互換の分析を有効にしている。`Paths`(`PathOpener` / `PathTarget`)だけは Windows 前提) |
+| `MmmSdk.Core` | `net10.0`。WinUI に依存せず、トリミング・AOT 互換の分析を有効にしている。`Paths`(`PathOpener` / `PathTarget`)だけは Windows 前提 |
 | `MmmSdk.WinUI` | `net10.0-windows10.0.19041.0`(WinUI 3) |
-| `MmmSdk.Db.Sqlite` | `net10.0`(SQLite のデータベースファイルを開いて版を上げる。外部のドライバー `Microsoft.Data.Sqlite` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト) |
-| `MmmSdk.Db.SqlServer` | `net10.0`(SQL Server への接続。外部のドライバー `Microsoft.Data.SqlClient` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト) |
+| `MmmSdk.Db.Sqlite` | `net10.0`。SQLite のデータベースファイルを開いて版を上げる。外部のドライバー `Microsoft.Data.Sqlite` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト |
+| `MmmSdk.Db.SqlServer` | `net10.0`。SQL Server への接続。外部のドライバー `Microsoft.Data.SqlClient` を参照するので、トリミング・AOT 互換の分析は有効にしていない。`MmmSdk.Core` とは別のプロジェクト |
 
 プロジェクトは、UI の有無 (`Core` / `WinUI`)と、依存先の違い (外部のドライバーを持つ部品は `MmmSdk.Db.<製品名>` に分ける)で分けています。プロジェクトの直下は、「Components / Controls / Utilities」の 3 つの層に分けています。名前空間はフォルダーと同じです。
 
@@ -50,7 +50,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.Core.Components.Storage` | JSON ファイルの読み書き (`IJsonFileStore` / `JsonFileStore`)・共通の書式 (`ReadableJsonOptions`)・読み込み結果 (`DataLoadResult`)・読み書きの失敗 (`DataFileException`) |
 | `MmmSdk.Core.Components.Settings` | 汎用設定ストア (`ISettingsStore`・拡張メソッド `SettingsStoreExtensions`)と、その先読みの起動時の準備の `SettingsStoreStartup`。ホストが、各機能の準備より先に `AddStartupTask` で登録する。JSON での実装は `MmmSdk.Core.Components.Settings.Json`(`JsonSettingsStore`) |
-| `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元 (`IWindowPositionService` / `WindowPositionService` / `WindowPosition`)と、画面との位置関係の計算 (`ScreenGeometry`。見えているか・作業領域に収める) |
+| `MmmSdk.Core.Components.WindowPositions` | ウィンドウ位置の保存・復元 (`IWindowPositionService` / `WindowPositionService` / `WindowPosition`)と、画面との位置関係の計算 (`ScreenGeometry` で、見えているか・作業領域に収める) |
 | `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を、設定ファイルとは別の場所に保存する。型は `ISecretStore` / `SecretStoreException`。Windows の資格情報マネージャーに保存する実装 (`CredentialSecretStore`)もある |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理 (`IPathOpener` / `PathOpener` / `PathOpenException`)と種類の判定 (`PathTarget`) |
 | `MmmSdk.Core.Components.TextLinks` | 文章の中の `http://`・`https://` の URL を、リンクにしてよいものだけ位置つきで見つける (`TextLinkFinder` / `TextLink`) |
@@ -59,7 +59,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
 | `MmmSdk.Core.Components.Shells` | シェルの決定 (`ShellInfo` / `ShellKind` / `ShellLocator`)と、シェル別のコマンド作り・パスの変換を行う `ShellCommands`、WSL のパスの `WslPath`、ディストリビューションの `WslDistribution` |
 | `MmmSdk.Core.Components.Scheduling` | アプリ全体で 1 つの定期処理の合図 (`ITicker`)・日付が変わったことの検知 (`DayChangeWatcher`)・分単位の時刻の計算 (`MinuteTime`) |
-| `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
+| `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog` で、ファイル名は `yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
 | `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口は `IFeaturePlugin` で、ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値。機能の登録は `FeatureInfo` / `AddFeature` で、オフにできない機能は `AddAlwaysOnFeature`。どちらも、使える条件 `availableWhen` を渡せる。条件の元の値が変わったときは、`FeatureService.NotifyAvailabilityChanged` で画面に知らせる。起動時の準備は `IStartupTask` / `AddStartupTask`。オフにする前の確認は `IFeatureDisableConfirmation`。オン・オフを調べる口は `IFeatureStatus`。`FeatureService` は、状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存を行う。並び順の保存は `SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。`FeatureChangeResult` もある |
@@ -73,20 +73,20 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | --- | --- |
 | `MmmSdk.WinUI.Components.Notifications` | 通知ダイアログ (`INotificationDialogService` / `NotificationDialogService`・`NotificationWindow`・`NotificationWindowViewModel`) |
 | `MmmSdk.WinUI.Components.TextLinks` | `TextBlock` に出す文章の URL をリンクにする添付プロパティ `LinkedText`。押したときの処理は、渡したコマンドが行う |
-| `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost`。実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService`。複数選択・保存先の選択を含む)・同じ名前のファイルがあるときの確認 (`AskFileConflictAsync`) |
+| `MmmSdk.WinUI.Components.Dialogs` | 確認ダイアログ (`IDialogService`)・親の決定 (`IDialogHost` で、実装は `DialogService`)・ファイル/フォルダー選択 (`IFilePickerService` / `IFolderPickerService` で、複数選択・保存先の選択を含む)・同じ名前のファイルがあるときの確認 (`AskFileConflictAsync`) |
 | `MmmSdk.WinUI.Components.Clipboards` | クリップボードのテキストの読み書き (`IClipboardService` / `ClipboardService`)・載っている中身の種類の判定 (`ClipboardFormats`) |
-| `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService`。Windows 標準の音声合成を使う) |
-| `MmmSdk.WinUI.Components.Audio` | 無音を流し続けて、音声機器が休止するのを防ぐ (`IAudioKeepAlive` / `AudioKeepAlive`。`AudioGraph` を使う) |
+| `MmmSdk.WinUI.Components.Speech` | テキストを日本語の音声で読み上げる (`ISpeechService` / `SpeechService` で、Windows 標準の音声合成を使う) |
+| `MmmSdk.WinUI.Components.Audio` | 無音を流し続けて、音声機器が休止するのを防ぐ (`IAudioKeepAlive` / `AudioKeepAlive` で、`AudioGraph` を使う) |
 | `MmmSdk.WinUI.Components.Windowing` | ウィンドウを親の上に擬似モーダルで出す (`PseudoModal`)・位置と大きさの自動保存 (`WindowBoundsKeeper`) |
 | `MmmSdk.WinUI.Components.Pages` | 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口 (`AddNavigationPage` / `AddNavigationChildPage` / `AddSettingsSection`・`NavigationPage` / `SettingsSection`)・ページの後始末 (`IReleasablePage`)・別のウィンドウへ移すとき画面だけを作り直して状態を引き継ぐ口 (`IHandoverPage`)・ホストが作ったページを調べる口 (`IPageCache`)・サイドバーの項目の右端の知らせの丸を、機能から出し入れする口 `INavigationService.SetBadge` (選ばれている項目と外している項目には出ない)・サイドバーの本体 `NavigationHost`・`NavigationHostViewModel`・`PageProvider`、ページを別のウィンドウに外す `PageDetacher`・`DetachedPageWindow`、移動の履歴と、タイトルバーに置く「戻る」「進む」のボタン `NavigationHistoryButtons`。アプリが `AddNavigationHost()` で登録し、`NavigationHost` をウィンドウに載せて使う。`AddFeatureService()` を先に登録しておく |
 | `MmmSdk.WinUI.Components.Tray` | タスクトレイ (`TrayIcon`・`TrayIconOptions`・`ITrayMenuSource`・`TrayMenuItem`)・機能のトレイメニューの項目の登録は `AddTrayMenuSource`。DI 登録は `AddMmmSdkTray`(`SdkWinUIServiceCollectionExtensions` の中) |
-| `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl`。xterm.js で描く)と、出力に特定の文字列が出たことを見つける `TerminalOutputWatcher` と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
-| `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`。保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する) |
-| `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile`。`x:Bind` から呼ぶ) |
+| `MmmSdk.WinUI.Components.Terminal` | ターミナル (`ITerminalSession` / `PseudoConsoleSession`・`TerminalControl` で、xterm.js で描く)と、出力に特定の文字列が出たことを見つける `TerminalOutputWatcher` と、ConPTY にプロセスをつないで起動する部分 (`PseudoConsole`) |
+| `MmmSdk.WinUI.Components.WebViews` | WebView2 の初期化 (`WebView2Setup.EnsureAsync`)で、保存先を指定して初期化する。同じプロセスの WebView2 は、同じ保存先なら同じ設定が要るので、ターミナルなど WebView2 を使う部品が共有する |
+| `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile` で、`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.DaysOfWeek` | 月〜日の 7 つのトグルボタンの曜日の選択欄 `WeekdayPicker` で、土は青、日は赤の文字と、土日の文字の色 `WeekdayColors` と、`CalendarDatePicker` のカレンダーで、土曜に青、日曜と祝日に赤の線を日の下に付ける添付プロパティ `CalendarHolidayColoring` |
-| `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState`。`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
-| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表。固定の列・仮想化) |
-| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered`。`WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・`TreeView` の選択を ViewModel と合わせる補助 (`TreeViewExtensions`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
+| `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState` で、`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表で、固定の列・仮想化に対応) |
+| `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered` など、クラスは `WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・`TreeView` の選択を ViewModel と合わせる補助 (`TreeViewExtensions`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 
 #### MmmSdk.Db.Sqlite
@@ -110,7 +110,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - Microsoft.Data.Sqlite … `MmmSdk.Db.Sqlite` のみ
 - WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0 / addon-serialize 0.14.0 を、ターミナル描画と、ページを別のウィンドウへ移すときの画面の引き継ぎに使う。いずれも MIT で、`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱し、ライセンスファイルも同じ場所に置く
 - Microsoft.Extensions.DependencyInjection.Abstractions (DI 登録用の拡張メソッド)
-- System.Text.Json (ソース生成。トリミング・AOT でも動く形。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する)
+- System.Text.Json (ソース生成)で、トリミング・AOT でも動く形にする。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する
 
 ## 必要環境
 
@@ -152,8 +152,8 @@ services.AddMmmSdkWinUI();
 
 | メソッド | 登録するもの |
 | --- | --- |
-| `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`・`ISecretStore`(すべて Singleton。実装の型ではなくインターフェースで受け取る。ViewModel のテストでモックに差し替えられる) |
-| `AddFeatureService()` | `FeatureService`・`IFeatureStatus`(Singleton。機能のオン・オフの管理。ホストが 1 回だけ呼ぶ。`ISettingsStore` を先に登録しておく) |
+| `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`・`ISecretStore` を登録する。すべて Singleton で、実装の型ではなくインターフェースで受け取るので、ViewModel のテストでモックに差し替えられる |
+| `AddFeatureService()` | `FeatureService`・`IFeatureStatus` を登録する。Singleton で、機能のオン・オフの管理を行う。ホストが 1 回だけ呼び、`ISettingsStore` を先に登録しておく |
 | `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`。`TrayIcon` は Singleton。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
 | `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISpeechService` は、すべて Singleton で、`NotificationWindow`・`NotificationWindowViewModel` は Transient |
 
@@ -680,7 +680,7 @@ dotnet build .\MmmSdk.slnx
 | ファイル | 内容 |
 | --- | --- |
 | `Directory.Build.props` | 全プロジェクト共通の設定 (Nullable・XML ドキュメントコメントの検査・コードスタイルのビルド時検査など) |
-| `Directory.Packages.props` | NuGet パッケージのバージョン (中央パッケージ管理。csproj にはバージョンを書きません) |
+| `Directory.Packages.props` | NuGet パッケージのバージョンを持つ中央パッケージ管理で、csproj にはバージョンを書きません |
 | `.editorconfig` | コードスタイル。未使用の using などはビルド時に警告になります |
 
 アプリと共通のパッケージ (Windows App SDK など)のバージョンを上げるときは、SDK を先に上げてから、アプリ側を同じバージョンにします。

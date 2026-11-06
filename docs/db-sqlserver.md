@@ -8,7 +8,7 @@
 | 型 | 内容 |
 | --- | --- |
 | `SqlServerConnectionOptions` | 接続の設定。`Server`・`Database`・`Authentication`・`UserName`・`Password`・`TrustServerCertificate`・`ConnectTimeoutSeconds` |
-| `SqlServerAuthentication` | 認証の方式。`Sql`(ユーザー名とパスワード。既定)/ `Windows`(今の Windows ユーザー) |
+| `SqlServerAuthentication` | 認証の方式。`Sql`(ユーザー名とパスワードで、既定)/ `Windows`(今の Windows ユーザー) |
 | `SqlServerConnectionFactory` | 設定から接続を作って開く (`OpenAsync`) |
 | `SqlServerConnectionException` | 接続できなかったときの例外。メッセージはそのまま画面に出せる。元の `SqlException` は `InnerException` |
 
@@ -55,6 +55,6 @@ catch (SqlServerConnectionException ex)
 | データベースを開けない | 4060 | データベースを開けません。データベース名と、ユーザーの権限を確認してください。 |
 | 時間切れ | -2・258 | サーバーから時間内に応答がありません。サーバー名と、ネットワークを確認してください。 |
 | サーバーに届かない | -1・2・40・53・10060・10061 | サーバーに接続できません。サーバー名・ポートと、ネットワーク (ファイアウォール・VPN)を確認してください。 |
-| そのほか | | データベースに接続できません (元のメッセージ)。 |
+| そのほか | | データベースに接続できません。{元のメッセージ} |
 
 証明書の検証の失敗のときだけ、検証を省いて接続し直したい (呼ぶ側が決める)ときは、メッセージの文字ではなく、`SqlServerConnectionException.IsUntrustedCertificate` で見分ける。アプリが、エラー番号や文字を調べずに済み、失敗の知識がこの部品に集まる。ほかの原因で処理を分けるときも、同じ形でプロパティを足す。

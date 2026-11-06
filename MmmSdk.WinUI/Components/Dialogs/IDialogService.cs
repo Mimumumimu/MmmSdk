@@ -10,7 +10,7 @@ public interface IDialogService
     /// <param name="title">ダイアログのタイトル</param>
     /// <param name="message">確認する内容のメッセージ</param>
     /// <param name="primaryText">実行するボタンの文言で、「削除」等</param>
-    /// <param name="closeText">取りやめるボタンの文言 (「キャンセル」等。アプリの言語で渡す)</param>
+    /// <param name="closeText">取りやめるボタンの文言。「キャンセル」等を、アプリの言語で渡す</param>
     /// <returns>実行するボタンが押されたら true</returns>
     Task<bool> ConfirmAsync(string title, string message, string primaryText, string closeText);
 

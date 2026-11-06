@@ -19,7 +19,7 @@ public sealed class DialogService : IDialogService, IDialogHost
     /// <summary>開いているモーダルウィンドウ (開いた順)</summary>
     private readonly List<Window> _modals = [];
 
-    /// <summary>親の候補にした普通のウィンドウ (登録順。閉じられたら外す)</summary>
+    /// <summary>親の候補にした普通のウィンドウ。登録順で、閉じられたら外す</summary>
     private readonly List<Window> _tracked = [];
 
     /// <summary>最後に操作した (アクティブになった)ウィンドウで、普通のウィンドウ・モーダルウィンドウ。無い・閉じられたら null</summary>

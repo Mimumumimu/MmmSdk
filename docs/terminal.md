@@ -15,7 +15,7 @@
   - BCL だけで書けるので Core に置く (Windows 専用なので `[SupportedOSPlatform("windows")]`)
 - `ShellLocator.Wsl`: WSL のシェルで、システムフォルダーの `wsl.exe`。種類は `ShellKind.Wsl`。引数なしの wsl.exe は、既定のディストリビューションで、そのユーザーの既定のシェル (bash など)を起動する。開始位置は、セッションの `WorkingDirectory`(Windows のパス)を wsl.exe が Linux のパスに変換して使う。WSL が入っていない PC でも wsl.exe はあり、起動すると入れ方の案内を出して終了する
 - `WslDistribution.TryGetDefaultName(out name)`: 既定のディストリビューションの名前で、`Ubuntu` など。WSL が登録するユーザーごとのレジストリ (`HKCU\Software\Microsoft\Windows\CurrentVersion\Lxss` の `DefaultDistribution` → その下の `DistributionName`)から読む (wsl.exe を起動しないので速い)
-- `WslPath.TryToLinux(windowsPath, out linuxPath)`: Windows のパスを、WSL の中から見たパスにする (文字列の変換だけ。パスごとに wslpath を起動すると遅いため)
+- `WslPath.TryToLinux(windowsPath, out linuxPath)`: Windows のパスを、WSL の中から見たパスにする (文字列の変換だけで、パスごとに wslpath を起動すると遅いため)
   - ドライブのパス `D:\work\a.txt` → `/mnt/d/work/a.txt`。WSL の共有 `\\wsl.localhost\Ubuntu\tmp\a.jpg`(旧来の `\\wsl$\...` も)→ `/tmp/a.jpg`
   - そのほかのネットワークのパス (`\\server\share\...`)は、WSL から同じ形では開けないので変換しない (`false`)
   - ドライブの割り当て先は WSL の既定の `/mnt/` とする。`/etc/wsl.conf` の `[automount] root` を変えた環境では違うパスになる。この値は WSL の中からしか読めない。WSL の共有のパスは、ディストリビューション名を見ずに変換する
@@ -26,11 +26,11 @@
   - WSL は、パスを Linux の形にしてから `cd -- '…'` で、単一引用符なら何も展開されない。`--` で `-` から始まるパスもオプションと見なさない。中の `'` は `'\''` にする。WSL から開けないパスは作らない (`false`)
 
 ## セッション (`ITerminalSession` / `PseudoConsoleSession`)
-- シェル 1 つ分。`Shell`(既定は `ShellLocator.Default`)と `WorkingDirectory` を、`Start` の前に設定する。`PseudoConsole` でシェルを起動し、出力の読み取り (`OutputReceived`。バックグラウンドスレッドから通知)・終了の通知 (`Exited`)・入力 (`Write`)・サイズ変更 (`Resize`)を受け持つ
+- シェル 1 つ分。`Shell`(既定は `ShellLocator.Default`)と `WorkingDirectory` を、`Start` の前に設定する。`PseudoConsole` でシェルを起動し、出力の読み取り (`OutputReceived` で、バックグラウンドスレッドから通知)・終了の通知 (`Exited`)・入力 (`Write`)・サイズ変更 (`Resize`)を受け持つ
 - `InputWritten`: キー入力と `Submit` で、利用者の入力がシェルへ送られたことを通知する。xterm.js が自動で返す報告は含めない。含めると、画面をクリックしただけで「入力があった」ことになるため。報告は、フォーカスの出入りの `ESC [ I` と `ESC [ O`、マウス、端末の問い合わせへの返事。矢印キーは、終端が A〜D・H・F・~ なので、報告と見分けられる
 - `Submit(text)`: テキストを貼り付けとして入力し、続けて Enter で確定する。画面側 (`TerminalControl`)を通して xterm.js の `term.paste`(ブラケットペースト)で貼り付けるので、複数行でも CLI が 1 行ずつ実行せず、ひとまとまりで受け取る。画面が無いとき (未接続)は、そのまま書き込んで確定する
 - `RestartAsync`: 古いシェルの終了待ち (最大で数秒)を UI スレッドの外で行ってから、同じ設定で起動し直す
-- `Dispose` は同期のまま (アプリの終了時に呼ばれ、シェルを確実に終わらせる。`IAsyncDisposable` にしない理由は [conpty.md](conpty.md))
+- `Dispose` は同期のまま。アプリの終了時に呼ばれ、シェルを確実に終わらせる。`IAsyncDisposable` にしない理由は [conpty.md](conpty.md) にある。
 - 出力の UTF-8 は、状態を持つデコーダーで復元する (読み取りの切れ目で多バイト文字が分かれても壊れない)
 
 ## 出力の監視 (`TerminalOutputWatcher`)
@@ -45,7 +45,7 @@
 - 使い終わったら `Dispose` で、セッションのイベントを外す
 
 ## 画面 (`TerminalControl`)
-- WebView2 上の xterm.js で描く `UserControl`。`Session` に `ITerminalSession` を渡すと、入出力をつなぐ。`FocusTerminal()` でフォーカスを移す。表示したときと準備ができたときは、既定で自分でフォーカスを取る。入力欄が別にある画面は、`AutoFocus` を false にして取らせない。WebView2 にフォーカスがあると、ウィンドウ全体のショートカットが効かないため。画面から取り除いてもう使わないとき (タブを閉じる・ページを捨てる)は `Close()` を呼ぶ (セッションを外し、WebView2 のプロセスを解放する。呼ばないと、アプリを終了するまで残る。シェルは終了しないので、セッションの `Dispose` も呼ぶ。閉じたあとは再利用できない)
+- WebView2 上の xterm.js で描く `UserControl`。`Session` に `ITerminalSession` を渡すと、入出力をつなぐ。`FocusTerminal()` でフォーカスを移す。表示したときと準備ができたときは、既定で自分でフォーカスを取る。入力欄が別にある画面は、`AutoFocus` を false にして取らせない。WebView2 にフォーカスがあると、ウィンドウ全体のショートカットが効かないため。画面から取り除いてもう使わないとき (タブを閉じる・ページを捨てる)は `Close()` を呼ぶ。セッションを外し、WebView2 のプロセスを解放する。呼ばないと、アプリを終了するまで残る。シェルは終了しないので、セッションの `Dispose` も呼ぶ。閉じたあとは再利用できない。
 - シェルは、表示の準備 (xterm.js の `ready`)ができたときに、`Session` が渡されていれば起動する。準備のあとに `Session` を渡したときは、渡したときに起動する (起動するシェルを、読み込みなどが済んでから決めたいときは、決めてから `Session` を渡す)
 - `RestartSessionAsync()`: シェルを起動し直す。起動していなければ起動する。セッションの `Shell` を替えたあとに呼ぶ。動いているシェル (とその中の CLI)は終了する。表示の準備がまだのとき・`Session` が無いとき・起動し直しの途中は何もしない。準備ができたときに、そのときの設定で起動する。起動し直しには端末の大きさが要るので、セッションではなく画面の口にしている
 - IME の回避策: テキスト入力欄 (`TextBox`・`PasswordBox`・`RichEditBox`)から WebView2 へ直接フォーカスが移ると、タスクバーの IME は日本語入力のままなのに、キー入力が IME に渡らず英字が入る。JS 側では `keydown` の `keyCode` が 229 でなく通常のキーコードになり、`compositionstart` も出ない。別のウィンドウへ切り替えて戻るか、ほかの部品 (ツリーなど)を一度経由すると直る
@@ -65,8 +65,8 @@
 - ページの CSP は、xterm.js が `<style>` を足すため、style だけ inline を許可している
 - C# ↔ JS は JSON メッセージで、C# → JS は `output` / `submit` / `focus` / `capture` / `restore`、JS → C# は `ready` / `input` / `resize` / `written` / `snapshot`。ページは `terminal.js`
 - 出力は細切れに届くので、UI スレッドへ渡す前にまとめる。xterm.js の書き込み待ちがあふれて出力が捨てられないよう、描画の受け取り (`written`)が返っていない文字数が 1M 文字を超えたら、受け取りが返るまで送らない
-- シェルが終了したあとは、何かキーを押すと再起動する (押されたキーは捨てる。終了待ちの間のキーも捨てて、二重に起動し直さない)
-- WebView2 を初期化できなかったとき (ランタイムが無い・起動できない。`COMException`)は、画面の場所に理由を文字で出す。ほかの機能は使い続けられる。`COMException` 以外の例外は、未処理例外の受け皿が受ける
+- シェルが終了したあとは、何かキーを押すと再起動する (押されたキーと、終了待ちの間のキーは捨てて、二重に起動し直さない)
+- WebView2 を初期化できなかったとき (ランタイムが無い・起動できないときの `COMException`)は、画面の場所に理由を文字で出す。ほかの機能は使い続けられる。`COMException` 以外の例外は、未処理例外の受け皿が受ける
 - シェルの起動に失敗したとき (`Win32Exception`・`COMException`・`InvalidOperationException`)は、端末に赤字で理由を出す
 
 ## 別のウィンドウへの引き継ぎ (`IHandoverPage` / `TerminalHandover`)

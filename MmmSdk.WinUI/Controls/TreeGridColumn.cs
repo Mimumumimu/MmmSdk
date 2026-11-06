@@ -28,20 +28,20 @@ public sealed class TreeGridColumn
     /// </remarks>
     public Func<UIElement>? HeaderFactory { get; set; }
 
-    /// <summary>見出しに触れたときに出す説明 (null なら出さない。見出しを短くするために使う)</summary>
+    /// <summary>見出しに触れたときに出す説明。null なら出さない。見出しを短くするために使う</summary>
     public string? HeaderToolTip { get; set; }
 
     /// <summary>見出しの右クリックのメニュー</summary>
     /// <remarks>その列だけの操作に使う。null なら、右クリックしても何も出さない。</remarks>
     public FlyoutBase? HeaderContextFlyout { get; set; }
 
-    /// <summary>見出しの下に引く線の色 (null なら線なし。列のまとまりを示す)</summary>
+    /// <summary>見出しの下に引く線の色で、列のまとまりを示す。null なら線なし</summary>
     public Brush? HeaderUnderline { get; set; }
 
     /// <summary>横にスクロールしても動かない列か</summary>
     public bool IsFrozen { get; set; }
 
-    /// <summary>木構造の列か (字下げと開閉ボタンを付ける。表に 1 つだけ)</summary>
+    /// <summary>木構造の列か。字下げと開閉ボタンを付け、表に 1 つだけ</summary>
     public bool IsTree { get; set; }
 
     /// <summary>表示するか (false でも、値は消えない)</summary>

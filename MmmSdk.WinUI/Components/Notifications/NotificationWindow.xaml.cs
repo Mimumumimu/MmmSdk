@@ -34,7 +34,7 @@ public sealed partial class NotificationWindow : Window
     private const double MinWindowHeight = 160;
     /// <summary>ウィンドウの最大の高さで、単位は DIP。これを超える分は本文をスクロールする</summary>
     private const double MaxWindowHeight = 480;
-    /// <summary>作業領域の端からの余白 (既定位置。物理ピクセル)</summary>
+    /// <summary>作業領域の端からの余白で、既定位置の分。物理ピクセル</summary>
     private const int ScreenMargin = 16;
     /// <summary>保存位置を「十分に見える」とみなす、ウィンドウ面積に対する見えている割合</summary>
     private const double VisibleRatio = 0.5;

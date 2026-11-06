@@ -2,7 +2,7 @@ using MmmSdk.Core.Components.Features;
 
 namespace MmmSdk.Core.Components.Settings;
 
-/// <summary>共通の設定ファイルの先読み (起動時の準備。各機能より先に行う)</summary>
+/// <summary>共通の設定ファイルの先読み。起動時の準備で、各機能より先に行う</summary>
 /// <param name="settings">共通の設定ストア</param>
 /// <remarks>
 /// 設定ストアは、最初の <c>Get</c> で同期で読み込む。それを UI スレッドで行わずに済むよう、ここで非同期で読んでおく。

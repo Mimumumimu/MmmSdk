@@ -7,7 +7,7 @@
 
 | 型 | 内容 |
 | --- | --- |
-| `SqliteDatabaseOptions` | 設定。`FilePath`(ファイルのパス)・`Migrations`(版を上げるスクリプト)・`SchemaSql`(あるべき表と索引の SQL で、無ければ点検しない)・`ColumnRenames`(列の名前の変更)・`ColumnReplacements`(列の置き換え)・`BusyTimeoutSeconds`(ロックを待つ秒数。既定は 30) |
+| `SqliteDatabaseOptions` | 設定。`FilePath`(ファイルのパス)・`Migrations`(版を上げるスクリプト)・`SchemaSql`(あるべき表と索引の SQL で、無ければ点検しない)・`ColumnRenames`(列の名前の変更)・`ColumnReplacements`(列の置き換え)・`BusyTimeoutSeconds`(ロックを待つ秒数で、既定は 30) |
 | `SqliteMigration` | 版を上げるスクリプト 1 つ (`Version`・`Sql`) |
 | `SqliteColumnRename` | 列の名前の変更 1 つ (`Table`・`OldName`・`NewName`) |
 | `SqliteColumnReplacement` | 列の置き換え 1 つ (`Table`・`OldName`・`NewName`・`NewValueSql`) |

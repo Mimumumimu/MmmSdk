@@ -47,7 +47,7 @@ public sealed class AttachmentStore : IDisposable
     private bool _staleCleaned;
 
     /// <summary>Windows の一時フォルダ (%TEMP%\アプリ名\)に保存する一時保存先を作る</summary>
-    /// <param name="appName">アプリを区別する名前 (一時フォルダの名前に使う。アプリごとに別の名前にする)</param>
+    /// <param name="appName">アプリを区別する名前。一時フォルダの名前に使い、アプリごとに別の名前にする</param>
     /// <param name="timeProvider">現在時刻の提供元</param>
     public AttachmentStore(string appName, TimeProvider timeProvider)
         : this(() => Path.Combine(Path.GetTempPath(), appName), timeProvider, cleansUp: true)
@@ -66,11 +66,11 @@ public sealed class AttachmentStore : IDisposable
     }
 
     /// <summary>WSL の既定のディストリビューションの /tmp (<c>\\wsl.localhost\&lt;名前&gt;\tmp\アプリ名\</c>)に保存する一時保存先を作る</summary>
-    /// <param name="appName">アプリを区別する名前 (一時フォルダの名前に使う。アプリごとに別の名前にする)</param>
+    /// <param name="appName">アプリを区別する名前。一時フォルダの名前に使い、アプリごとに別の名前にする</param>
     /// <param name="timeProvider">現在時刻の提供元</param>
     /// <returns>WSL の /tmp に保存する一時保存先</returns>
     /// <remarks>
-    /// WSL で動く CLI に渡すときは、保存先のパスを Linux の形 (<c>/tmp/アプリ名/...</c>。<see cref="WslPath"/>)にして渡す。
+    /// WSL で動く CLI に渡すときは、保存先のパスを、<see cref="WslPath"/> で Linux の形 <c>/tmp/アプリ名/...</c> にして渡す。
     /// 終了時の削除と古い一時フォルダの掃除はしない。WSL の /tmp は、systemd が有効なら WSL の起動のたびに空になるため。これはユーザーの決定。送信前に取り除いた添付は、Windows と同じくすぐ消す。
     /// ディストリビューション名は最初の添付のときに調べる。見つからない (WSL が入っていない)ときは、その添付が <see cref="IOException"/> で失敗する。
     /// </remarks>

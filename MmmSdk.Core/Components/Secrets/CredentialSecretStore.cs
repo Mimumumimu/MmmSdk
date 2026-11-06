@@ -82,5 +82,5 @@ public sealed unsafe class CredentialSecretStore : ISecretStore
     /// <param name="error">Win32 のエラーコード</param>
     /// <returns>画面に出せるメッセージを持つ例外</returns>
     private static SecretStoreException Failure(string action, int error)
-        => new($"Windows の資格情報マネージャーに{action}でした (エラー {error}: {Marshal.GetPInvokeErrorMessage(error)})。");
+        => new($"Windows の資格情報マネージャーに{action}でした。エラー {error}: {Marshal.GetPInvokeErrorMessage(error)}");
 }

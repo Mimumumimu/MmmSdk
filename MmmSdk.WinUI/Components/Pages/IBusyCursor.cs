@@ -14,7 +14,7 @@ public interface IBusyCursor
     event EventHandler? Changed;
 
     /// <summary>処理待ちの形にし始める</summary>
-    /// <returns>破棄すると、この分の処理待ちを終える入れ物 (複数が重なったときは、すべて終わるまで続く。二重に破棄しても、1 回だけ数える)</returns>
+    /// <returns>破棄すると、この分の処理待ちを終える入れ物。複数が重なったときは、すべて終わるまで続き、二重に破棄しても、1 回だけ数える</returns>
     IDisposable Begin();
 
     /// <summary>処理待ちの形にして、砂時計が描かれるのを待ってから、処理を行い、処理の結果が画面に描かれたら元に戻す</summary>

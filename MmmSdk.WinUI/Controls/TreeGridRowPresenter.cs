@@ -34,7 +34,7 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>スクロールする列ごとの、集計の行の背景と行の色 (列ごとに分けて、一部の列だけ表の面の色のままにできるようにする)</summary>
     private readonly List<(TreeGridColumn Column, Border Backing, Border Tint)> _scrollBackings = [];
 
-    /// <summary>選んだ行の枠 (固定の列の部分。行の背景の色と混ざらない)</summary>
+    /// <summary>選んだ行の枠で、固定の列の部分。行の背景の色と混ざらない</summary>
     /// <remarks>セルのフォーカスの枠より後ろに描くため、行全体ではなく、固定の列・スクロールする列それぞれの Grid の中に置く。</remarks>
     private readonly Border _frozenSelection = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, -1) };
 
@@ -83,7 +83,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         return null;
     }
 
-    /// <summary>入力用の見た目になっているセル (無ければ null。1 行に 1 つだけ)</summary>
+    /// <summary>入力用の見た目になっているセル。無ければ null で、1 行に 1 つだけ</summary>
     private (TreeGridColumn Column, ContentControl Cell)? _editing;
 
     /// <summary>セルを作ったときの、表の列の版</summary>
@@ -138,7 +138,7 @@ public sealed partial class TreeGridRowPresenter : Grid
 
                 // 入力に入らないセル (集計の行・備考のボタンなど)は、押した時点で、セルにフォーカスを移す。
                 // 備考のボタンが開く入れ物を閉じたとき、フォーカスは、開く前の場所に戻るので、先にそのセルへ移しておく。
-                // 右クリックは、どのセルでも同じように移す (入力は始めない。入力中のセルの中は、入力欄自身のメニューに任せる)
+                // 右クリックは、どのセルでも同じように移す。入力は始めず、入力中のセルの中は、入力欄自身のメニューに任せる
                 if (FindCellAt(point.Position) is { } pressed && pressed.Column.IsFocusable)
                 {
                     var isRight = point.Properties.IsRightButtonPressed;
@@ -222,7 +222,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>行の背景を直す (集計の行は、固定の部分・スクロールする部分とも、集計の行の背景。入力できる行は、固定の部分だけ、固定の列の背景)</summary>
+    /// <summary>行の背景を直す。集計の行は、固定の部分・スクロールする部分とも、集計の行の背景にする。入力できる行は、固定の部分だけ、固定の列の背景にする</summary>
     /// <remarks>
     /// 入力できる行 (入力欄が並ぶ)と、入力できない集計の行を、背景の色で見分けられるようにする。
     /// 使う側が色を渡していれば、その色にする。対象は <see cref="TreeGridView.SummaryBackground"/>・<see cref="TreeGridView.FrozenBackground"/>。
@@ -381,7 +381,7 @@ public sealed partial class TreeGridRowPresenter : Grid
             grid.Children.Add(frame);
         }
 
-        // 表示しなくなった列のセルは、持ち続けない (行への結び付きを残さない。また表示するときは、作り直す)
+        // 表示しなくなった列のセルは、持ち続けない。行への結び付きを残さず、また表示するときは、作り直す
         foreach (var column in _cellCache.Keys.Where(c => !_owner.VisibleColumns.Contains(c)).ToList())
         {
             _cellCache.Remove(column);
@@ -626,7 +626,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>セルの入力を始める (入力欄に切り替える。クリックで選ぶ列は、使う側に知らせる)</summary>
+    /// <summary>セルの入力を始める。入力欄に切り替え、クリックで選ぶ列は、使う側に知らせる</summary>
     /// <param name="column">列</param>
     /// <param name="cell">セル</param>
     private void StartEdit(TreeGridColumn column, ContentControl cell)
@@ -639,7 +639,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         Activate();
         if (column.IsInvokable)
         {
-            // 開く前にセルへフォーカスを移す (メニューが閉じたとき、フォーカスが戻る先。開いている間も、枠が出る)
+            // 開く前にセルへフォーカスを移す。メニューが閉じたとき、フォーカスが戻る先になり、開いている間も、枠が出る
             cell.Focus(FocusState.Programmatic);
             _owner.SetCursor(cell);
             _owner.RaiseCellInvoked(_row, column.Key, cell);
@@ -737,7 +737,7 @@ public sealed partial class TreeGridRowPresenter : Grid
     }
 
     /// <summary>入力用の見た目を、すぐ表示用に戻す</summary>
-    /// <param name="raiseEnding">戻す直前に、使う側へ知らせるか (<see cref="TreeGridView.EditEnding"/>。行の使い回し・Esc の取りやめでは知らせない)</param>
+    /// <param name="raiseEnding">戻す直前に、使う側へ知らせるか。知らせるのは <see cref="TreeGridView.EditEnding"/> で、行の使い回し・Esc の取りやめでは知らせない</param>
     /// <remarks>
     /// フォーカスのある入力欄を、フォーカスごと消すと、フォーカスが、画面の最初の要素 (表の 1 行目のセル)に飛び、行の選択まで 1 行目に移る。
     /// そこで、入力欄にフォーカスがあるときは、先にセル自身へ移してから、入力用の見た目を外す。

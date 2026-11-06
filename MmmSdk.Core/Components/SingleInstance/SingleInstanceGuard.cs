@@ -12,7 +12,7 @@ public sealed class SingleInstanceGuard
     public bool IsFirstInstance { get; }
 
     /// <summary>Mutex を取得して、最初の起動かどうかを判定する</summary>
-    /// <param name="appName">アプリを区別する名前 (Mutex 名の先頭に付ける。アプリごとに別の名前にする)</param>
+    /// <param name="appName">アプリを区別する名前。Mutex 名の先頭に付け、アプリごとに別の名前にする</param>
     public SingleInstanceGuard(string appName)
     {
         _mutex = new Mutex(initiallyOwned: true, $@"Local\{appName}_{ExePathHash.Current}", out var createdNew);

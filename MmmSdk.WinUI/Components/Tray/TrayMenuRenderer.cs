@@ -291,7 +291,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
     /// <summary>フォントを作る</summary>
     /// <param name="face">フォント名</param>
-    /// <param name="height">文字の高さ (論理単位。負なら文字の高さ)</param>
+    /// <param name="height">文字の高さで、論理単位。負なら文字の高さ</param>
     /// <returns>フォントのハンドル</returns>
     private static HFONT CreateFont(string face, int height)
     {
