@@ -10,8 +10,10 @@
     <!-- .editorconfig のコードスタイルをビルド時にも検査する -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!--
-      全プロジェクトを x64 専用にする。Core も含めて AnyCPU を使わない。
-      Platforms は VS で選べる一覧なので、既定の Platform も x64 にする。-p:Platform を付けないビルドで AnyCPU にならないようにするため。CsWin32 は AnyCPU では一部の API を作れない
+      既定は x64 専用にする。MmmSdk.Core だけは、ブラウザ (browser-wasm)で動く Web 版の画面側が、アプリの .Core 経由で参照するので、csproj の Platforms・Platform・PlatformTarget を AnyCPU にして、この既定から外す。
+      Platforms は VS で選べる一覧なので、既定の Platform も x64 にする。-p:Platform を付けないビルドで AnyCPU にならないようにするため。
+      CsWin32 は AnyCPU では、CPU ごとに構造体の形が違う API を作れない。MmmSdk.Core の資格情報マネージャーの API は、AnyCPU でも作れる。ビルドで確かめた。
+      CPU ごとに形が違う API を使う部品は、x64 の MmmSdk.WinUI に置く
     -->
     <Platforms>x64</Platforms>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>

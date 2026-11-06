@@ -7,9 +7,7 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
   </Folder>
-  <Project Path="MmmSdk.Core/MmmSdk.Core.csproj">
-    <Platform Project="x64" />
-  </Project>
+  <Project Path="MmmSdk.Core/MmmSdk.Core.csproj" />
   <Project Path="MmmSdk.Db.Sqlite/MmmSdk.Db.Sqlite.csproj">
     <Platform Project="x64" />
   </Project>
