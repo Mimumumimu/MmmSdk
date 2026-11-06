@@ -51,7 +51,7 @@ public sealed record MinuteTickOptions
     /// <summary>今、この処理を動かしてよいか。合図のたびに確かめ、false なら今回の合図を飛ばす。機能のオン・オフや、管理者による無効は、起動後にも変わるため。null なら常に動かす</summary>
     public Func<bool>? IsActive { get; init; }
 
-    /// <summary>直前の実行から、最低限空ける時間。<see cref="IMinuteTickSubscription.MarkRan"/> と組み合わせる。既定は 0 (空けない)</summary>
+    /// <summary>直前に動かし始めた時刻から、最低限空ける時間。<see cref="IMinuteTickSubscription.MarkRan"/> と組み合わせる。既定は 0 で、空けない</summary>
     public TimeSpan MinimumGap { get; init; }
 
     /// <summary>登録を呼んだスレッドの <see cref="SynchronizationContext"/> (UI スレッド)で、処理を動かすか。UI スレッドで状態を持つ処理向け。false ならスレッドプールで動かす</summary>

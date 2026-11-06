@@ -128,7 +128,7 @@ public sealed class MinuteTicker(TimeProvider timeProvider) : IMinuteTicker, IDi
         /// <summary>処理を動かしている最中か。最中なら、次の合図を飛ばす</summary>
         private bool _running;
 
-        /// <summary>最後に処理を動かした (動かした扱いにした)時刻。まだ無ければ null</summary>
+        /// <summary>最後に処理を動かし始めた (動かした扱いにした)時刻。まだ無ければ null</summary>
         private DateTimeOffset? _lastRanAt;
 
         /// <summary>解除したか</summary>
@@ -159,7 +159,7 @@ public sealed class MinuteTicker(TimeProvider timeProvider) : IMinuteTicker, IDi
             _cancellation.Cancel();
         }
 
-        /// <summary>毎分の合図を受ける (同じ分や過去の分、解除後は飛ばす)</summary>
+        /// <summary>毎分の合図を受ける (同じ分と、解除後は飛ばす)</summary>
         /// <param name="minute">今の分</param>
         public void OnMinute(DateTime minute)
         {
@@ -241,12 +241,12 @@ public sealed class MinuteTicker(TimeProvider timeProvider) : IMinuteTicker, IDi
         }
 
         /// <summary>処理を終えた印を付ける</summary>
+        /// <remarks>最後に動かした時刻は、始めた時刻のまま変えない。処理が遅いときに、終わった時刻から数えると、次の合図が飛ばされて、間隔が延びるため。重なりは、最中の印で防ぐ。</remarks>
         private void End()
         {
             lock (_sync)
             {
                 _running = false;
-                _lastRanAt = timeProvider.GetUtcNow();
             }
         }
 
