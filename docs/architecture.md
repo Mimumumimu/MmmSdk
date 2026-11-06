@@ -89,7 +89,9 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
   - サイドバーの印: `INavigationService.SetBadge<TPage>(bool)` は、サイドバーの指定のページの項目の右端に、知らせの丸を出し入れする口。ページを開いていない間に、見てほしいことが起きたことを知らせる。選ばれている項目と、別のウィンドウに外している項目には出さない。標準の点のバッジ `InfoBadge` は小さくて気づきにくいため使わない。印の状態は、機能がオフの間も項目が持つ。
 - `.TextLinks`: LinkedText。`TextBlock` の添付プロパティ `Text` に文章を渡すと、URL を `Hyperlink` にして並べる。リンクを押すと、`LinkCommand` に URL を渡す。開く処理と失敗の表示は、受け取る側が持つ。`NavigateUri` は使わない。開けなかったときの表示を、アプリが決めるため。強調色の地の上などでは、`LinkForeground` で色を渡す
 - `.Tray`: TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem・`AddTrayMenuSource`。`TrayMenuRenderer` は internal。DI 登録は `AddMmmSdkWinUI` と同じ `SdkWinUIServiceCollectionExtensions` の `AddMmmSdkTray`
-- `MmmSdk.WinUI.Controls`: TimeInputBox・LinkArea・RefreshButton・OverflowRowLayout・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)
+- `MmmSdk.WinUI.Controls`: AppStyles.xaml・TimeInputBox・LinkArea・RefreshButton・OverflowRowLayout・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)
+  - AppStyles.xaml は、アプリ共通のスタイル `AppTextBoxStyle` と `SettingsSectionHeaderStyle` を持つ
+  - 各アプリの `App.xaml` が、`XamlControlsResources` の後ろで `ms-appx:///MmmSdk.WinUI/Controls/AppStyles.xaml` を読む。アプリに書き写さない
 - `MmmSdk.WinUI.Utilities`: WindowExtensions・WindowPlacement・NativeMessageBox・ImeControl・TextBoxExtensions・TreeViewExtensions・VisualTreeSearch・WarningBubble
 
 ### DB の接続

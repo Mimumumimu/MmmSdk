@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- アプリ共通のスタイル。各アプリの App.xaml が、XamlControlsResources の後ろで MergedDictionaries に足して読む。DefaultTextBoxStyle などを BasedOn にするため、順序が逆だと起動時に落ちる -->
+
+    <!-- 入力欄の空のときの薄い文字は、アプリで 1 つの標準の色 (TextFillColorDisabledBrush)に決める。入力欄ごとには指定せず、既定の TextBox のスタイルで全体に効かせる。独自のスタイルを付ける TextBox は、AppTextBoxStyle を BasedOn にする。色の名前 TextControlPlaceholderForeground の上書きは、効かなかった -->
+    <Style x:Key="AppTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="PlaceholderForeground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+    </Style>
+    <Style TargetType="TextBox" BasedOn="{StaticResource AppTextBoxStyle}" />
+
+    <!-- 設定ページの区切りの見出し。各部品の先頭に置く。カードの上に、少し間を空ける -->
+    <Style x:Key="SettingsSectionHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Margin" Value="1,20,0,4" />
+    </Style>
+</ResourceDictionary>
