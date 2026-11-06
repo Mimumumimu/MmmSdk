@@ -16,14 +16,20 @@ public static class WindowExtensions
     /// <param name="window">対象のウィンドウ</param>
     /// <remarks>表示 (<c>Activate</c>)のあとに呼ぶ。別のアプリが前面にあると、Windows の制限で前面にならないことがある。</remarks>
     public static void SetForeground(this Window window)
-        => PInvoke.SetForegroundWindow((HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id));
+        => window.AppWindow.SetForeground();
+
+    /// <summary>ウィンドウを前面に出す</summary>
+    /// <param name="appWindow">対象のウィンドウ</param>
+    /// <remarks>別のアプリが前面にあると、Windows の制限で前面にならないことがある。<see cref="SetForeground(Window)"/> の <see cref="AppWindow"/> 版。</remarks>
+    public static void SetForeground(this AppWindow appWindow)
+        => PInvoke.SetForegroundWindow((HWND)Win32Interop.GetWindowFromWindowId(appWindow.Id));
 
     /// <summary>トレイ・最小化・非表示から確実に戻して、前面に出す</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <remarks>
     /// 別の仮想デスクトップ (Win+Tab のデスクトップ)にあるときは、いま見ているデスクトップへ移してから、復元 (最小化しているとき)→ 表示 → 前面化の順に行う。
     /// 移さずに前面にすると、Windows がウィンドウのあるデスクトップへ切り替えてしまうため。
-    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある。関連は <see cref="SetForeground"/>。
+    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある。関連は <see cref="SetForeground(Window)"/>。
     /// </remarks>
     public static void BringToFront(this Window window)
     {
