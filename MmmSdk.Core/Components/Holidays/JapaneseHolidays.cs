@@ -17,20 +17,31 @@ public static class JapaneseHolidays
     /// <summary>一覧の日付の書式 (例: <c>2026/1/1</c>)</summary>
     private const string DateFormat = "yyyy/M/d";
 
-    /// <summary>祝日の日付 (初めて使うときに、ファイルから読む)</summary>
-    private static readonly Lazy<HashSet<DateOnly>> Dates = new(Load);
+    /// <summary>祝日の日付と名前 (初めて使うときに、ファイルから読む)</summary>
+    private static readonly Lazy<Dictionary<DateOnly, string>> Holidays = new(Load);
 
     /// <summary>日付が、国民の祝日・休日か</summary>
     /// <param name="date">日付</param>
     /// <returns>祝日・休日なら true (振替休日・国民の休日を含む。日曜と土曜は、祝日でなければ false)</returns>
-    public static bool IsHoliday(DateOnly date) => Dates.Value.Contains(date);
+    public static bool IsHoliday(DateOnly date) => Holidays.Value.ContainsKey(date);
+
+    /// <summary>国民の祝日・休日の名前を返す</summary>
+    /// <param name="date">日付</param>
+    /// <returns>祝日・休日の名前で、勤労感謝の日など。祝日・休日でなければ null</returns>
+    public static string? GetName(DateOnly date) => Holidays.Value.GetValueOrDefault(date);
+
+    /// <summary>ある年の、国民の祝日・休日を、日付の順に返す</summary>
+    /// <param name="year">西暦の年</param>
+    /// <returns>日付と名前の組。一覧に無い年は空</returns>
+    public static IReadOnlyList<KeyValuePair<DateOnly, string>> GetHolidays(int year)
+        => [.. Holidays.Value.Where(holiday => holiday.Key.Year == year).OrderBy(holiday => holiday.Key)];
 
     /// <summary>一覧のファイルを読む</summary>
-    /// <returns>祝日の日付の集まり (ファイルが無い・読めないときは空)</returns>
+    /// <returns>祝日の日付と名前 (ファイルが無い・読めないときは空)</returns>
     /// <remarks>先頭の見出しの行と、日付として読めない行は、飛ばす。</remarks>
-    private static HashSet<DateOnly> Load()
+    private static Dictionary<DateOnly, string> Load()
     {
-        var dates = new HashSet<DateOnly>();
+        var dates = new Dictionary<DateOnly, string>();
         var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Holidays", "syukujitsu.csv");
         string text;
         try
@@ -48,7 +59,7 @@ public static class JapaneseHolidays
             var comma = line.IndexOf(',');
             if (comma > 0 && DateOnly.TryParseExact(line.AsSpan(0, comma), DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
             {
-                dates.Add(date);
+                dates[date] = line[(comma + 1)..].Trim().Trim('"');
             }
         }
         return dates;

@@ -54,7 +54,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.Secrets` | API キーなどの秘密を、設定ファイルとは別の場所に保存する。型は `ISecretStore` / `SecretStoreException`。Windows の資格情報マネージャーに保存する実装 (`CredentialSecretStore`)もある |
 | `MmmSdk.Core.Components.Paths` | URL・ファイル・フォルダーを開く処理 (`IPathOpener` / `PathOpener` / `PathOpenException`)と種類の判定 (`PathTarget`) |
 | `MmmSdk.Core.Components.TextLinks` | 文章の中の `http://`・`https://` の URL を、リンクにしてよいものだけ位置つきで見つける (`TextLinkFinder` / `TextLink`) |
-| `MmmSdk.Core.Components.Holidays` | 日本の祝日の判定 (`JapaneseHolidays`。アプリの `Assets/Holidays/syukujitsu.csv` (内閣府の「国民の祝日」の一覧。ダウンロードしたままのファイル)から読み、外へは通信しない。ファイルは置き換えられる。一覧にない年は、祝日にしない。出典の記載は `syukujitsu.LICENSE.txt`) |
+| `MmmSdk.Core.Components.Holidays` | 日本の祝日の判定・名前・年ごとの一覧で、型は `JapaneseHolidays`。アプリの `Assets/Holidays/syukujitsu.csv` から読み、外へは通信しない。内閣府の「国民の祝日」の一覧を、ダウンロードしたままの形で置く。ファイルは置き換えられる。一覧にない年は、祝日にしない。出典の記載は `syukujitsu.LICENSE.txt` にある |
 | `MmmSdk.Core.Components.DaysOfWeek` | 曜日フラグ `Weekdays` (月 = 1 から日 = 64 の足し算の数)と、変換・判定・表記の `WeekdaySet` で、曜日を選んでいないときと 7 つ全部のときは、どちらも毎日で、表記も「毎日」 |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
 | `MmmSdk.Core.Components.Shells` | シェルの決定 (`ShellInfo` / `ShellKind` / `ShellLocator`)と、シェル別のコマンド作り・パスの変換を行う `ShellCommands`、WSL のパスの `WslPath`、ディストリビューションの `WslDistribution` |

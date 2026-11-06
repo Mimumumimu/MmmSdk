@@ -53,7 +53,11 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Secrets`: ISecretStore・SecretStoreException (秘密の保存の口)・CredentialSecretStore は資格情報マネージャーで ISecretStore を実装し、CsWin32 の `CredRead` などを使う。Web 版のサーバーのように画面を持たないアプリからも使うので、Core に置き、`NativeMethods.txt` は Core にも持つ
 - `.Paths`: PathOpener・PathOpenException・PathTarget
 - `.TextLinks`: TextLinkFinder・TextLink。文章の中の `http://`・`https://` の URL を見つけ、リンクにしてよいものだけを位置つきで返す。末尾の句読点は含めず、`http` と `https` 以外・空白や引用符を含むもの・長すぎるものは返さない。ノートの HTML・メッセージの Web 版のサーバー・PC 版の `LinkedText` が、同じ結果を使う
-- `.Holidays`: JapaneseHolidays は日本の祝日の判定を行う。内閣府の「国民の祝日」の一覧 (`syukujitsu.csv`。ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない)を、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る。配るのは SDK の csproj で、利用者が、最新の一覧に置き換えられるようにするため。置き換えたら、次の起動から使う。ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる (ファイルは変換せず、そのまま置くので、加工の記載は要らない)
+- `.Holidays`: JapaneseHolidays は日本の祝日の判定 (`IsHoliday`)と、祝日の名前 (`GetName`)と、ある年の祝日の一覧 (`GetHolidays`)を返す。
+  - 内閣府の「国民の祝日」の一覧を読む。一覧は `syukujitsu.csv` で、ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない。
+  - 一覧は、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る。配るのは SDK の csproj で、利用者が、最新の一覧に置き換えられるようにするため。置き換えたら、次の起動から使う。
+  - ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。
+  - 公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる。ファイルは変換せず、そのまま置くので、加工の記載は要らない。
 - `.DaysOfWeek`: Weekdays と WeekdaySet
   - `Weekdays` は曜日フラグで、月 = 1 から日 = 64 の足し算の数。JSON・DB の列と同じ値
   - `WeekdaySet` は、変換・判定・表記
