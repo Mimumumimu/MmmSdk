@@ -4,11 +4,11 @@ namespace MmmSdk.Core.Components.Scheduling;
 /// <param name="ticker">毎分の合図</param>
 /// <remarks>
 /// 「次の 0 時まであと何時間」と時間の長さで予約すると、スタンバイや時計の変更でずれたときに、日付が変わったことに気づけない。
-/// そのため、予約はせず、<see cref="IMinuteTicker"/> の毎分の合図で日付を比べる。ずれても、最大 1 分で追いつく。
+/// そのため、予約はせず、<see cref="ITicker"/> の毎分の合図で日付を比べる。ずれても、最大 1 分で追いつく。
 /// 画面に出している日付は、画面を作り直したあとに <see cref="MarkShown"/> で覚えさせる。覚えている日付が無いときも、違うものとして知らせる。
 /// 知らせる処理は、合図を受けたスレッドプールのスレッドで動く。違いが直るまで、つまり <see cref="MarkShown"/> されるまで、毎分知らせる。
 /// </remarks>
-public sealed class DayChangeWatcher(IMinuteTicker ticker) : IDisposable
+public sealed class DayChangeWatcher(ITicker ticker) : IDisposable
 {
     /// <summary>状態を守るロック</summary>
     private readonly Lock _gate = new();
@@ -17,7 +17,7 @@ public sealed class DayChangeWatcher(IMinuteTicker ticker) : IDisposable
     private DateOnly? _shownDate;
 
     /// <summary>毎分の合図の登録。開始前・破棄後は null</summary>
-    private IMinuteTickSubscription? _subscription;
+    private ITickSubscription? _subscription;
 
     /// <summary>破棄したか</summary>
     private bool _disposed;
@@ -45,7 +45,7 @@ public sealed class DayChangeWatcher(IMinuteTicker ticker) : IDisposable
                 throw new InvalidOperationException("すでに開始しています。");
             }
             _onDayChanged = onDayChanged;
-            _subscription = ticker.Subscribe(OnMinute, new MinuteTickOptions { RunImmediately = true });
+            _subscription = ticker.Subscribe(OnMinute, new TickOptions { RunImmediately = true });
         }
     }
 
@@ -62,7 +62,7 @@ public sealed class DayChangeWatcher(IMinuteTicker ticker) : IDisposable
     /// <summary>止める</summary>
     public void Dispose()
     {
-        IMinuteTickSubscription? subscription;
+        ITickSubscription? subscription;
         lock (_gate)
         {
             _disposed = true;

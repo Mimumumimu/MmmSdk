@@ -58,7 +58,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.DaysOfWeek` | 曜日フラグ `Weekdays` (月 = 1 から日 = 64 の足し算の数)と、変換・判定・表記の `WeekdaySet` で、曜日を選んでいないときと 7 つ全部のときは、どちらも毎日で、表記も「毎日」 |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
 | `MmmSdk.Core.Components.Shells` | シェルの決定 (`ShellInfo` / `ShellKind` / `ShellLocator`)と、シェル別のコマンド作り・パスの変換を行う `ShellCommands`、WSL のパスの `WslPath`、ディストリビューションの `WslDistribution` |
-| `MmmSdk.Core.Components.Scheduling` | アプリ全体で 1 つの毎分の合図 (`IMinuteTicker`)・日付が変わったことの検知 (`DayChangeWatcher`)・毎分 00 秒に処理を呼ぶ土台 (`MinuteScheduler`) |
+| `MmmSdk.Core.Components.Scheduling` | アプリ全体で 1 つの定期処理の合図 (`ITicker`)・日付が変わったことの検知 (`DayChangeWatcher`)・分単位の時刻の計算 (`MinuteTime`) |
 | `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
@@ -417,40 +417,71 @@ var guard = new SingleInstanceGuard("MyApp");   // アプリ起動の最初に�
 if (!guard.IsFirstInstance) { /* すでに起動している。メッセージを出して終了する */ }
 ```
 
-### 毎分の合図 (`IMinuteTicker`)
+### 定期処理の合図 (`ITicker`)
 
-アプリ全体で 1 つのタイマーから、登録した処理へ、毎分の合図を渡します。機能は自分でタイマーを持たず、ここに登録します。`AddMmmSdkCore` で登録されます。
+アプリ全体で 1 つのタイマーから、登録した処理へ、合図を渡します。機能は自分でタイマーを持たず、ここに登録します。`AddMmmSdkCore` で登録されます。
 
-- 合図は、登録した全員に同時に渡し、戻りを待ちません。前の処理が続いている処理には、その回を渡さずに飛ばします。ほかの処理の合図は止めません。
-- スリープ明けに、たまった分をまとめて動かしません。同じ分に同じ処理を 2 回動かしません。
+- タイマーは、登録のうち、いちばん早く来る時刻に掛け直す単発のタイマーです。毎秒起きる固定のタイマーではないので、登録が毎分だけなら、1 分に 1 回しか起きません。時刻は毎回、そのときの時計から求め直すので、時計の変更やスリープ明けに追従します。
+- 合図は、時刻が来た登録にだけ渡し、戻りを待ちません。前の処理が続いている処理には、その回を渡さずに飛ばします。ほかの処理の合図は止めません。
+- スリープ明けに、たまった分をまとめて動かしません。毎分の合図は、同じ分に同じ処理を 2 回動かしません。
 - 処理が起こした予想外の例外は握りつぶさず、アプリの未処理例外の受け皿へ渡します。`Forget` と同じ扱いです。
-- 返ってきた控え (`IMinuteTickSubscription`)は、持ち主 (画面・ViewModel)を閉じるときに `Dispose` します。解除しないと、メモリが漏れます。
+- 返ってきた控え (`ITickSubscription`)は、持ち主 (画面・ViewModel)を閉じるときに `Dispose` します。解除しないと、メモリが漏れます。
+
+合図の渡し方は、`TickTiming` で選ぶ 3 つです。
+
+| 渡し方 | いつ渡すか | 向いている処理 |
+|---|---|---|
+| `OnTheMinute` | 毎分 00 秒に、全員へ同時に | リマインダーの判定・日付の変わりの監視 |
+| `Staggered` | 毎分 1 回、登録ごとに決めた 1〜59 秒の秒に | DB を読み直す処理 (全員が同じ 1 秒に読みに来ないため) |
+| `Interval` | 前に渡した時刻から、決めた間隔 (1 秒以上)がたつたびに | 1 分より短い周期の処理 |
 
 ```csharp
 // 毎分 00 秒に動かす (リマインダーの判定など。登録した直後にも 1 回動かす)
 var tick = ticker.Subscribe(async now => { /* 処理。now は現在の日時 */ },
-    new MinuteTickOptions { RunImmediately = true, IsActive = () => features.IsEnabled(key) });
+    new TickOptions { RunImmediately = true, IsActive = () => features.IsEnabled(key) });
 
 // DB を読み直す処理は、端末ごとにずらした秒に動かす。UI スレッドで状態を持つなら OnCallerContext にする
 var poll = ticker.Subscribe(_ => ReloadAsync(),
-    new MinuteTickOptions { Timing = MinuteTickTiming.Staggered, MinimumGap = TimeSpan.FromSeconds(30), OnCallerContext = true });
+    new TickOptions { Timing = TickTiming.Staggered, MinimumGap = TimeSpan.FromSeconds(30), OnCallerContext = true });
 poll.MarkRan();   // 手動で取り込んだ直後は、MinimumGap の間、自動の取り込みを飛ばす
 poll.Dispose();   // 解除する
+
+// 10 秒おきに動かし、画面を見ているときだけ 2 秒おきにする
+var sync = ticker.Subscribe(_ => SyncAsync(),
+    new TickOptions { Timing = TickTiming.Interval, Interval = TimeSpan.FromSeconds(10) });
+sync.SetInterval(TimeSpan.FromSeconds(2));   // 間隔を変える。直前の合図から数え直し、過ぎていればすぐ渡す
+sync.WakeNow();                              // 次の時刻を待たず、すぐ動かす。前の処理が続いていれば飛ばす
 ```
 
 `IsActive` は合図のたびに確かめ、false なら今回を飛ばします。機能のオン・オフや、管理者による無効は、起動後にも変わるためです。
 
-### 毎分 00 秒の処理 (`MinuteScheduler`)
+#### 失敗が続いたときに間隔を延ばす
 
-`IMinuteTicker` の土台です。開始直後に 1 回、以後はシステム時刻の毎分 00 秒に、処理を呼びます。固定間隔ではなく、次の 00 秒までの残り時間をその都度計算する単発タイマーを掛け直すので、時計のずれに追従します。タイマーが 00 秒より少し早く来ても、同じ分に 2 回は呼びません。アプリからは `IMinuteTicker` を使い、これは直接使いません。
+DB など外の相手を読む処理は、結果を返す登録にします。相手に届かなかったときだけ `TickResult.Failed` を返すと、`Ticker` が次の合図までの時間を延ばします。
 
 ```csharp
-var minute = MinuteScheduler.TruncateToMinute(now);   // 秒以下を切り捨てる
+var poll = ticker.Subscribe(
+    async _ => await TryReloadAsync() ? TickResult.Done : TickResult.Failed,
+    new TickOptions { Timing = TickTiming.Staggered });
+```
+
+- 失敗のたびに、次の合図までの時間を 2 倍にします。延ばす前の時間は、`Interval` なら今の間隔、毎分の合図なら 1 分です。上限は `Ticker.MaxBackoff` (5 分)です。
+- 全員の端末が同じ時刻に戻らないよう、延ばした時間の半分から全部のうちのどこかにばらつかせます。
+- `Done` を返すと元に戻ります。ログインの前や読むものが無いときは、相手に届かなかったのではないので `Done` を返します。
+- 飛ばした回は、延ばす状態を変えません。`WakeNow` は、延ばしている間もすぐ動かします。
+- 例外は、これまでどおり未処理例外の受け皿へ渡します。`Failed` にするのは、起こると分かっている失敗だけです。
+
+### 分単位の時刻の計算 (`MinuteTime`)
+
+秒以下を切り捨てます。
+
+```csharp
+var minute = MinuteTime.TruncateToMinute(now);   // 秒以下を切り捨てる
 ```
 
 ### 日付が変わったことの検知 (`DayChangeWatcher`)
 
-画面に出している日付と今の日付を、`IMinuteTicker` の合図で毎分比べ、違っていたら知らせます。「次の 0 時まであと何時間」と予約する方式と違い、スタンバイや時計の変更でずれても、最大 1 分で追いつきます。
+画面に出している日付と今の日付を、`ITicker` の合図で毎分比べ、違っていたら知らせます。「次の 0 時まであと何時間」と予約する方式と違い、スタンバイや時計の変更でずれても、最大 1 分で追いつきます。
 
 ```csharp
 var watcher = new DayChangeWatcher(ticker);
