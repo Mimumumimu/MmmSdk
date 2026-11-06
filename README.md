@@ -58,13 +58,13 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.Core.Components.DaysOfWeek` | 曜日フラグ `Weekdays` (月 = 1 から日 = 64 の足し算の数)と、変換・判定・表記の `WeekdaySet` で、曜日を選んでいないときと 7 つ全部のときは、どちらも毎日で、表記も「毎日」 |
 | `MmmSdk.Core.Components.Notifications` | 通知の項目 (`NotificationItem`) |
 | `MmmSdk.Core.Components.Shells` | シェルの決定 (`ShellInfo` / `ShellKind` / `ShellLocator`)と、シェル別のコマンド作り・パスの変換を行う `ShellCommands`、WSL のパスの `WslPath`、ディストリビューションの `WslDistribution` |
-| `MmmSdk.Core.Components.Scheduling` | 毎分 00 秒に処理を呼ぶ (`MinuteScheduler`)・日付が変わったことの検知 (`DayChangeWatcher`) |
+| `MmmSdk.Core.Components.Scheduling` | アプリ全体で 1 つの毎分の合図 (`IMinuteTicker`)・日付が変わったことの検知 (`DayChangeWatcher`)・毎分 00 秒に処理を呼ぶ土台 (`MinuteScheduler`) |
 | `MmmSdk.Core.Components.Logging` | エラーログの追記 (`ErrorLog`。`yyyy-MM-dd.log`) |
 | `MmmSdk.Core.Components.Attachments` | 添付ファイルの一時保存先 (`AttachmentStore`) |
 | `MmmSdk.Core.Components.SingleInstance` | 多重起動の防止 (`SingleInstanceGuard`) |
 | `MmmSdk.Core.Components.Features` | 機能 (プラグイン)がホストへ入る口。入口は `IFeaturePlugin` で、ホストは `AddFeaturePlugin<T>(order)` で呼ぶ。`order` はサイドバー・トレイ・設定の並び順の値。機能の登録は `FeatureInfo` / `AddFeature` で、オフにできない機能は `AddAlwaysOnFeature`。どちらも、使える条件 `availableWhen` を渡せる。条件の元の値が変わったときは、`FeatureService.NotifyAvailabilityChanged` で画面に知らせる。起動時の準備は `IStartupTask` / `AddStartupTask`。オフにする前の確認は `IFeatureDisableConfirmation`。オン・オフを調べる口は `IFeatureStatus`。`FeatureService` は、状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順の保存を行う。並び順の保存は `SetOrderAsync` / `ResetOrderAsync` / `OrderOf` / `OrderChanged`。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。`FeatureChangeResult` もある |
 | `MmmSdk.Core.Components.Hosting` | アプリの名前・データとキャッシュのフォルダー・アイコンのパス・WebView2 の保存先を持つ型は `AppEnvironment` と `WebView2Directory`。ホストが 1 つ登録し、機能が DI から受け取る |
-| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・待ちの途中で数え直せる定期タイマー (`RestartableTimer`。手動で取り込んだとき、自動の取り込みの間隔を数え直す)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`)・選んだ日付を、選んだ日の間だけ覚える (`RememberedDate`。ページを作り直しても、見ている日付を引き継ぐ状態クラスが使う) |
+| `MmmSdk.Core.Utilities` | 待たずに走らせるタスクの失敗を未処理例外にする (`Forget`)・入力が止まるのを待ってから処理を 1 回だけ行う (`Debouncer`)・「最近使った順」のリストの操作 (`AddRecent`)・ファイルの大きさの表記 (`FileSizeFormatter`)・選んだ日付を、選んだ日の間だけ覚える (`RememberedDate`) |
 | `MmmSdk.Core` | DI への登録 (`AddMmmSdkCore`) |
 
 #### MmmSdk.WinUI
@@ -417,25 +417,45 @@ var guard = new SingleInstanceGuard("MyApp");   // アプリ起動の最初に�
 if (!guard.IsFirstInstance) { /* すでに起動している。メッセージを出して終了する */ }
 ```
 
-### 毎分 00 秒の処理 (`MinuteScheduler`)
+### 毎分の合図 (`IMinuteTicker`)
 
-開始直後に 1 回、以後はシステム時刻の毎分 00 秒に、処理を呼びます。固定間隔ではなく、次の 00 秒までの残り時間をその都度計算する単発タイマーを掛け直すので、時計のずれに追従します。タイマーが 00 秒より少し早く来ても、同じ分に 2 回は呼びません。
+アプリ全体で 1 つのタイマーから、登録した処理へ、毎分の合図を渡します。機能は自分でタイマーを持たず、ここに登録します。`AddMmmSdkCore` で登録されます。
+
+- 合図は、登録した全員に同時に渡し、戻りを待ちません。前の処理が続いている処理には、その回を渡さずに飛ばします。ほかの処理の合図は止めません。
+- スリープ明けに、たまった分をまとめて動かしません。同じ分に同じ処理を 2 回動かしません。
+- 処理が起こした予想外の例外は握りつぶさず、アプリの未処理例外の受け皿へ渡します。`Forget` と同じ扱いです。
+- 返ってきた控え (`IMinuteTickSubscription`)は、持ち主 (画面・ViewModel)を閉じるときに `Dispose` します。解除しないと、メモリが漏れます。
 
 ```csharp
-var scheduler = new MinuteScheduler(TimeProvider.System);
-scheduler.Start(async now => { /* 毎分 00 秒の処理。now は現在の日時 */ });   // タイマーのスレッドで動く
-var minute = MinuteScheduler.TruncateToMinute(now);                           // 秒以下を切り捨てる
-scheduler.Dispose();                                                          // 止める
+// 毎分 00 秒に動かす (リマインダーの判定など。登録した直後にも 1 回動かす)
+var tick = ticker.Subscribe(async now => { /* 処理。now は現在の日時 */ },
+    new MinuteTickOptions { RunImmediately = true, IsActive = () => features.IsEnabled(key) });
+
+// DB を読み直す処理は、端末ごとにずらした秒に動かす。UI スレッドで状態を持つなら OnCallerContext にする
+var poll = ticker.Subscribe(_ => ReloadAsync(),
+    new MinuteTickOptions { Timing = MinuteTickTiming.Staggered, MinimumGap = TimeSpan.FromSeconds(30), OnCallerContext = true });
+poll.MarkRan();   // 手動で取り込んだ直後は、MinimumGap の間、自動の取り込みを飛ばす
+poll.Dispose();   // 解除する
+```
+
+`IsActive` は合図のたびに確かめ、false なら今回を飛ばします。機能のオン・オフや、管理者による無効は、起動後にも変わるためです。
+
+### 毎分 00 秒の処理 (`MinuteScheduler`)
+
+`IMinuteTicker` の土台です。開始直後に 1 回、以後はシステム時刻の毎分 00 秒に、処理を呼びます。固定間隔ではなく、次の 00 秒までの残り時間をその都度計算する単発タイマーを掛け直すので、時計のずれに追従します。タイマーが 00 秒より少し早く来ても、同じ分に 2 回は呼びません。アプリからは `IMinuteTicker` を使い、これは直接使いません。
+
+```csharp
+var minute = MinuteScheduler.TruncateToMinute(now);   // 秒以下を切り捨てる
 ```
 
 ### 日付が変わったことの検知 (`DayChangeWatcher`)
 
-画面に出している日付と今の日付を、`MinuteScheduler` で毎分比べ、違っていたら知らせます。「次の 0 時まであと何時間」と予約する方式と違い、スタンバイや時計の変更でずれても、最大 1 分で追いつきます。
+画面に出している日付と今の日付を、`IMinuteTicker` の合図で毎分比べ、違っていたら知らせます。「次の 0 時まであと何時間」と予約する方式と違い、スタンバイや時計の変更でずれても、最大 1 分で追いつきます。
 
 ```csharp
-var watcher = new DayChangeWatcher(TimeProvider.System);
+var watcher = new DayChangeWatcher(ticker);
 watcher.MarkShown(now);                      // 画面を作ったら、使った日時を覚えさせる
-watcher.Start(() => { /* 日付が違う。読み直す */ });   // タイマーのスレッドで動く。違いが直るまで毎分呼ぶ
+watcher.Start(() => { /* 日付が違う。読み直す */ });   // スレッドプールで動く。違いが直るまで毎分呼ぶ
 watcher.Dispose();                           // 止める
 ```
 

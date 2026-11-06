@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MmmSdk.Core.Components.Paths;
+using MmmSdk.Core.Components.Scheduling;
 using MmmSdk.Core.Components.Secrets;
 using MmmSdk.Core.Components.Settings;
 using MmmSdk.Core.Components.Settings.Json;
@@ -25,6 +27,9 @@ public static class SdkCoreServiceCollectionExtensions
         services.AddSingleton<IJsonFileStore>(new JsonFileStore(dataDirectory));
         services.AddSingleton<ISettingsStore, JsonSettingsStore>();
         services.AddSingleton<IWindowPositionService, WindowPositionService>();
+        // 毎分の合図。最初に使うときまで、タイマーは動かない。時計を登録していないホストのために、標準の時計を足す
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IMinuteTicker, MinuteTicker>();
         // パスを開く処理 (PathTarget・PathOpener)と秘密の保存 (資格情報マネージャー)は Windows 前提。Windows 以外では登録しない
         // 版を指定するのは、資格情報マネージャーの API が 5.1.2600 以降の印を持つため。今の Windows ならいつも真になる
         if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
