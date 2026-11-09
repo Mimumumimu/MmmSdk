@@ -53,7 +53,7 @@ public sealed class WarningBubble
     private DispatcherQueueTimer? _timer;
 
     /// <summary>吹き出しを、要素の下に出す</summary>
-    /// <param name="target">出す場所の要素 (入力したセルなど。この要素の左下に合わせる)</param>
+    /// <param name="target">出す場所の要素。入力したセルなどで、この要素の左下に合わせる</param>
     /// <param name="message">警告の文</param>
     /// <param name="duration">出しておく時間。省略すると 4 秒</param>
     /// <remarks>すでに出ている吹き出しは、すぐ消す。要素が画面の下端・右端にかかるときは、収まる位置にずらす。下に収まらなければ、要素の上に出す。</remarks>

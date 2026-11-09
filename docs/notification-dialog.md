@@ -23,7 +23,7 @@
 - 常に最前面にする。`SetWindowPos` の `HWND_TOPMOST` + `SWP_NOACTIVATE` を使う。フォーカスを奪わない。`WS_EX_NOACTIVATE` を使う。Alt+Tab に出さない。サイズ変更・最大化・最小化はできない
 - 非アクティブで表示するとバインドが評価されないことがあるので、表示のたびに `Bindings.Update()` を呼ぶ
 - ドラッグは `SetTitleBar` を使わず、ルートのポインタイベント (`handledEventsToo`)で自前実装する
-  - カーソルの画面座標で移動量を測り、`SM_CXDRAG` / `SM_CYDRAG` 以上でドラッグ開始 (その時点でキャプチャ。リンクの押下を横取りしないため)
+  - カーソルの画面座標で移動量を測り、`SM_CXDRAG` / `SM_CYDRAG` 以上でドラッグ開始 (その時点でキャプチャして、リンクの押下を横取りしないため)
   - それ未満で離したらクリックとみなして閉じる
   - リンクのクリックは `Hyperlink.Click` でフラグを立て、閉じる判定は Low 優先度で 1 サイクル遅らせて確認する
   - キャプションボタンの領域 (`TitleBar.RightInset`)とスクロールバーでの押下は対象外
@@ -35,14 +35,14 @@
 - 節が入れ替わる・減るときは、高さの変化で画面に収まらなくなるとき以外は位置を動かさない
 
 ## 位置の保存と復元 (`IWindowPositionService` / `WindowPositionService`)
-- 位置の保存に失敗 (`DataFileException`。ロック・権限・ディスク)しても、通知は使えるので、その失敗だけを受けて続ける。`async void` の例外は受け皿が無く、アプリごと落ちるため。メインウィンドウ用の `WindowBoundsKeeper` も同じ。
+- 位置の保存に失敗 (`DataFileException` で、ロック・権限・ディスク)しても、通知は使えるので、その失敗だけを受けて続ける。`async void` の例外は受け皿が無く、アプリごと落ちるため。メインウィンドウ用の `WindowBoundsKeeper` も同じ。
 - 位置は設定ストアに `WindowPosition.<キー>` として保存する。画面内にいるかの判定は `WindowPlacement.IsVisibleEnough`。メインウィンドウの `WindowBoundsKeeper` と共通。キーは `Notification` の 1 つ (窓が 1 枚で、送り元ごとに位置を持たないため)
 - 保存するタイミング
   - ドラッグの終了 (離した通知とキャプチャ喪失のどちらからでも 1 回)
   - クリックで閉じる直前 (`Window.Close()` では `AppWindow.Closing` が発火しないため、明示的に保存する)
   - × / Alt+F4 で閉じるとき (`Closing`)
 - 復元は、表示するときにキーが変わっていた場合だけ行う
-  - 保存位置のウィンドウが、全モニターの作業領域に対して面積の 50% 以上見えていれば、その位置 (判定は `ScreenGeometry.IsVisibleEnough`。状態を持たず、設定ストアにも依存しない計算)
+  - 保存位置のウィンドウが、全モニターの作業領域に対して面積の 50% 以上見えていれば、その位置 (判定は `ScreenGeometry.IsVisibleEnough` で、状態を持たず、設定ストアにも依存しない計算)
   - 見えなければ、プライマリモニターの作業領域の右下 (余白 16px)
 - そのうえで毎回の表示で、はみ出していれば最寄りのモニターの作業領域の内側へ寄せる。寄せるのは `KeepInWorkArea`。寄せた位置は保存しない
 - `DisplayArea.FindAll()` は `foreach` せず、Count とインデクサで回す

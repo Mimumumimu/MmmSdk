@@ -25,7 +25,7 @@ public static class WindowPlacement
 
     /// <summary>ウィンドウの矩形が、全モニターの作業領域に対して、十分に見えているか</summary>
     /// <param name="window">ウィンドウの矩形 (物理ピクセル)</param>
-    /// <param name="minRatio">見えている割合の下限 (0〜1。面積に対する割合)</param>
+    /// <param name="minRatio">見えている割合の下限で、0〜1。面積に対する割合</param>
     /// <returns>十分に見えていれば true (保存した位置が、今のモニター構成で画面外にならないかの判定に使う)</returns>
     public static bool IsVisibleEnough(RectInt32 window, double minRatio)
     {

@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- ブラウザ (browser-wasm)で動く Web 版の画面側が、アプリの .Core 経由で参照するので、x64 専用の共通設定 (Directory.Build.props)から外して AnyCPU にする -->
+    <Platforms>AnyCPU</Platforms>
+    <Platform>AnyCPU</Platform>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <!-- トリミング・AOT でも動くことを、ビルドの分析で確かめる (README の「トリミングしても動く」を裏付ける) -->
     <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>

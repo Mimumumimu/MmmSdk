@@ -4,11 +4,11 @@
 
 ## DialogService (ダイアログの親の決定)
 
-- ダイアログ・モーダルウィンドウの親を決める。優先順位は、最後に操作した (アクティブになった)ウィンドウ (登録した普通のウィンドウ・開いているモーダルウィンドウ。見えているものだけ)→ いちばん手前のモーダルウィンドウ → 最初に登録したウィンドウ。どれも無ければ `InvalidOperationException`
+- ダイアログ・モーダルウィンドウの親を決める。優先順位は、最後に操作した (アクティブになった)ウィンドウ (登録した普通のウィンドウ・開いているモーダルウィンドウで、見えているものだけ)→ いちばん手前のモーダルウィンドウ → 最初に登録したウィンドウ。どれも無ければ `InvalidOperationException`
 - 普通のウィンドウは、見えているもの (`AppWindow.IsVisible`)だけを親にする。× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えないため。見えているものが 1 つも無いときだけ、隠れたウィンドウ (最後に操作したもの → 最初に登録したもの)を返す。このときは `ContentDialog` が見えないまま待ち続けるので、呼ぶ側が、先に見えるウィンドウを出してから呼ぶ
 - 確認ダイアログ (`ConfirmAsync`)は `SemaphoreSlim(1)` で順番に開く。`ContentDialog` は、同じ画面に 2 つ同時に開くと例外になるため。親は、順番が来てから決める
 - 普通のウィンドウは `TrackWindow` で登録する。アクティブになるたびに「最後に操作したウィンドウ」を更新し、閉じたら候補から外す
-- モーダルウィンドウは `ShowModalAsync` で開く間だけ覚え、アクティブになったら「最後に操作したウィンドウ」にもなる (その上に開くダイアログの親にするため。一覧の上に入力画面・確認を重ねられる)
+- モーダルウィンドウは `ShowModalAsync` で開く間だけ覚え、アクティブになったら「最後に操作したウィンドウ」にもなる (その上に開くダイアログの親にして、一覧の上に入力画面・確認を重ねられるようにするため)
 - 親は「最後に操作したウィンドウ」を先にする。いちばん手前のモーダルを先にしない。別のウィンドウでモーダルが開いたまま、もう一方のウィンドウ (アプリのメイン画面など)で操作したとき、操作したほうの上に出すため
 - `ConfirmAsync(title, message, primaryText, closeText)`: 確認ダイアログ。ボタンの文言は、実行・取りやめとも、アプリが言語に合わせて渡す。SDK は日本語を埋め込まない。取り消しにくい操作の確認用に、既定のボタンを置かない。Enter で誤って実行しない。キャンセルを既定にすると、キャンセルが強調色になって主な操作に見えるので、どちらも強調しない。コードで作る `ContentDialog` には既定のスタイルが当たらないので、`DefaultContentDialogStyle` を明示している
 - `AskFileConflictAsync(title, message, replaceText, skipText, closeText, decideEachText = null)`: 保存先に同じ名前のファイルがあるときの扱いを聞く。選択肢は縦に並べたボタン (Windows のファイルのコピーの確認と同じ形)で、結果は `FileConflictChoice` は `Replace` / `Skip` / `DecideEach` / `Cancel` のどれか。`decideEachText` を渡したときだけ「ファイルごとに決める」の選択肢が出て、`DecideEach` が返りうる。複数のファイルをまとめて聞くときに返る。1 つのファイルについて聞くときは省く。取りやめるボタン・Esc は `Cancel`。置き換えは取り消しにくいので、`ConfirmAsync` と同じく既定のボタンを置かない。既定のボタンが無いと最初の選択肢 (置き換える)にフォーカスが当たり、Enter・Space 1 回で置き換えてしまうので、開いたら取りやめるボタンへフォーカスを移す。移すのは `Opened` のときで、強調色は付けない。文言は、すべてアプリが渡す。`ConfirmAsync` と同じロックで順番に開く
@@ -24,7 +24,7 @@
 
 ## ファイル/フォルダー選択
 
-- `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null。`PickFolderAsync(startDirectory)` は、最初に開くフォルダを指定できる。ドライブだけの入力 (`D:`)は `D:\` として、無いフォルダは存在する一番近い親として開く。ピッカーはフルパスでない値で例外になるため。指定が使えないときは、ピッカーの既定の場所。選ばれたフォルダは、末尾を `\` にそろえて返す (`D:\` のようにすでに `\` で終わるものは、そのまま。ドライブだけの `D:` が、シェルで「そのドライブで最後にいたフォルダ」と解釈されるのを防ぐため、表記を 1 つにする)
+- `IFilePickerService.PickFileAsync` / `IFolderPickerService.PickFolderAsync`。選ばれたパスを返し、キャンセルなら null。`PickFolderAsync(startDirectory)` は、最初に開くフォルダを指定できる。ドライブだけの入力 (`D:`)は `D:\` として、無いフォルダは存在する一番近い親として開く。ピッカーはフルパスでない値で例外になるため。指定が使えないときは、ピッカーの既定の場所。選ばれたフォルダは、末尾を `\` にそろえて返す (`D:\` のようにすでに `\` で終わるものは、そのままにして、ドライブだけの `D:` が、シェルで「そのドライブで最後にいたフォルダ」と解釈されるのを防ぐため、表記を 1 つにする)
 - `IFilePickerService.PickFilesAsync`: 複数のファイルを選べる。選ばれたパスの一覧を返し、キャンセルなら空
 - `IFilePickerService.PickSaveFileAsync(suggestedFileName)`: 保存先を選ぶ。名前を付けて保存にあたる。最初に入れておくファイル名を渡す。保存の種類は、そのファイル名の拡張子 1 つだけ。拡張子が無いときは、拡張子なしを表す `.`。同じ名前のファイルがあるときの上書きの確認は、ダイアログが出す。キャンセルなら null
 - Windows App SDK のピッカー。アンパッケージでも、親のウィンドウ ID (`IDialogHost.Owner`)を渡すだけで使える
@@ -38,17 +38,19 @@
 - 貼り付けなどのイベントの中で、`Clipboard.GetContent()` / `Contains` を呼ばない。コピー元の返事を待つ間に、UI スレッドで画面の操作が処理され続け、イベントの途中で WinUI が内部で失敗して落ちるため。種類は `ClipboardFormats` で決め、取り出しはイベントのあとに行う
 - 名前空間を `Clipboard` にしないのは、`Windows.ApplicationModel.DataTransfer.Clipboard` の型名を隠さないため (フォルダ名は `Clipboards`)
 
-## NativeMessageBox (標準のメッセージボックス。`MmmSdk.WinUI.Utilities`)
+## NativeMessageBox (標準のメッセージボックス)
 
+- 名前空間は `MmmSdk.WinUI.Utilities`。
 - `ShowInformation(text, caption)`: Windows 標準の情報メッセージボックス。閉じられるまで待つ
 - `ShowError(text, caption)`: 同じく標準のエラーで、赤い×のアイコン。`FatalErrorHandler` が、復旧できないエラーを知らせるのに使う
 - WinUI のウィンドウ・アプリの初期化 (XAML の読み込み)より前でも出せる。多重起動の案内のように、画面を作る前に知らせたいときに使う (`ContentDialog` は画面が無いと出せない)
 - 親ウィンドウは持たない (デスクトップが親)
 
-## PseudoModal (擬似モーダル。`MmmSdk.WinUI.Components.Windowing`)
+## PseudoModal (擬似モーダル)
 
+- 名前空間は `MmmSdk.WinUI.Components.Windowing`。
 - ウィンドウを親の上に出し、閉じるまで親を操作できなくする。`OverlappedPresenter.IsModal` では親を操作できてしまったため、Win32 のモーダルと同じく `EnableWindow` で親を無効にしている
-- `SetOwner`(表示の前)で親と表示倍率を取り、オーナー設定 (親より常に手前・一緒に最小化)をする。`Show` で親を無効にして表示、`CenterOnOwner` で親の中央へ (作業領域からはみ出す分は内側へ寄せる)
+- `SetOwner`(表示の前)で親と表示倍率を取り、オーナー設定 (親より常に手前・一緒に最小化)をする。`Show` で親を無効にして表示、`CenterOnOwner` で、作業領域からはみ出す分を内側へ寄せて、親の中央へ置く。大きさを決める前に、`GetAvailableHeightDip` と `GetAvailableWidthDip` で、作業領域に収まる高さと幅の上限を取れる
 - 親を戻すのは、コードから閉じる (`Close`)・× / Alt+F4 (`AppWindow.Closing`)・閉じたあと (`Closed`)のどれでも。何度戻してもよい。無効のまま閉じると、別のアプリが前面に来るため、消える前に戻す。閉じたあとは親を前面に出す
 - 中身が出入りする画面 (お知らせ・入力欄の切り替え)は、出入りのあとに、`Window.ResizeToContentHeight(content, width)` (`MmmSdk.WinUI.Utilities.WindowExtensions`)で、高さを中身に合わせて測り直し、`true` のときに `CenterOnOwner` で置き直す。測り直しを順番待ちに回すと、閉じたあと・画面に載る前に実行されることがある (閉じたウィンドウは `AppWindow` が、載る前は `XamlRoot` が無い)ので、測れないときは何もせず `false` を返す
 

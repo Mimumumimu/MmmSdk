@@ -105,13 +105,13 @@ public sealed class TrayIcon : IDisposable
             };
             if (PInvoke.RegisterClassEx(windowClass) == 0)
             {
-                throw new InvalidOperationException($"トレイ用のウィンドウクラスを登録できませんでした (エラー {Marshal.GetLastPInvokeError()})。");
+                throw new InvalidOperationException($"トレイ用のウィンドウクラスを登録できませんでした。エラー {Marshal.GetLastPInvokeError()}");
             }
 
             _hwnd = PInvoke.CreateWindowEx(0, className, toolTip, 0, 0, 0, 0, 0, HWND.Null, HMENU.Null, hInstance, null);
             if (_hwnd.IsNull)
             {
-                throw new InvalidOperationException($"トレイ用のウィンドウを作成できませんでした (エラー {Marshal.GetLastPInvokeError()})。");
+                throw new InvalidOperationException($"トレイ用のウィンドウを作成できませんでした。エラー {Marshal.GetLastPInvokeError()}");
             }
         }
 
@@ -261,7 +261,7 @@ public sealed class TrayIcon : IDisposable
                         _dispatcher.TryEnqueue(() => OpenRequested?.Invoke(this, EventArgs.Empty));
                         break;
                     case PInvoke.WM_CONTEXTMENU:
-                        // 座標は wParam の下位・上位 16 ビット (符号付き。マルチモニターで負になる)
+                        // 座標は wParam の下位・上位 16 ビットで、符号付き。マルチモニターで負になる
                         ShowMenu((short)(wParam.Value & 0xFFFF), (short)((wParam.Value >> 16) & 0xFFFF));
                         break;
                 }
@@ -291,7 +291,7 @@ public sealed class TrayIcon : IDisposable
 
     /// <summary>メニューの項目の元の並び順の値を取得する</summary>
     /// <param name="source">メニューの項目の元</param>
-    /// <returns>並び順の値 (登録で付いたもの。付いていない元は 0)</returns>
+    /// <returns>並び順の値。登録で付いたもので、付いていない元は 0</returns>
     private static int SourceOrder(ITrayMenuSource source) => source is RegisteredTrayMenuSource registered ? registered.Order : 0;
 
     /// <summary>右クリックメニューを出し、選ばれた項目の処理を行う。</summary>

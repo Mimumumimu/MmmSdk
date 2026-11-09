@@ -204,7 +204,7 @@ public static class WindowExtensions
 
     /// <summary>ウィンドウの高さを、中身の高さにちょうど合わせる (幅は変えない)</summary>
     /// <param name="window">対象のウィンドウ</param>
-    /// <param name="content">中身の最上位の要素 (ウィンドウの内容。画面に載っていること)</param>
+    /// <param name="content">中身の最上位の要素。ウィンドウの内容で、画面に載っていること</param>
     /// <param name="width">幅で、単位は DIP。中身の高さを測るときの幅</param>
     /// <returns>大きさを変えたとき true。測れなかったとき (まだ画面に載る前・閉じたあと)は false で、何もしない</returns>
     /// <remarks>
@@ -229,7 +229,7 @@ public static class WindowExtensions
 
     /// <summary>指定した範囲の中央に置く (作業領域からはみ出す分は内側へ寄せる)</summary>
     /// <param name="window">対象のウィンドウ</param>
-    /// <param name="bounds">中央に合わせる範囲 (物理ピクセル。親ウィンドウや作業領域)</param>
+    /// <param name="bounds">中央に合わせる範囲で、物理ピクセル。親ウィンドウや作業領域</param>
     /// <remarks>収める作業領域は、その範囲にいちばん近いモニターのもの。</remarks>
     public static void MoveCentered(this Window window, RectInt32 bounds)
     {

@@ -16,7 +16,7 @@ namespace MmmSdk.WinUI.Components.Audio;
 /// </remarks>
 public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
 {
-    /// <summary>1 区間の長さの希望 (サンプル数。長くして、エンジンの起床の回数を減らす。機器が許す範囲に丸められる)</summary>
+    /// <summary>1 区間の長さの希望で、サンプル数。長くして、エンジンの起床の回数を減らす。機器が許す範囲に丸められる</summary>
     private const uint DesiredSamplesPerQuantum = 4800;
 
     /// <summary>開始・停止・作り直しを 1 つずつ行うための排他</summary>

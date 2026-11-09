@@ -36,7 +36,7 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- 外側の枠 (標準の入力欄と同じ見た目。フォーカス中は下線をアクセント色で太く) -->
+    <!-- 外側の枠。標準の入力欄と同じ見た目で、フォーカス中は下線をアクセント色で太くする -->
     <Grid
         x:Name="Frame"
         MinHeight="{ThemeResource TextControlThemeMinHeight}"

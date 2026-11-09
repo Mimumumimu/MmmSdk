@@ -8,7 +8,7 @@ public sealed class SqliteDatabaseOptions
     /// <summary>データベースのファイルのパス (フォルダーが無ければ作る)</summary>
     public required string FilePath { get; init; }
 
-    /// <summary>版を上げるスクリプト (連番で、抜けがないこと。並びは問わない)</summary>
+    /// <summary>版を上げるスクリプト。連番で抜けがなければよく、並びは問わない</summary>
     public IReadOnlyList<SqliteMigration> Migrations { get; init; } = [];
 
     /// <summary>あるべき表と索引の SQL (無ければ null)</summary>

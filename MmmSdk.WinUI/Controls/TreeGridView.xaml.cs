@@ -49,7 +49,7 @@ public sealed partial class TreeGridView : UserControl
     /// <summary>表示する列 (固定の列が先)</summary>
     internal IReadOnlyList<TreeGridColumn> VisibleColumns => _visibleColumns;
 
-    /// <summary>列の定義 (並べた順に出る。固定の列を先に並べる)</summary>
+    /// <summary>列の定義。並べた順に出るので、固定の列を先に並べる</summary>
     public IList<TreeGridColumn> Columns { get; } = [];
 
     /// <summary>行の高さ (固定)</summary>
@@ -79,7 +79,7 @@ public sealed partial class TreeGridView : UserControl
         set => Scroller.ContextFlyout = value;
     }
 
-    /// <summary>行の一覧 (<see cref="ITreeGridRow"/> の一覧。増減を通知する一覧にすると、差分だけが反映される)</summary>
+    /// <summary>行の一覧で、<see cref="ITreeGridRow"/> の一覧。増減を通知する一覧にすると、差分だけが反映される</summary>
     public object? ItemsSource
     {
         get => Repeater.ItemsSource;
@@ -216,7 +216,7 @@ public sealed partial class TreeGridView : UserControl
         HeaderHost.Children.Add(_headerScrollPanel);
         HeaderHost.Children.Add(_headerFrozenPanel);
 
-        // 入力中のセルの外が押されたら、入力を終える (行の中でも外でも。入力欄はクリックでフォーカスが移らない所があるので、自分で閉じる)
+        // 入力中のセルの外が押されたら、入力を終える。行の中でも外でも終え、入力欄はクリックでフォーカスが移らない所があるので、自分で閉じる
         Scroller.AddHandler(PointerPressedEvent, new Microsoft.UI.Xaml.Input.PointerEventHandler((_, e) =>
         {
             foreach (var presenter in _presenters)

@@ -34,8 +34,23 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 
 ## 機能 (プラグイン)がホストへ入る口 (`Features` / `Pages` / `Hosting` / `Tray`)
 - アプリの機能を、機能ごとのライブラリ (プラグイン)に分けられるよう、機能がホスト (exe)へ入るための型を SDK に置く。機能はホストを参照できないため、機能もホストも SDK のこれらの型を参照する
-- `MmmSdk.Core.Components.Features`: 入口 `IFeaturePlugin`(`Register(IServiceCollection)`。ホストは `AddFeaturePlugin<TPlugin>(order)` で呼ぶ。`order` は、サイドバー・トレイ・設定の並び順の値で、登録の間だけ `FeatureRegistrationScope` が持つ)・機能の登録 `FeatureInfo` / `AddFeature` / `AddAlwaysOnFeature` はオフにできない機能で、並び順だけ使う。`availableWhen` を渡すと、満たさない間は画面に出ない。`AddFeature` の `availableWhen` は、機能が動く前提 (例: サーバーモード)を満たさない間、機能の一覧にも出さず常にオフにする条件で、利用者のオン・オフとは別。サイドバー・トレイ・設定の部品・起動時の準備が、`IsEnabled` で一斉に外れる。条件の元の値が、画面を作ったあとで変わったとき (サインイン後に読み込む、ユーザーごとの許可など)は、`FeatureService.NotifyAvailabilityChanged` が、条件が付いた機能すべてに `Changed` を出して、サイドバーを作り直させる・起動時の準備 `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`・オフにする前の確認 `IFeatureDisableConfirmation`・オン・オフを調べる口 `IFeatureStatus`・オン・オフの管理 `FeatureService`(状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知・利用者が決めた並び順は、設定ストアの `Feature.Order` に、キーの配列で持つ。載っていない機能は登録の順で後ろに付く。`OrderOf` が画面の並びの値を返し、`SetOrderAsync` / `ResetOrderAsync` で保存・既定へ戻し、`OrderChanged` で通知する。トレイは使わない。ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。切り替えの確認・画面への反映はホストが持つ)・`FeatureChangeResult`
-- `MmmSdk.Core.Components.Hosting`: `AppEnvironment`(アプリの名前・データのフォルダー・キャッシュのフォルダー・アイコンのパス・WebView2 の保存先 `WebView2Directory`。ホストが 1 つ登録し、機能が DI から受け取る)
+- `MmmSdk.Core.Components.Features`
+  - 入口は `IFeaturePlugin` で、`Register(IServiceCollection)` を持つ。ホストは `AddFeaturePlugin<TPlugin>(order)` で呼ぶ。`order` は、サイドバー・トレイ・設定の並び順の値で、登録の間だけ `FeatureRegistrationScope` が持つ。
+  - 機能の登録は `FeatureInfo` / `AddFeature` / `AddAlwaysOnFeature`。`AddAlwaysOnFeature` はオフにできない機能で、並び順だけ使う。`availableWhen` を渡すと、満たさない間は画面に出ない。
+    - `AddFeature` の `availableWhen` は、機能が動く前提 (例: サーバーモード)を満たさない間、機能の一覧にも出さず常にオフにする条件で、利用者のオン・オフとは別。
+    - サイドバー・トレイ・設定の部品・起動時の準備が、`IsEnabled` で一斉に外れる。
+    - 条件の元の値が、画面を作ったあとで変わったとき (サインイン後に読み込む、ユーザーごとの許可など)は、`FeatureService.NotifyAvailabilityChanged` が、条件が付いた機能すべてに `Changed` を出して、サイドバーを作り直させる。
+  - 起動時の準備は `IStartupTask` / `StartupTaskRegistration` / `AddStartupTask`。
+  - オフにする前の確認は `IFeatureDisableConfirmation`。
+  - オン・オフを調べる口は `IFeatureStatus`。
+  - オン・オフの管理は `FeatureService`。
+    - 状態の設定ストアへの保存・起動時の準備の実行・切り替えの通知を行う。
+    - 利用者が決めた並び順は、設定ストアの `Feature.Order` に、キーの配列で持つ。載っていない機能は登録の順で後ろに付く。
+    - `OrderOf` が画面の並びの値を返し、`SetOrderAsync` / `ResetOrderAsync` で保存・既定へ戻し、`OrderChanged` で通知する。トレイは使わない。
+    - ホストが `AddFeatureService()` で登録する。保存が無い機能は、登録の既定値。
+    - 切り替えの確認・画面への反映はホストが持つ。
+  - 結果の型は `FeatureChangeResult`。
+- `MmmSdk.Core.Components.Hosting`: `AppEnvironment` は、アプリの名前・データのフォルダー・キャッシュのフォルダー・アイコンのパス・WebView2 の保存先 `WebView2Directory` を持つ。ホストが 1 つ登録し、機能が DI から受け取る。
 - `MmmSdk.WinUI.Components.Pages`: サイドバーのページ `NavigationPage` / `NavigationItem` / `NavigationArea` / `AddNavigationPage` / `AddNavigationChildPage` は、別のページの子の項目として、親の直後に字下げして並べる。開閉は無く、常に出す。子は 1 段だけで、サイドバーの上部だけ。親がオフの間は出さない。親は、同じ機能のページを型で指す。`NavigationView` の入れ子の項目は使わない。親を押すたびに子の開閉が切り替わり、「親を押すとページが開く」動きと合わないため。・設定の部品 `SettingsSection` / `AddSettingsSection`・ページの後始末 `IReleasablePage`・ページを別のウィンドウへ移すとき、スコープを捨てずに画面だけを作り直して引き継ぐ `IHandoverPage` ([terminal.md](terminal.md) の「別のウィンドウへの引き継ぎ」)・ホストが作ったページを調べる口 `IPageCache`・サイドバーの本体 `NavigationHost` (`NavigationView` と、選んだ項目のページを出す `Frame` を持つ UserControl)・項目の一覧と選択を持つ `NavigationHostViewModel`・ページを DI のスコープごとに作って保つ `PageProvider`・外したページのウィンドウ `DetachedPageWindow` と、その管理 `PageDetacher` が行う。項目をメインウィンドウの外へドラッグするか、マウスを乗せたときのボタンで、ページを別のウィンドウに外す。1 つのページは同時に 1 か所だけ。外すときは、そのウィンドウ用にページを新しく作る。`IHandoverPage` を持つページは、同じスコープから作って状態を引き継ぎ、閉じるときも、メインのページへ同じ形で引き継ぐ。それ以外は、メインに残る同じ機能のページを捨てて作り直し、閉じたら、外したページを破棄して、メモリを持ち続けない。WebView2 は、別のウィンドウへ移さない。移すと、日本語入力が効かず、英字しか入らないため。外せるかは、登録の `canDetach` で機能が決める。ウィンドウの大きさは、機能ごとに `WindowBounds.DetachedPage.<項目のキー>` で覚える。並べ方は OS (スナップ)に任せ、分割表示は持たない。登録された機能のオン・オフ・並び順 (`FeatureService`)に合わせて項目を作り直し、オフになった機能のページを捨てる。ウィンドウ (タイトルバー・トレイへの退避)は、アプリが持つ。アプリごとに同じ部品を書き写さず、機能 (バッチ処理)が増えても、ホストは機能の名前を持たずに済むようにするため、MmmTool と MmmBatch で共有する
 - `MmmSdk.WinUI.Components.Tray`: トレイメニューの項目の登録 `AddTrayMenuSource`(機能がオフの間は項目を出さない包みを内部に持つ)
 - 登録の拡張メソッドの型引数には、トリミング・AOT 対応のため `DynamicallyAccessedMembers(PublicConstructors)` を付ける (Core の `IsAotCompatible` の宣言に合わせる)
@@ -53,7 +68,11 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Secrets`: ISecretStore・SecretStoreException (秘密の保存の口)・CredentialSecretStore は資格情報マネージャーで ISecretStore を実装し、CsWin32 の `CredRead` などを使う。Web 版のサーバーのように画面を持たないアプリからも使うので、Core に置き、`NativeMethods.txt` は Core にも持つ
 - `.Paths`: PathOpener・PathOpenException・PathTarget
 - `.TextLinks`: TextLinkFinder・TextLink。文章の中の `http://`・`https://` の URL を見つけ、リンクにしてよいものだけを位置つきで返す。末尾の句読点は含めず、`http` と `https` 以外・空白や引用符を含むもの・長すぎるものは返さない。ノートの HTML・メッセージの Web 版のサーバー・PC 版の `LinkedText` が、同じ結果を使う
-- `.Holidays`: JapaneseHolidays は日本の祝日の判定を行う。内閣府の「国民の祝日」の一覧 (`syukujitsu.csv`。ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない)を、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る。配るのは SDK の csproj で、利用者が、最新の一覧に置き換えられるようにするため。置き換えたら、次の起動から使う。ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる (ファイルは変換せず、そのまま置くので、加工の記載は要らない)
+- `.Holidays`: JapaneseHolidays は日本の祝日の判定 (`IsHoliday`)と、祝日の名前 (`GetName`)と、ある年の祝日の一覧 (`GetHolidays`)を返す。
+  - 内閣府の「国民の祝日」の一覧を読む。一覧は `syukujitsu.csv` で、ダウンロードしたままの Shift_JIS のファイル。UTF-8 も読める。外へは通信しない。
+  - 一覧は、アプリの `Assets/Holidays/` から読む。組み込みリソースにせず、ファイルのまま `Assets/Holidays/` へ配る。配るのは SDK の csproj で、利用者が、最新の一覧に置き換えられるようにするため。置き換えたら、次の起動から使う。
+  - ファイルが無い・読めないときと、一覧の最後の年より先は、祝日として扱わない。
+  - 公共データ利用規約 (第 1.0 版)が出典の記載を求めるので、`syukujitsu.LICENSE.txt` を同じ場所へ配り、アプリの同梱ライブラリのライセンス全文に載せる。ファイルは変換せず、そのまま置くので、加工の記載は要らない。
 - `.DaysOfWeek`: Weekdays と WeekdaySet
   - `Weekdays` は曜日フラグで、月 = 1 から日 = 64 の足し算の数。JSON・DB の列と同じ値
   - `WeekdaySet` は、変換・判定・表記
@@ -62,34 +81,36 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Notifications`: NotificationItem
 - `.SingleInstance`: SingleInstanceGuard
 - `.Attachments`: AttachmentStore
-- `.Shells`: ShellInfo・ShellKind・ShellLocator・ShellCommands・WslPath・WslDistribution (シェルの決定と、シェル別のコマンド作り・パスの変換。WSL も含む)
+- `.Shells`: ShellInfo・ShellKind・ShellLocator・ShellCommands・WslPath・WslDistribution (シェルの決定と、シェル別のコマンド作り・パスの変換で、WSL も含む)
 - `.Features` / `.Hosting`: 機能 (プラグイン)がホストへ自分を登録する口と、オン・オフと並び順の管理の `FeatureService`。上の「機能 (プラグイン)がホストへ入る口」。`Json/FeatureJsonContext` は機能の並び順の配列用 (internal)
-- `.Scheduling`: MinuteScheduler・DayChangeWatcher
+- `.Scheduling`: ITicker・Ticker・TickOptions・TickTiming・DayChangeWatcher・MinuteTime (分単位の時刻の計算)
 - `.Logging`: ErrorLog
-- `MmmSdk.Core.Utilities`: Forget・Debouncer・RestartableTimer・RecentListExtensions・FileSizeFormatter・RememberedDate (選んだ日付を選んだ日の間だけ覚える)
+- `MmmSdk.Core.Utilities`: Forget・Debouncer・RecentListExtensions・FileSizeFormatter・RememberedDate (選んだ日付を選んだ日の間だけ覚える)
 
 ### MmmSdk.WinUI
 - `MmmSdk.WinUI.Components.Notifications`: 通知ダイアログの Window・ViewModel・サービス
 - `.Dialogs`: IDialogService・IDialogHost・DialogService・ファイル/フォルダー選択・FileConflictChoice
 - `.Speech`: ISpeechService・SpeechService (Windows 標準の音声合成で日本語を読み上げる)
 - `.Audio`: IAudioKeepAlive・AudioKeepAlive (無音を流し続けて、音声機器が休止するのを防ぐ)
-- `.Clipboards`: IClipboardService・ClipboardService・ClipboardFormats (クリップボードのテキストの読み書きと、載っている中身の種類の判定。名前空間を `Clipboard` にすると `DataTransfer.Clipboard` の型名を隠すので複数形)
+- `.Clipboards`: IClipboardService・ClipboardService・ClipboardFormats (クリップボードのテキストの読み書きと、載っている中身の種類の判定で、名前空間を `Clipboard` にすると `DataTransfer.Clipboard` の型名を隠すので複数形)
 - `.Attachments`: IImageConverter・ImageConverter・ThumbnailImage (添付の画像の変換とサムネイル)
 - `.Windowing`: PseudoModal・WindowBoundsKeeper・DefaultWindowPlacement
 - `.DaysOfWeek`: WeekdayPicker と WeekdayColors と CalendarHolidayColoring
   - `WeekdayPicker` は、月〜日の 7 つのトグルボタンで、`Value` に曜日フラグが出る。土は青、日は赤の文字
   - `WeekdayColors` は、土日の文字の色で、ライト・ダークの両方の値を持つ。スケジュールの日付と、日付を選ぶカレンダーの線も、同じ色を使う
-  - `CalendarHolidayColoring` は、`CalendarDatePicker` に付ける添付プロパティ `IsEnabled`。開いたカレンダーの日の下に、土曜は青、日曜と祝日 (`JapaneseHolidays`)は赤の線を付ける。アプリの既定のスタイルで全部の選択欄に効かせる
+  - `CalendarHolidayColoring` は、`CalendarDatePicker` と `CalendarView` に付ける添付プロパティ `IsEnabled`。開いたカレンダーの日の下に、土曜は青、日曜と祝日 (`JapaneseHolidays`)は赤の線を付ける。アプリの既定のスタイルで全部の選択欄に効かせる
   - 日の数字の文字の色は変えない。日の数字は内部の描画で、日ごとに色を変えられないため
   - 日ごとに指定できる `SetDensityColors` の線を使う
 - `.Errors`: ErrorState・FatalErrorHandler
-- `.WebViews`: WebView2Setup (WebView2 を、保存先を指定して初期化する。TerminalControl など、WebView2 を使う部品が共有する)
+- `.WebViews`: WebView2Setup (WebView2 を、保存先を指定して初期化する部品で、TerminalControl など、WebView2 を使う部品が共有する)
 - `.Terminal`: ITerminalSession・PseudoConsoleSession・TerminalControl・TerminalOutputWatcher・PseudoConsole。xterm.js のアセットは `Components/Terminal/Assets/` にあり、csproj が参照するアプリの出力フォルダーへ配る。PseudoConsole は ConPTY にプロセスをつないで起動する。UI は持たないが、Core は Windows に依存しないので WinUI 側に置く
 - `.Pages`: 機能 (プラグイン)がサイドバーのページと設定の部品を登録する口で、上の「機能 (プラグイン)がホストへ入る口」と同じもの。`IBusyCursor` は、ウィンドウ全体のマウスカーソルを砂時計にする口で、`NavigationHost`(サイドバーとページの全体)が、その状態に合わせてカーソルを変える。サイドバーを押した直後は、マウスがページの外にあるため、ページだけでは変えない。`RunAsync` は、砂時計を描かせてから、UI スレッドで長く動く処理を始める。サイドバーの移動の履歴は `NavigationHostViewModel` が持ち、`NavigationHistoryButtons` (タイトルバーに置く「戻る」「進む」)と Alt+←・Alt+→ で使う。ショートカットはボタンに持たせ、キーフックは使わない。アプリが前面のときだけ効けばよいため。`INavigationService` は、機能が、サイドバーの指定のページ (`Open<TPage>()`)を開いてもらう口で、通知のクリックなど、ページの外から使う。ホストのウィンドウを前面に出すのは、ホストアプリが `ShowRequested` を受けて行う。トレイへ隠れていても見せるため、ページを開くたびに知らせる。そのため、機能がホストのウィンドウを知らなくて済む。ページが機能のオフなどで項目に無いときは、何もせず false を返す
   - サイドバーの印: `INavigationService.SetBadge<TPage>(bool)` は、サイドバーの指定のページの項目の右端に、知らせの丸を出し入れする口。ページを開いていない間に、見てほしいことが起きたことを知らせる。選ばれている項目と、別のウィンドウに外している項目には出さない。標準の点のバッジ `InfoBadge` は小さくて気づきにくいため使わない。印の状態は、機能がオフの間も項目が持つ。
 - `.TextLinks`: LinkedText。`TextBlock` の添付プロパティ `Text` に文章を渡すと、URL を `Hyperlink` にして並べる。リンクを押すと、`LinkCommand` に URL を渡す。開く処理と失敗の表示は、受け取る側が持つ。`NavigateUri` は使わない。開けなかったときの表示を、アプリが決めるため。強調色の地の上などでは、`LinkForeground` で色を渡す
 - `.Tray`: TrayIcon・TrayIconOptions・ITrayMenuSource・TrayMenuItem・`AddTrayMenuSource`。`TrayMenuRenderer` は internal。DI 登録は `AddMmmSdkWinUI` と同じ `SdkWinUIServiceCollectionExtensions` の `AddMmmSdkTray`
-- `MmmSdk.WinUI.Controls`: TimeInputBox・LinkArea・RefreshButton・OverflowRowLayout・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)
+- `MmmSdk.WinUI.Controls`: AppStyles.xaml・TimeInputBox・LinkArea・RefreshButton・OverflowRowLayout・TreeGridView (TreeGridView は ITreeGridRow・TreeGridColumn・TreeGridRowEventArgs・TreeGridRowPresenter (表の中の部品)と一組)
+  - AppStyles.xaml は、アプリ共通のスタイル `AppTextBoxStyle` と `SettingsSectionHeaderStyle` を持つ
+  - 各アプリの `App.xaml` が、`XamlControlsResources` の後ろで `ms-appx:///MmmSdk.WinUI/Controls/AppStyles.xaml` を読む。アプリに書き写さない
 - `MmmSdk.WinUI.Utilities`: WindowExtensions・WindowPlacement・NativeMessageBox・ImeControl・TextBoxExtensions・TreeViewExtensions・VisualTreeSearch・WarningBubble
 
 ### DB の接続

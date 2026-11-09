@@ -4,9 +4,10 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MmmSdk.WinUI.Components.DaysOfWeek;
 
-/// <summary>日付の選択欄 (<see cref="CalendarDatePicker"/>)のカレンダーで、土曜に青、日曜と祝日に赤の線を、日の下に付ける添付プロパティ</summary>
+/// <summary>日付の選択欄 (<see cref="CalendarDatePicker"/>)と、カレンダー (<see cref="CalendarView"/>)で、土曜に青、日曜と祝日に赤の線を、日の下に付ける添付プロパティ</summary>
 /// <remarks>
-/// アプリの既定のスタイルで <see cref="IsEnabledProperty"/> を <see langword="true"/> にして、すべての選択欄に効かせる。
+/// 日付の選択欄は、アプリの既定のスタイルで <see cref="IsEnabledProperty"/> を <see langword="true"/> にして、すべての選択欄に効かせる。
+/// 複数の日を選ぶカレンダー (<see cref="CalendarView"/>)は、作ったカレンダーに <see cref="SetIsEnabled"/> で付ける。
 /// 色は <see cref="WeekdayColors"/> で、曜日のボタンやスケジュールの日付と同じ。
 /// 日の数字は、カレンダーの内部の描画で書かれ、日ごとに文字の色を変えられない。そのため、日ごとに指定できる「密度の線」 (<see cref="CalendarViewDayItem.SetDensityColors"/>)を使う。
 /// </remarks>
@@ -22,7 +23,7 @@ public static class CalendarHolidayColoring
     public static bool GetIsEnabled(DependencyObject element) => (bool)element.GetValue(IsEnabledProperty);
 
     /// <summary>土日祝の色付けをするかを設定する</summary>
-    /// <param name="element">日付の選択欄</param>
+    /// <param name="element">日付の選択欄か、カレンダー</param>
     /// <param name="value">色付けをするなら <see langword="true"/></param>
     public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IsEnabledProperty, value);
 
@@ -31,16 +32,23 @@ public static class CalendarHolidayColoring
     /// <param name="e">変更の情報</param>
     private static void OnIsEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is not CalendarDatePicker picker)
-        {
-            return;
-        }
-
         // スタイルの再適用などで二重に購読しないよう、先に外す
-        picker.CalendarViewDayItemChanging -= OnDayItemChanging;
-        if (e.NewValue is true)
+        switch (d)
         {
-            picker.CalendarViewDayItemChanging += OnDayItemChanging;
+            case CalendarDatePicker picker:
+                picker.CalendarViewDayItemChanging -= OnDayItemChanging;
+                if (e.NewValue is true)
+                {
+                    picker.CalendarViewDayItemChanging += OnDayItemChanging;
+                }
+                break;
+            case CalendarView view:
+                view.CalendarViewDayItemChanging -= OnDayItemChanging;
+                if (e.NewValue is true)
+                {
+                    view.CalendarViewDayItemChanging += OnDayItemChanging;
+                }
+                break;
         }
     }
 

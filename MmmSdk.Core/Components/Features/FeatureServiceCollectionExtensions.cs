@@ -18,7 +18,7 @@ public static class FeatureServiceCollectionExtensions
 
     /// <summary>設定でオン・オフを切り替えられる機能として登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>
+    /// <param name="featureKey">機能のキー。設定ファイルにも使うので、決めたら変えない</param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
     /// <param name="defaultEnabled">保存が無いとき (初回起動)のオン・オフ</param>
     /// <param name="availableWhen">機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。null なら常に使える</param>
@@ -32,7 +32,7 @@ public static class FeatureServiceCollectionExtensions
 
     /// <summary>オフにできない機能として登録する (設定ページの「機能」の一覧に、スイッチなしで出し、並び順だけ使う)</summary>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="featureKey">機能のキー (設定ファイルにも使う。決めたら変えない)</param>
+    /// <param name="featureKey">機能のキー。設定ファイルにも使うので、決めたら変えない</param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
     /// <param name="availableWhen">機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。null なら常に使える</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
@@ -60,7 +60,7 @@ public static class FeatureServiceCollectionExtensions
     /// <summary>機能 (プラグイン)を、入口から登録する</summary>
     /// <typeparam name="TPlugin">機能の入口の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="order">機能の並び順の値 (小さいほど先。サイドバー・設定の機能の一覧・設定の部品の並びに使う。<paramref name="trayOrder"/> が null のときは、トレイメニューにも使う)</param>
+    /// <param name="order">機能の並び順の値。小さいほど先で、サイドバー・設定の機能の一覧・設定の部品の並びに使う。<paramref name="trayOrder"/> が null のときは、トレイメニューにも使う</param>
     /// <param name="trayOrder">トレイメニューの並び順の値で、小さいほど先。値が大きいほど下で、メニューが開く位置のカーソルに近い。null なら <paramref name="order"/></param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>

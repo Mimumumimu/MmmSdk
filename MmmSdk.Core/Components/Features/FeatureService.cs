@@ -22,7 +22,7 @@ public sealed class FeatureService(
     ISettingsStore settings,
     IServiceProvider services) : IFeatureStatus
 {
-    /// <summary>登録された機能 (登録の並び順の値の順。同じ値は登録順)</summary>
+    /// <summary>登録された機能。登録の並び順の値の順で、同じ値は登録順</summary>
     private readonly IReadOnlyList<FeatureInfo> _registered = [.. features.OrderBy(f => f.Order)];
 
     /// <summary>機能で、オフにできない機能も含む。利用者が決めた並び順の順</summary>

@@ -71,11 +71,11 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         }
         catch (IOException ex)
         {
-            throw new DataFileException($"データベースのファイルを読み書きできません ({ex.Message})。", ex);
+            throw new DataFileException($"データベースのファイルを読み書きできません。{ex.Message}", ex);
         }
         catch (UnauthorizedAccessException ex)
         {
-            throw new DataFileException($"データベースのファイルを読み書きできません ({ex.Message})。", ex);
+            throw new DataFileException($"データベースのファイルを読み書きできません。{ex.Message}", ex);
         }
     }
 
@@ -259,8 +259,8 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
     private static string Describe(SqliteException ex) => ex.SqliteErrorCode switch
     {
         SqliteBusy or SqliteLocked => "データベースのファイルが、ほかの処理で使われています。少し待ってから、もう一度操作してください。",
-        SqliteReadOnly or SqliteCantOpen => $"データベースのファイルを開けません ({ex.Message})。",
+        SqliteReadOnly or SqliteCantOpen => $"データベースのファイルを開けません。{ex.Message}",
         SqliteFull => "ディスクの空きが足りないため、データベースに書き込めません。",
-        _ => $"データベースの読み書きに失敗しました ({ex.Message})。",
+        _ => $"データベースの読み書きに失敗しました。{ex.Message}",
     };
 }

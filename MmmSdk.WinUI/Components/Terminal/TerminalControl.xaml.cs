@@ -317,7 +317,7 @@ public sealed partial class TerminalControl : UserControl
     {
         WebView.Visibility = Visibility.Collapsed;
         InitializationErrorText.Text =
-            $"ターミナルを表示できません (WebView2 を初期化できませんでした)。\nWebView2 ランタイムがインストールされているか確認してください。\n\n{exception.Message}";
+            $"ターミナルを表示できません。WebView2 を初期化できませんでした。\nWebView2 ランタイムがインストールされているか確認してください。\n\n{exception.Message}";
         InitializationErrorText.Visibility = Visibility.Visible;
     }
 

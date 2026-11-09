@@ -53,7 +53,7 @@
         }
     });
 
-    // サイズ変更の通知は 1 フレームに 1 回にまとめる (ドラッグ中に fit() を連打しない。onResize は、列・行が実際に変わったときだけ ConPTY へ伝える)
+    // サイズ変更の通知は 1 フレームに 1 回にまとめる。ドラッグ中に fit() を連打せず、onResize は、列・行が実際に変わったときだけ ConPTY へ伝える
     let fitScheduled = false;
     new ResizeObserver(() => {
         if (fitScheduled) {
@@ -69,13 +69,13 @@
     // 最後にシェルの出力を受け取った時刻 (送信時に、CLI の処理が落ち着いたかの判断に使う)
     let lastOutputAt = 0;
 
-    // 送信の待ち方: 貼り付け後、CLI が一度画面を書き換え、その出力が QUIET_MS 途切れたら Enter (最低 MIN_WAIT_MS、最長 MAX_WAIT_MS)。
+    // 送信の待ち方: 貼り付け後、CLI が一度画面を書き換え、その出力が QUIET_MS 途切れたら Enter を送る。待つ時間は最低 MIN_WAIT_MS、最長 MAX_WAIT_MS。
     // 長い貼り付けを CLI がまとめて「[Pasted text …]」に置き換える場合、置き換えの描画より先に Enter が届くと
     // 確定されないため、貼り付け後の出力が来る前は待ち続ける
     const MIN_WAIT_MS = 150;
     const QUIET_MS = 200;
     const MAX_WAIT_MS = 2000;
-    // 合図の文字列を待っている間の上限 (合図が出ないまま、MAX_WAIT_MS まで待たないため。CLI は貼り付けの取り込みを 0.3 秒ほどで終える)
+    // 合図の文字列を待っている間の上限。合図が出ないまま MAX_WAIT_MS まで待たないためで、CLI は貼り付けの取り込みを 0.3 秒ほどで終える
     const MARKER_MAX_WAIT_MS = 1000;
     const POLL_MS = 30;
     // 合図の探索に使う、貼り付け後の出力の最大の文字数 (後ろから数える)
