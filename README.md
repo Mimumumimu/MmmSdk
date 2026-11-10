@@ -348,6 +348,7 @@ var scale = window.GetDpiScale();  // 100% で 1.0。表示の前でも取れる
 
 window.UseCustomTitleBar(titleBarArea, iconPath);                        // アイコン + タイトルバーを自分で描く
 window.UseFixedPresenter(isDialog: true, isResizable: false);            // 最大化・最小化できないウィンドウ
+window.UseFixedPresenter(isDialog: true, isResizable: true, isMaximizable: true);  // 最大化はできて、最小化はできないウィンドウ
 window.ResizeClientDip(360, 440, scale);                                 // 論理サイズ (DIP)と倍率で大きさを決める
 window.MoveCentered(new RectInt32(x, y, width, height));                 // 範囲の中央に置く (作業領域に収める)
 ```

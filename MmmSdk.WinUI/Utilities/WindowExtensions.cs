@@ -167,16 +167,17 @@ public static class WindowExtensions
         };
     }
 
-    /// <summary>最大化・最小化できない重ね合わせ型のウィンドウにする</summary>
+    /// <summary>最小化できない重ね合わせ型のウィンドウにする (最大化は引数で選ぶ)</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="isDialog">ダイアログ用の見た目 (<see cref="OverlappedPresenter.CreateForDialog"/>)にするか</param>
     /// <param name="isResizable">大きさを変えられるか</param>
     /// <param name="minimumSize">最小の大きさで、単位は物理ピクセル。0 なら指定しない</param>
-    public static void UseFixedPresenter(this Window window, bool isDialog, bool isResizable, SizeInt32 minimumSize = default)
+    /// <param name="isMaximizable">最大化できるか。true なら、最大化ボタンとタイトルバーのダブルクリックで最大化できる。<paramref name="isResizable"/> が true のときだけ有効</param>
+    public static void UseFixedPresenter(this Window window, bool isDialog, bool isResizable, SizeInt32 minimumSize = default, bool isMaximizable = false)
     {
         var presenter = isDialog ? OverlappedPresenter.CreateForDialog() : OverlappedPresenter.Create();
         presenter.IsResizable = isResizable;
-        presenter.IsMaximizable = false;
+        presenter.IsMaximizable = isMaximizable && isResizable;
         presenter.IsMinimizable = false;
         if (minimumSize.Width > 0)
         {
