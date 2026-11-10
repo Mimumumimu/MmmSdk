@@ -99,6 +99,49 @@ public sealed partial class TreeGridView : UserControl
         Repeater.ItemsSource = source;
     }
 
+    /// <summary>上に固定する行の表示部品 (<see cref="PinnedTopRows"/> と同じ並び)</summary>
+    private readonly List<TreeGridRowPresenter> _pinnedTopPresenters = [];
+
+    /// <summary>上に固定する行</summary>
+    private IReadOnlyList<ITreeGridRow> _pinnedTopRows = [];
+
+    /// <summary>上に固定する行。縦にスクロールしても、見出しのすぐ下に残る。横は、ほかの行と一緒に動く</summary>
+    /// <remarks>
+    /// 全体の合計のように、いつも見せておく行に使う。<see cref="ItemsSource"/> の行とは別に渡し、同じ行を両方には入れない。
+    /// 列・セルの見た目・固定の列・行の色は、ほかの行と同じ。行の数だけ、行が見える高さが減るので、少ない数で使う。
+    /// Tab・矢印キーの移動では、行の一覧の前に並ぶ行として扱う。<see cref="FocusCell(ITreeGridRow, string)"/>・<see cref="FindCell"/> は、この行を探さない。
+    /// 同じ並びを渡したときは、何もしない。
+    /// </remarks>
+    public IReadOnlyList<ITreeGridRow> PinnedTopRows
+    {
+        get => _pinnedTopRows;
+        set
+        {
+            if (_pinnedTopRows.SequenceEqual(value, ReferenceEqualityComparer.Instance))
+            {
+                return;
+            }
+
+            foreach (var presenter in _pinnedTopPresenters)
+            {
+                presenter.Release();
+                _presenters.Remove(presenter);
+            }
+            _pinnedTopPresenters.Clear();
+            PinnedTopHost.Children.Clear();
+
+            _pinnedTopRows = [.. value];
+            foreach (var row in _pinnedTopRows)
+            {
+                var presenter = new TreeGridRowPresenter { IsPinned = true };
+                _presenters.Add(presenter);
+                _pinnedTopPresenters.Add(presenter);
+                PinnedTopHost.Children.Add(presenter);
+                presenter.Bind(this, row);
+            }
+        }
+    }
+
     /// <summary>選んだ行 (行の中の入力欄にフォーカスが入った・右クリックしたときに変わる)</summary>
     public ITreeGridRow? SelectedRow
     {
@@ -319,7 +362,12 @@ public sealed partial class TreeGridView : UserControl
             var focusable = _visibleColumns.Where(c => c.IsFocusable).ToList();
             var key = presenter.GetFocusedColumnKey(e.OriginalSource as DependencyObject);
             var column = focusable.FindIndex(c => c.Key == key);
-            var rowIndex = rows.IndexOf(row);
+
+            // 行の並びは、上に固定する行が先で、そのあとに、行の一覧が続く
+            var pinnedCount = _pinnedTopPresenters.Count;
+            var rowCount = pinnedCount + rows.Count;
+            var listIndex = presenter.IsPinned ? -1 : rows.IndexOf(row);
+            var rowIndex = presenter.IsPinned ? _pinnedTopPresenters.IndexOf(presenter) : listIndex < 0 ? -1 : pinnedCount + listIndex;
             if (key is null || column < 0 || rowIndex < 0)
             {
                 return;
@@ -331,7 +379,7 @@ public sealed partial class TreeGridView : UserControl
             {
                 var shift = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
                 target = (rowIndex * count) + column + (shift ? -1 : 1);
-                if (target < 0 || target >= rows.Count * count)
+                if (target < 0 || target >= rowCount * count)
                 {
                     return;
                 }
@@ -348,7 +396,7 @@ public sealed partial class TreeGridView : UserControl
                 var nextRow = rowIndex + rowStep;
                 var nextColumn = column + columnStep;
                 e.Handled = true;
-                if (nextRow < 0 || nextRow >= rows.Count || nextColumn < 0 || nextColumn >= count)
+                if (nextRow < 0 || nextRow >= rowCount || nextColumn < 0 || nextColumn >= count)
                 {
                     return;
                 }
@@ -360,7 +408,13 @@ public sealed partial class TreeGridView : UserControl
             }
 
             e.Handled = true;
-            if (rows[target / count] is ITreeGridRow targetRow)
+            var targetRowIndex = target / count;
+            if (targetRowIndex < pinnedCount)
+            {
+                // 上に固定する行は、いつも作ってあり、見えているので、そのまま移す
+                _pinnedTopPresenters[targetRowIndex].FocusCell(focusable[target % count].Key, false);
+            }
+            else if (rows[targetRowIndex - pinnedCount] is ITreeGridRow targetRow)
             {
                 FocusCell(targetRow, focusable[target % count].Key, false);
             }
@@ -371,12 +425,13 @@ public sealed partial class TreeGridView : UserControl
     /// <summary>セルが見える位置になるよう、スクロールする</summary>
     /// <param name="cell">セル</param>
     /// <param name="isFrozen">固定の列のセルか (横には動かさない)</param>
+    /// <param name="isPinned">上に固定する行のセルか (縦には動かさない)</param>
     /// <remarks>
     /// 固定の列は、見かけの位置だけをずらしているので、並び上は、スクロールする列の左端に重なる。
     /// そのため、<c>StartBringIntoView</c> では、固定の列の下に隠れたセルを、見えているものとして扱ってしまう。
-    /// そこで、固定の列の幅と、見出しの高さを除いた範囲に、セルが入るように、位置を決める。
+    /// そこで、固定の列の幅と、見出しと上に固定する行の高さを除いた範囲に、セルが入るように、位置を決める。
     /// </remarks>
-    internal void RevealCell(FrameworkElement cell, bool isFrozen)
+    internal void RevealCell(FrameworkElement cell, bool isFrozen, bool isPinned)
     {
         if (cell.ActualWidth <= 0)
         {
@@ -400,9 +455,14 @@ public sealed partial class TreeGridView : UserControl
         }
 
         double? y = null;
-        if (bounds.Top < Scroller.VerticalOffset + HeaderHeight)
+        var topHeight = HeaderHeight + (_pinnedTopRows.Count * RowHeight);
+        if (isPinned)
         {
-            y = bounds.Top - HeaderHeight;
+            // 上に固定する行は、いつも見えているので、縦には動かさない
+        }
+        else if (bounds.Top < Scroller.VerticalOffset + topHeight)
+        {
+            y = bounds.Top - topHeight;
         }
         else if (bounds.Bottom > Scroller.VerticalOffset + Scroller.ViewportHeight)
         {
@@ -632,11 +692,12 @@ public sealed partial class TreeGridView : UserControl
     }
 
     /// <summary>見出しを、スクロールの位置に合わせて動かす式を設定する</summary>
-    /// <remarks>見出しの行全体は、縦のスクロールの分だけ、固定の列の部分は、横のスクロールの分だけ、逆向きに動かして、画面に残す。</remarks>
+    /// <remarks>見出しの行全体と、上に固定する行の入れ物は、縦のスクロールの分だけ、固定の列の部分は、横のスクロールの分だけ、逆向きに動かして、画面に残す。</remarks>
     private void AttachHeaderAnimations()
     {
         var scroll = GetScrollProperties();
         Anchor(HeaderHost, scroll, "-scroll.Translation.Y", "Translation.Y");
+        Anchor(PinnedTopHost, scroll, "-scroll.Translation.Y", "Translation.Y");
         Anchor(_headerFrozenPanel, scroll, "-scroll.Translation.X", "Translation.X");
     }
 

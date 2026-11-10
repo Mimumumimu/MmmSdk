@@ -85,7 +85,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile` で、`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.DaysOfWeek` | 月〜日の 7 つのトグルボタンの曜日の選択欄 `WeekdayPicker` で、土は青、日は赤の文字と、土日の文字の色 `WeekdayColors` と、`CalendarDatePicker` のカレンダーで、土曜に青、日曜と祝日に赤の線を日の下に付ける添付プロパティ `CalendarHolidayColoring` |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState` で、`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
-| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表で、固定の列・仮想化に対応) |
+| `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表で、固定の列・上に固定する行・仮想化に対応) |
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered` など、クラスは `WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・`TreeView` の選択を ViewModel と合わせる補助 (`TreeViewExtensions`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
 

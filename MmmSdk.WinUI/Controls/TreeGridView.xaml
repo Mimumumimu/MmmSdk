@@ -99,14 +99,22 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- 見出し。縦にスクロールしても上に残し、中身はコードで作る -->
             <Grid x:Name="HeaderHost" Canvas.ZIndex="10" Background="{ThemeResource TreeGridHeaderBackgroundBrush}" />
 
+            <!-- 上に固定する行 (PinnedTopRows)。縦にスクロールしても、見出しのすぐ下に残す。下を通る行を隠すため、不透明にする -->
+            <StackPanel
+                x:Name="PinnedTopHost"
+                Grid.Row="1"
+                Canvas.ZIndex="9"
+                Background="{ThemeResource TreeGridPanelBackgroundBrush}" />
+
             <ItemsRepeater
                 x:Name="Repeater"
-                Grid.Row="1"
+                Grid.Row="2"
                 ElementClearing="OnElementClearing"
                 ElementPrepared="OnElementPrepared">
                 <ItemsRepeater.Layout>

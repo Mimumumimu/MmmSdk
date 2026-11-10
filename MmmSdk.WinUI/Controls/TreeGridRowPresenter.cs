@@ -95,6 +95,9 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>今の行 (使い回しに戻している間は null)</summary>
     public ITreeGridRow? Row => _row;
 
+    /// <summary>上に固定する行 (<see cref="TreeGridView.PinnedTopRows"/>)の表示部品か</summary>
+    internal bool IsPinned { get; init; }
+
     /// <summary>行の表示部品を作る</summary>
     public TreeGridRowPresenter()
     {
@@ -279,6 +282,17 @@ public sealed partial class TreeGridRowPresenter : Grid
             _row.PropertyChanged -= OnRowPropertyChanged;
         }
         _row = null;
+    }
+
+    /// <summary>行との結び付きを外し、セルからも行を外す (使い回さずに、捨てるとき)</summary>
+    /// <remarks>セルの中の部品が、行の通知を購読したまま残り、長く生きる行から、捨てた表示部品がたどれてしまうのを防ぐ。</remarks>
+    internal void Release()
+    {
+        Unbind();
+        foreach (var (_, cell) in _cells)
+        {
+            cell.Content = null;
+        }
     }
 
     /// <summary>列に合わせて、セルを作り直す</summary>
@@ -518,7 +532,7 @@ public sealed partial class TreeGridRowPresenter : Grid
             if (cell.FocusState == FocusState.Keyboard)
             {
                 // 画面の外 (固定の列の下を含む)にあるセルなら、見える位置までスクロールする
-                _owner?.RevealCell(cell, column.IsFrozen);
+                _owner?.RevealCell(cell, column.IsFrozen, IsPinned);
             }
         };
         cell.KeyDown += (_, e) =>
@@ -680,7 +694,7 @@ public sealed partial class TreeGridRowPresenter : Grid
             target.Focus(FocusState.Programmatic);
         }
         _owner?.SetCursor(cell);
-        _owner?.RevealCell(cell, column.IsFrozen);
+        _owner?.RevealCell(cell, column.IsFrozen, IsPinned);
     }
 
     /// <summary>フォーカスのあるセルに、枠を付ける (入力中・入力を終えてセルにフォーカスが残っている間)</summary>
