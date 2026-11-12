@@ -10,7 +10,7 @@
 | `SqlServerConnectionOptions` | 接続の設定。`Server`・`Database`・`Authentication`・`UserName`・`Password`・`TrustServerCertificate`・`ConnectTimeoutSeconds` |
 | `SqlServerAuthentication` | 認証の方式。`Sql`(ユーザー名とパスワードで、既定)/ `Windows`(今の Windows ユーザー) |
 | `SqlServerConnectionFactory` | 設定から接続を作って開く (`OpenAsync`) |
-| `SqlServerConnectionException` | 接続できなかったときの例外。メッセージはそのまま画面に出せる。元の `SqlException` は `InnerException` |
+| `SqlServerConnectionException` | 接続できなかったときの例外。メッセージはそのまま画面に出せる。元の例外は `InnerException` で、多くは `SqlException`、接続プールの待ちが切れたときは `InvalidOperationException` |
 
 DI への登録は持たない。設定 (サーバー名・DB 名・パスワードなど)はアプリが読んで組み立てて渡すので、ファクトリはアプリの `Add<機能>()` が作って登録する。ファクトリのインターフェースは持たない。保存先の差し替えは、アプリの Repository のインターフェースで行う。ファクトリは SQL Server 専用の実装の部品で、差し替える対象ではない。
 
@@ -45,7 +45,7 @@ catch (SqlServerConnectionException ex)
 - `SqlServerConnectionOptions` は、パスワードを持つので `class` にしている。`record` の `ToString` は全項目を文字にするため、ログに出ると漏れる。パスワードは設定ファイルに書かない
 
 ## 接続の失敗
-`OpenAsync` の `SqlException` を、次のメッセージの `SqlServerConnectionException` にして渡す。取り消し (`OperationCanceledException`)など、`SqlException` 以外はそのまま渡す。メッセージにして渡すのは、画面に出す文言を、呼ぶ側がエラー番号を調べずに使えるようにするため。`DataFileException`・`SecretStoreException` と同じ形。分類できない失敗は、元のメッセージつきで渡し、隠さない。
+`OpenAsync` の `SqlException` と、接続プールの待ちが切れたときの `InvalidOperationException` を、次のメッセージの `SqlServerConnectionException` にして渡す。取り消し (`OperationCanceledException`)など、それ以外はそのまま渡す。メッセージにして渡すのは、画面に出す文言を、呼ぶ側がエラー番号を調べずに使えるようにするため。`DataFileException`・`SecretStoreException` と同じ形。分類できない失敗は、元のメッセージつきで渡し、隠さない。
 
 | 原因 | エラー番号 | メッセージ |
 | --- | --- | --- |
@@ -55,6 +55,7 @@ catch (SqlServerConnectionException ex)
 | データベースを開けない | 4060 | データベースを開けません。データベース名と、ユーザーの権限を確認してください。 |
 | 時間切れ | -2・258 | サーバーから時間内に応答がありません。サーバー名と、ネットワークを確認してください。 |
 | サーバーに届かない | -1・2・40・53・10060・10061 | サーバーに接続できません。サーバー名・ポートと、ネットワーク (ファイアウォール・VPN)を確認してください。 |
+| 接続プールに空きが無く待ちが切れた | (`SqlException` ではなく `InvalidOperationException`) | データベースの接続に空きが無く、時間内に接続できませんでした。しばらくしてから、やり直してください。 |
 | そのほか | | データベースに接続できません。{元のメッセージ} |
 
 証明書の検証の失敗のときだけ、検証を省いて接続し直したい (呼ぶ側が決める)ときは、メッセージの文字ではなく、`SqlServerConnectionException.IsUntrustedCertificate` で見分ける。アプリが、エラー番号や文字を調べずに済み、失敗の知識がこの部品に集まる。ほかの原因で処理を分けるときも、同じ形でプロパティを足す。

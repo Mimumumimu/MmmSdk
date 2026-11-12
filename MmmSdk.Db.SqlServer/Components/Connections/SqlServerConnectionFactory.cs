@@ -57,7 +57,7 @@ public sealed class SqlServerConnectionFactory
     /// </returns>
     /// <exception cref="SqlServerConnectionException">
     /// 接続できなかった
-    /// 原因は到達できない・認証の失敗・証明書の検証の失敗・データベースを開けないなど
+    /// 原因は到達できない・認証の失敗・証明書の検証の失敗・データベースを開けない・接続プールの待ちが切れたなど
     /// メッセージは画面に出せる
     /// </exception>
     public async Task<SqlConnection> OpenAsync(CancellationToken cancellationToken = default)
@@ -71,6 +71,12 @@ public sealed class SqlServerConnectionFactory
         {
             await connection.DisposeAsync().ConfigureAwait(false);
             throw new SqlServerConnectionException(Describe(ex), ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // 接続プールに空きが無いまま待ちの時間が切れたとき、SqlClient は SqlException ではなくこの例外を投げる。作ったばかりの接続を開くので、ほかの原因は無い
+            await connection.DisposeAsync().ConfigureAwait(false);
+            throw new SqlServerConnectionException("データベースの接続に空きが無く、時間内に接続できませんでした。しばらくしてから、やり直してください。", ex);
         }
         catch
         {
