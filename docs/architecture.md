@@ -85,7 +85,10 @@ SDK のプロジェクト・フォルダ・Win32 呼び出しの決め方と、�
 - `.Features` / `.Hosting`: 機能 (プラグイン)がホストへ自分を登録する口と、オン・オフと並び順の管理の `FeatureService`。上の「機能 (プラグイン)がホストへ入る口」。`Json/FeatureJsonContext` は機能の並び順の配列用 (internal)
 - `.Scheduling`: ITicker・Ticker・TickOptions・TickTiming・DayChangeWatcher・MinuteTime (分単位の時刻の計算)
 - `.Logging`: ErrorLog
-- `MmmSdk.Core.Utilities`: Forget・Debouncer・RecentListExtensions・FileSizeFormatter・RememberedDate (選んだ日付を選んだ日の間だけ覚える)
+- `MmmSdk.Core.Utilities`: Forget・Debouncer・RecentListExtensions・FileSizeFormatter・RememberedDate (選んだ日付を選んだ日の間だけ覚える)・ChangeWatermark (差分の読み出しの基準の時刻で、戻して読む時間を持つ)・SeenChanges&lt;TKey&gt; (戻して読んだ行を二重に扱わないための記録)
+  - 「前回より後に更新された行だけを読む」処理は、基準の管理を自分で書かず、この 2 つを使う
+  - 戻す時間は、使う側が決めて渡す
+    - 理由: 確認の間隔と、書き込みが確定するまでの長さが処理ごとに違うため
 
 ### MmmSdk.WinUI
 - `MmmSdk.WinUI.Components.Notifications`: 通知ダイアログの Window・ViewModel・サービス
