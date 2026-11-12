@@ -1,28 +1,42 @@
 namespace MmmSdk.Core.Components.Shells;
 
-/// <summary>Windows のパスを、WSL の中から見たパス (Linux の形)に変換する</summary>
+/// <summary>Windows のパスを WSL の中から見たパスに変換する</summary>
 /// <remarks>
-/// 文字列の変換だけで、ファイルには触れない。wslpath を呼ばない。パスごとに WSL のプロセスを起動すると遅いため。
+/// 変換後は Linux の形になる。
+/// 文字列の変換だけで、ファイルには触れない。
+/// wslpath を呼ばない。
+/// パスごとに WSL のプロセスを起動すると遅いため。
 /// <list type="bullet">
 /// <item>ドライブのパス (<c>D:\work\a.txt</c>)→ <c>/mnt/d/work/a.txt</c></item>
 /// <item>WSL のファイルの共有 (<c>\\wsl.localhost\Ubuntu\tmp\a.jpg</c>・<c>\\wsl$\Ubuntu\tmp\a.jpg</c>)→ <c>/tmp/a.jpg</c></item>
-/// <item>そのほかのネットワークのパス (<c>\\server\share\...</c>)は、WSL から同じ形では開けないので、変換できない</item>
+/// <item>そのほかのネットワークのパス (<c>\\server\share\...</c>)は WSL から同じ形では開けないので、変換できない</item>
 /// </list>
-/// ドライブの割り当て先は WSL の既定の <c>/mnt/</c> とする。制約: <c>/etc/wsl.conf</c> の <c>[automount] root</c> を変えた環境では、違うパスになる。この値は WSL の中からしか読めない。
-/// WSL の共有のパスは、ディストリビューション名を見ずに変換する。シェルが動いているのと別のディストリビューションのパスを渡すと、違う場所を指す。
+/// ドライブの割り当て先は WSL の既定の <c>/mnt/</c> とする。
+/// 制約: <c>/etc/wsl.conf</c> の <c>[automount] root</c> を変えた環境では違うパスになる。
+/// この値は WSL の中からしか読めない。
+/// WSL の共有のパスはディストリビューション名を見ずに変換する。
+/// シェルが動いているのと別のディストリビューションのパスを渡すと違う場所を指す。
 /// </remarks>
 public static class WslPath
 {
-    /// <summary>Windows のドライブを割り当てる場所 (WSL の既定)</summary>
+    /// <summary>Windows のドライブを割り当てる場所</summary>
+    /// <remarks>WSL の既定の場所</remarks>
     private const string MountRoot = "/mnt/";
 
-    /// <summary>WSL のファイルの共有のホスト名 (<c>\\wsl.localhost\</c>・旧来の <c>\\wsl$\</c>)</summary>
+    /// <summary>WSL のファイルの共有のホスト名</summary>
+    /// <remarks><c>\\wsl.localhost\</c> と旧来の <c>\\wsl$\</c></remarks>
     private static readonly string[] ShareHosts = ["wsl.localhost", "wsl$"];
 
     /// <summary>Windows のパスを Linux の形に変換する</summary>
     /// <param name="windowsPath">Windows の絶対パス</param>
-    /// <param name="linuxPath">変換したパス。変換できないときは空</param>
-    /// <returns>変換できたら true。相対パス・WSL の共有ではないネットワークのパスなら false</returns>
+    /// <param name="linuxPath">
+    /// 変換したパス
+    /// 変換できないときは空
+    /// </param>
+    /// <returns>
+    /// 変換できたら true
+    /// 相対パス・WSL の共有ではないネットワークのパスなら false
+    /// </returns>
     public static bool TryToLinux(string windowsPath, out string linuxPath)
     {
         var path = windowsPath.Trim().Replace('\\', '/');
@@ -49,9 +63,10 @@ public static class WslPath
         return false;
     }
 
-    /// <summary>末尾の / を外す (ルートの / だけは残す)</summary>
+    /// <summary>末尾の / を外す</summary>
     /// <param name="path">Linux の形のパス</param>
     /// <returns>末尾の / を外したパス</returns>
+    /// <remarks>ルートの / だけは残す</remarks>
     private static string TrimEndSlash(string path)
     {
         var trimmed = path.TrimEnd('/');

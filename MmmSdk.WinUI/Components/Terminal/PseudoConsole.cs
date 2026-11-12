@@ -8,16 +8,18 @@ using Windows.Win32.System.Threading;
 
 namespace MmmSdk.WinUI.Components.Terminal;
 
-/// <summary>
-/// ConPTY (Windows 擬似コンソール)にプロセスをつないで起動し、入出力のパイプを渡す。
-/// </summary>
+/// <summary>ConPTY にプロセスをつないで入出力のパイプを渡す</summary>
 /// <remarks>
-/// 端末の描画・入力の解釈は持たない。出力は端末のエスケープシーケンスを含んだバイト列のまま。
+/// ConPTY は Windows の擬似コンソール。
+/// プロセスをつないで起動し、入出力のパイプを渡す。
+/// 端末の描画・入力の解釈は持たない。
+/// 出力は端末のエスケープシーケンスを含んだバイト列のまま。
 /// 使い終わったら、出力を読み続けたまま <see cref="Close"/> でシェルを終わらせ、読み取りが終わってから <see cref="Dispose"/> する。
 /// </remarks>
 public sealed class PseudoConsole : IDisposable
 {
-    /// <summary>端末の大きさの上限 (列・行)</summary>
+    /// <summary>端末の大きさの上限</summary>
+    /// <remarks>列と行の上限</remarks>
     private const int MaxSize = short.MaxValue;
 
     /// <summary>擬似コンソールを閉じるのを待つ時間</summary>
@@ -46,27 +48,40 @@ public sealed class PseudoConsole : IDisposable
         ExitHandle = new ProcessWaitHandle(process);
     }
 
-    /// <summary>プロセスへの入力 (書き込み用)</summary>
-    /// <remarks>書き込む内容は、端末が受け取るキー入力の文字列で、UTF-8。<see cref="Close"/> で閉じる。</remarks>
+    /// <summary>プロセスへの入力</summary>
+    /// <remarks>
+    /// 書き込み用。
+    /// 書き込む内容は端末が受け取るキー入力の文字列で、UTF-8。
+    /// <see cref="Close"/> で閉じる。
+    /// </remarks>
     public Stream Input { get; }
 
-    /// <summary>プロセスからの出力 (読み取り用)</summary>
-    /// <remarks>端末のエスケープシーケンスを含む UTF-8 のバイト列。プロセスが終わり擬似コンソールを閉じると、末尾 (読み取りが 0 バイト)になる。</remarks>
+    /// <summary>プロセスからの出力</summary>
+    /// <remarks>
+    /// 読み取り用
+    /// 端末のエスケープシーケンスを含む UTF-8 のバイト列
+    /// プロセスが終わり擬似コンソールを閉じると末尾 (読み取りが 0 バイト)になる
+    /// </remarks>
     public Stream Output { get; }
 
     /// <summary>プロセスが終了すると通知される待機ハンドル</summary>
-    /// <remarks><see cref="ThreadPool.RegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object?, int, bool)"/> などで待つ。ハンドルの所有はこのクラスで、<see cref="Dispose"/> まで有効。</remarks>
+    /// <remarks>
+    /// <see cref="ThreadPool.RegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object?, int, bool)"/> などで待つ。
+    /// ハンドルの所有はこのクラスで、<see cref="Dispose"/> まで有効。
+    /// </remarks>
     public WaitHandle ExitHandle { get; }
 
     /// <summary>擬似コンソールを作り、プロセスをつないで起動する</summary>
-    /// <param name="commandLine">プロセスを起動するコマンドライン (実行ファイルのパスは、空白を含むことがあるので、引用符で囲んで渡す)</param>
+    /// <param name="commandLine">プロセスを起動するコマンドライン (実行ファイルのパスは空白を含むことがあるので、引用符で囲んで渡す)。</param>
     /// <param name="workingDirectory">プロセスの作業ディレクトリ</param>
     /// <param name="columns">端末の桁数</param>
     /// <param name="rows">端末の行数</param>
     /// <returns>起動した擬似コンソール</returns>
     /// <remarks>
-    /// 失敗したときは、作った分をすべて解放してから例外を投げる。
-    /// <paramref name="commandLine"/> は、そのまま <c>CreateProcess</c> に渡す。実行ファイルのパスを引用符で囲まないと、パスの空白で区切られて、別のファイルが起動することがある。<c>ShellInfo.CommandLine</c> は囲んで作る。
+    /// 失敗したときは作った分をすべて解放してから例外を投げる。
+    /// <paramref name="commandLine"/> はそのまま <c>CreateProcess</c> に渡す。
+    /// 実行ファイルのパスを引用符で囲まないと、パスの空白で区切られて、別のファイルが起動することがある。
+    /// <c>ShellInfo.CommandLine</c> は囲んで作る。
     /// </remarks>
     /// <exception cref="Win32Exception">パイプの作成またはプロセスの起動に失敗した</exception>
     /// <exception cref="COMException">擬似コンソールを作成できなかった</exception>
@@ -127,7 +142,7 @@ public sealed class PseudoConsole : IDisposable
     /// <summary>端末の大きさを変える</summary>
     /// <param name="columns">端末の桁数</param>
     /// <param name="rows">端末の行数</param>
-    /// <remarks>閉じたあとは何もしない。</remarks>
+    /// <remarks>閉じたあとは何もしない</remarks>
     public void Resize(int columns, int rows)
     {
         if (!_closed)
@@ -136,11 +151,14 @@ public sealed class PseudoConsole : IDisposable
         }
     }
 
-    /// <summary>入力を閉じ、擬似コンソールを閉じる (プロセスがまだ動いていれば終了する)</summary>
+    /// <summary>擬似コンソールを閉じる</summary>
     /// <remarks>
+    /// 入力を閉じ、擬似コンソールを閉じる。
+    /// プロセスがまだ動いていれば終了する。
     /// 出力を読み続けていないと擬似コンソールを閉じる処理が戻らないことがあるため、別スレッドで閉じて、最大 3 秒だけ待つ。
     /// 呼ぶ側は出力を読み続けたまま呼び、読み取りが末尾になるのを待ってから <see cref="Dispose"/> する。
-    /// 同期で待つのは意図的。<c>IAsyncDisposable</c> にすると、DI コンテナが <c>ConfigureAwait(false)</c> で待つため、
+    /// 同期で待つのは意図的。
+    /// <c>IAsyncDisposable</c> にすると、DI コンテナが <c>ConfigureAwait(false)</c> で待つため、
     /// 後から破棄されるトレイアイコンなどの後始末が UI スレッドの外で動いてしまう。
     /// </remarks>
     public void Close()
@@ -153,7 +171,7 @@ public sealed class PseudoConsole : IDisposable
         Task.Run(() => PInvoke.ClosePseudoConsole(handle)).Wait(CloseTimeout);
     }
 
-    /// <summary>擬似コンソールを、まだ閉じていなければ閉じ、パイプとプロセスのハンドルを解放する</summary>
+    /// <summary>擬似コンソールをまだ閉じていなければ閉じ、パイプとプロセスのハンドルを解放する</summary>
     public void Dispose()
     {
         if (_disposed) return;

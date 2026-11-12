@@ -2,20 +2,21 @@ using Microsoft.Data.SqlClient;
 
 namespace MmmSdk.Db.SqlServer.Components.Connections;
 
-/// <summary>
-/// SQL Server への接続を作る。
-/// </summary>
+/// <summary>SQL Server への接続を作る</summary>
 /// <remarks>
-/// 接続は操作のたびに開いて閉じる。実体の接続は ADO.NET の接続プールが使い回すので、開くコストは小さい。
-/// 呼ぶ側が <c>await using</c> で閉じる。到達確認の Ping はせず、<see cref="SqlServerConnectionOptions.ConnectTimeoutSeconds"/> で待つ。
-/// 接続の失敗は、画面に出せるメッセージつきの <see cref="SqlServerConnectionException"/> にして渡す。握りつぶさない。
+/// 接続は操作のたびに開いて閉じる。
+/// 実体の接続は ADO.NET の接続プールが使い回すので、開くコストは小さい。
+/// 呼ぶ側が <c>await using</c> で閉じる。
+/// 到達確認の Ping はせず、<see cref="SqlServerConnectionOptions.ConnectTimeoutSeconds"/> で待つ。
+/// 接続の失敗は画面に出せるメッセージつきの <see cref="SqlServerConnectionException"/> にして渡す。
+/// 握りつぶさない。
 /// </remarks>
 public sealed class SqlServerConnectionFactory
 {
     private readonly string _connectionString;
     private readonly SqlServerAuthentication _authentication;
 
-    /// <summary>設定から、接続を作るファクトリを作る</summary>
+    /// <summary>設定から接続を作るファクトリを作る</summary>
     /// <param name="options">接続の設定</param>
     /// <exception cref="ArgumentException">サーバー・データベース名が空、または SQL Server 認証でユーザー名・パスワードが空。</exception>
     public SqlServerConnectionFactory(SqlServerConnectionOptions options)
@@ -50,8 +51,15 @@ public sealed class SqlServerConnectionFactory
 
     /// <summary>接続を作って開く</summary>
     /// <param name="cancellationToken">取り消し</param>
-    /// <returns>開いた接続。呼ぶ側が閉じる</returns>
-    /// <exception cref="SqlServerConnectionException">接続できなかった。原因は到達できない・認証の失敗・証明書の検証の失敗・データベースを開けないなど。メッセージは画面に出せる。</exception>
+    /// <returns>
+    /// 開いた接続
+    /// 呼ぶ側が閉じる
+    /// </returns>
+    /// <exception cref="SqlServerConnectionException">
+    /// 接続できなかった
+    /// 原因は到達できない・認証の失敗・証明書の検証の失敗・データベースを開けないなど
+    /// メッセージは画面に出せる
+    /// </exception>
     public async Task<SqlConnection> OpenAsync(CancellationToken cancellationToken = default)
     {
         var connection = new SqlConnection(_connectionString);
@@ -72,9 +80,12 @@ public sealed class SqlServerConnectionFactory
         return connection;
     }
 
-    /// <summary>接続の失敗を、画面に出せる 1 行のメッセージにする</summary>
+    /// <summary>接続の失敗を画面に出せる 1 行のメッセージにする</summary>
     /// <param name="ex">接続の失敗</param>
-    /// <returns>原因ごとのメッセージ。分類できないときは、元のメッセージつき</returns>
+    /// <returns>
+    /// 原因ごとのメッセージ
+    /// 分類できないときは元のメッセージつき
+    /// </returns>
     private string Describe(SqlException ex) => ex.Number switch
     {
         SqlServerConnectionException.UntrustedCertificateNumber => "サーバーの証明書を信頼できません。自己署名の証明書のサーバーに接続するときは、証明書を信頼する設定にしてください。",

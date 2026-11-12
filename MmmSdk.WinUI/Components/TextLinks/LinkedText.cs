@@ -7,16 +7,19 @@ using MmmSdk.Core.Components.TextLinks;
 
 namespace MmmSdk.WinUI.Components.TextLinks;
 
-/// <summary>
-/// <see cref="TextBlock"/> に文章を出すとき、<c>http://</c>・<c>https://</c> の URL を、押すと既定のブラウザで開くリンクにする添付プロパティ。
-/// </summary>
+/// <summary>URL を押すと開くリンクにする添付プロパティ</summary>
 /// <remarks>
 /// <para>
-/// <c>TextBlock.Text</c> の代わりに <see cref="TextProperty"/> に文章を渡す。URL の見つけ方は <see cref="TextLinkFinder"/> に従い、リンクにするのは <c>http</c> と <c>https</c> だけ。
-/// リンクは <see cref="Hyperlink"/> にして、押すと <see cref="LinkCommandProperty"/> のコマンドへ URL を渡す。開く処理と、開けなかったときの表示は、受け取る側が持つ。
+/// <see cref="TextBlock"/> に文章を出すとき、<c>http://</c>・<c>https://</c> の URL を、押すと既定のブラウザで開くリンクにする。
 /// </para>
 /// <para>
-/// 強調色の地の上など、既定のリンクの色では読めない場所では、<see cref="LinkForegroundProperty"/> で色を渡す。
+/// <c>TextBlock.Text</c> の代わりに <see cref="TextProperty"/> に文章を渡す。
+/// URL の見つけ方は <see cref="TextLinkFinder"/> に従い、リンクにするのは <c>http</c> と <c>https</c> だけ。
+/// リンクは <see cref="Hyperlink"/> にして、押すと <see cref="LinkCommandProperty"/> のコマンドへ URL を渡す。
+/// 開く処理と、開けなかったときの表示は受け取る側が持つ。
+/// </para>
+/// <para>
+/// 強調色の地の上など、既定のリンクの色では読めない場所では <see cref="LinkForegroundProperty"/> で色を渡す。
 /// </para>
 /// </remarks>
 public static class LinkedText
@@ -25,11 +28,13 @@ public static class LinkedText
     public static readonly DependencyProperty TextProperty = DependencyProperty.RegisterAttached(
         "Text", typeof(string), typeof(LinkedText), new PropertyMetadata("", OnChanged));
 
-    /// <summary>リンクの文字の色の添付プロパティ。null のときは、リンクの既定の色</summary>
+    /// <summary>リンクの文字の色の添付プロパティ</summary>
+    /// <remarks>null のときはリンクの既定の色</remarks>
     public static readonly DependencyProperty LinkForegroundProperty = DependencyProperty.RegisterAttached(
         "LinkForeground", typeof(Brush), typeof(LinkedText), new PropertyMetadata(null, OnChanged));
 
-    /// <summary>リンクを押したときに実行するコマンドの添付プロパティ。引数は、開く URL の文字列</summary>
+    /// <summary>リンクを押したときに実行するコマンドの添付プロパティ</summary>
+    /// <remarks>引数は開く URL の文字列</remarks>
     public static readonly DependencyProperty LinkCommandProperty = DependencyProperty.RegisterAttached(
         "LinkCommand", typeof(ICommand), typeof(LinkedText), new PropertyMetadata(null, OnChanged));
 
@@ -45,27 +50,40 @@ public static class LinkedText
 
     /// <summary>リンクの文字の色を取る</summary>
     /// <param name="element">対象の <see cref="TextBlock"/></param>
-    /// <returns>色。既定の色のときは null</returns>
+    /// <returns>
+    /// 色
+    /// 既定の色のときは null
+    /// </returns>
     public static Brush? GetLinkForeground(DependencyObject element) => (Brush?)element.GetValue(LinkForegroundProperty);
 
     /// <summary>リンクの文字の色を決める</summary>
     /// <param name="element">対象の <see cref="TextBlock"/></param>
-    /// <param name="value">色。既定の色にするときは null</param>
+    /// <param name="value">
+    /// 色
+    /// 既定の色にするときは null
+    /// </param>
     public static void SetLinkForeground(DependencyObject element, Brush? value) => element.SetValue(LinkForegroundProperty, value);
 
     /// <summary>リンクを押したときのコマンドを取る</summary>
     /// <param name="element">対象の <see cref="TextBlock"/></param>
-    /// <returns>コマンド。無いときは null</returns>
+    /// <returns>
+    /// コマンド
+    /// 無いときは null
+    /// </returns>
     public static ICommand? GetLinkCommand(DependencyObject element) => (ICommand?)element.GetValue(LinkCommandProperty);
 
     /// <summary>リンクを押したときのコマンドを決める</summary>
     /// <param name="element">対象の <see cref="TextBlock"/></param>
-    /// <param name="value">コマンド。引数は、開く URL の文字列</param>
+    /// <param name="value">
+    /// コマンド
+    /// 引数は開く URL の文字列
+    /// </param>
     public static void SetLinkCommand(DependencyObject element, ICommand? value) => element.SetValue(LinkCommandProperty, value);
 
-    /// <summary>文章か色が変わったとき、<see cref="TextBlock"/> の中身を組み立て直す</summary>
+    /// <summary>文章か色が変わったとき中身を組み立て直す</summary>
     /// <param name="d">対象</param>
     /// <param name="e">変更の内容</param>
+    /// <remarks>組み立て直すのは <see cref="TextBlock"/> の中身</remarks>
     private static void OnChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is TextBlock block)
@@ -74,8 +92,9 @@ public static class LinkedText
         }
     }
 
-    /// <summary>文章を、文字とリンクに分けて、<see cref="TextBlock"/> の <c>Inlines</c> に並べる</summary>
+    /// <summary>文章を文字とリンクに分けて並べる</summary>
     /// <param name="block">対象の <see cref="TextBlock"/></param>
+    /// <remarks>並べる先は <see cref="TextBlock"/> の <c>Inlines</c></remarks>
     private static void Rebuild(TextBlock block)
     {
         var text = GetText(block) ?? "";
@@ -108,9 +127,13 @@ public static class LinkedText
         AddRun(block, text[position..]);
     }
 
-    /// <summary>文字の部分を、<see cref="Run"/> として足す</summary>
+    /// <summary>文字の部分を足す</summary>
     /// <param name="block">足す先の <see cref="TextBlock"/></param>
-    /// <param name="text">文字。空のときは足さない</param>
+    /// <param name="text">
+    /// 文字
+    /// 空のときは足さない
+    /// </param>
+    /// <remarks><see cref="Run"/> として足す</remarks>
     private static void AddRun(TextBlock block, string text)
     {
         if (text.Length > 0)

@@ -2,11 +2,9 @@ using MmmSdk.Core.Components.Settings;
 
 namespace MmmSdk.Core.Components.WindowPositions;
 
-/// <summary>
-/// ウィンドウの位置をキー単位で保存・復元する。
-/// </summary>
+/// <summary>ウィンドウの位置をキー単位で保存・復元する</summary>
 /// <param name="store">汎用設定ストア</param>
-/// <remarks>保存は汎用設定ストア (<see cref="ISettingsStore"/>)に <c>WindowPosition.&lt;キー&gt;</c> として持つ。</remarks>
+/// <remarks>保存は汎用設定ストア (<see cref="ISettingsStore"/>)に <c>WindowPosition.&lt;キー&gt;</c> として持つ</remarks>
 public sealed class WindowPositionService(ISettingsStore store) : IWindowPositionService
 {
     /// <summary>位置のキーの接頭辞</summary>
@@ -23,7 +21,10 @@ public sealed class WindowPositionService(ISettingsStore store) : IWindowPositio
     }
 
     /// <inheritdoc />
-    /// <remarks>設定ストアが読み取り専用 (読み込みに失敗している)のときは、保存しない。位置が残らなくても困らないので、呼ぶ側には知らせない。</remarks>
+    /// <remarks>
+    /// 設定ストアが読み取り専用 (読み込みに失敗している)のときは保存しない。
+    /// 位置が残らなくても困らないので、呼ぶ側には知らせない。
+    /// </remarks>
     public Task SaveAsync(string key, WindowPosition position) =>
         store.SetAsync(KeyPrefix + key, position, WindowPositionJsonContext.Readable.WindowPosition);
 
@@ -32,7 +33,7 @@ public sealed class WindowPositionService(ISettingsStore store) : IWindowPositio
         => store.TryGet(BoundsKeyPrefix + key, WindowPositionJsonContext.Readable.WindowBounds, out var bounds) ? bounds : null;
 
     /// <inheritdoc />
-    /// <remarks>設定ストアが読み取り専用 (読み込みに失敗している)のときは、保存しない。</remarks>
+    /// <remarks>設定ストアが読み取り専用 (読み込みに失敗している)のときは保存しない</remarks>
     public Task SaveBoundsAsync(string key, WindowBounds bounds) =>
         store.SetAsync(BoundsKeyPrefix + key, bounds, WindowPositionJsonContext.Readable.WindowBounds);
 }

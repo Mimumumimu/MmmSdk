@@ -4,18 +4,25 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace MmmSdk.Core.Components.Storage;
 
-/// <summary>
-/// データフォルダ内の JSON ファイルを読み書きする。書き込みは一時ファイルに書いてから置き換え、途中で失敗しても元のファイルを壊さない。
-/// </summary>
+/// <summary>JSON ファイルの読み書き</summary>
 /// <param name="dataDirectory">JSON ファイルを置くフォルダのパス</param>
+/// <remarks>
+/// データフォルダ内の JSON ファイルを読み書きする。
+/// 書き込みは一時ファイルに書いてから置き換え、途中で失敗しても元のファイルを壊さない。
+/// </remarks>
 public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
 {
-    /// <summary>ファイル操作の同時実行を防ぐロック (ファイル名ごと)</summary>
+    /// <summary>ファイル操作の同時実行を防ぐロック</summary>
     /// <remarks>
-    /// 同じファイルの読み込みと書き込みで取る。読み込みと壊れたファイルの退避の間に、書き込みが割り込まないようにするため。別のファイルは待たせない。
-    /// 待つ処理 (await)をまたいで持つので、継続を元のスレッド (UI スレッド)に戻さない。戻さないのは <c>ConfigureAwait(false)</c> で行う。
+    /// ファイル名ごとに持つ。
+    /// 同じファイルの読み込みと書き込みで取る。
+    /// 読み込みと壊れたファイルの退避の間に書き込みが割り込まないようにするため。
+    /// 別のファイルは待たせない。
+    /// 待つ処理 (await)をまたいで持つので、継続を元のスレッド (UI スレッド)に戻さない。
+    /// 戻さないのは <c>ConfigureAwait(false)</c> で行う。
     /// 戻すと、UI スレッドが同じファイルの同期の <see cref="Read{T}"/> でこのロックを待っている間に、継続が UI スレッドを待って、デッドロックする。
-    /// ファイル名の大文字小文字は区別しない。Windows のファイルシステムに合わせる。
+    /// ファイル名の大文字小文字は区別しない。
+    /// Windows のファイルシステムに合わせる。
     /// </remarks>
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileLocks = new(StringComparer.OrdinalIgnoreCase);
 
@@ -123,19 +130,26 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         }
     }
 
-    /// <summary>ファイルのロックを返す (無ければ作る)</summary>
+    /// <summary>ファイルのロックを返す</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <returns>そのファイル用のロック</returns>
-    /// <remarks>不正なファイル名 (フォルダを含むなど)は、ロックを作る前に <see cref="GetPath"/> で拒否する。</remarks>
-    /// <exception cref="ArgumentException"><paramref name="fileName"/> が不正。呼ぶ側のバグ。</exception>
+    /// <remarks>
+    /// 無ければ作る
+    /// 不正なファイル名 (フォルダを含むなど)はロックを作る前に <see cref="GetPath"/> で拒否する
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="fileName"/> が不正
+    /// 呼ぶ側のバグ
+    /// </exception>
     private SemaphoreSlim GetFileLock(string fileName)
     {
         GetPath(fileName);
         return _fileLocks.GetOrAdd(fileName, static _ => new SemaphoreSlim(1, 1));
     }
 
-    /// <summary>一時ファイルを削除する。削除できなくても例外にしない</summary>
+    /// <summary>一時ファイルを削除する</summary>
     /// <param name="tempPath">一時ファイルのフルパス</param>
+    /// <remarks>削除できなくても例外にしない</remarks>
     private static void TryDeleteTempFile(string tempPath)
     {
         try
@@ -158,25 +172,29 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         return File.Exists(path);
     }
 
-    /// <summary>ファイルの読み書きの失敗 (ロック・権限など)か</summary>
+    /// <summary>ファイルの読み書きの失敗か</summary>
     /// <param name="exception">起きた例外</param>
     /// <returns>ロック・権限などの失敗なら true</returns>
     private static bool IsFileAccessError(Exception exception) => exception is IOException or UnauthorizedAccessException;
 
-    /// <summary>読み込みの失敗を、画面に出せるメッセージ付きの例外にする</summary>
+    /// <summary>読み込みの失敗を画面に出せるメッセージ付きの例外にする</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <param name="cause">原因の例外</param>
     /// <returns>読み込みに失敗したことを表す例外</returns>
     private static DataFileException ReadFailed(string fileName, Exception cause)
         => new($"{fileName} を読み込めませんでした。{cause.Message}", cause);
 
-    /// <summary>JSON を値に変換する。読めなければファイルを退避する。呼ぶ側は <see cref="GetFileLock"/> のロックを取っておくこと</summary>
+    /// <summary>JSON を値に変換する</summary>
     /// <typeparam name="T">読み込む値の型</typeparam>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <param name="bytes">ファイルの中身</param>
     /// <param name="typeInfo">値の型のソース生成メタデータ</param>
-    /// <returns>変換した値と、退避したときのメッセージ</returns>
-    /// <remarks>空 (BOM・空白だけ)なら値は null。</remarks>
+    /// <returns>変換した値と、退避したときのメッセージ。</returns>
+    /// <remarks>
+    /// 読めなければファイルを退避する
+    /// 呼ぶ側は <see cref="GetFileLock"/> のロックを取っておくこと
+    /// 空 (BOM・空白だけ)なら値は null
+    /// </remarks>
     private DataLoadResult<T?> ParseOrRecover<T>(string fileName, byte[] bytes, JsonTypeInfo<T> typeInfo)
     {
         if (IsBlank(bytes))
@@ -196,9 +214,10 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         }
     }
 
-    /// <summary>中身が空 (UTF-8 の BOM と空白だけ)か</summary>
+    /// <summary>中身が空か</summary>
     /// <param name="bytes">ファイルの中身</param>
     /// <returns>空なら true</returns>
+    /// <remarks>UTF-8 の BOM と空白だけのときも空とみなす</remarks>
     private static bool IsBlank(byte[] bytes)
     {
         var span = bytes.AsSpan();
@@ -209,15 +228,17 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
         return span.Trim((ReadOnlySpan<byte>)[(byte)' ', (byte)'\t', (byte)'\r', (byte)'\n']).IsEmpty;
     }
 
-    /// <summary>壊れたファイルを退避する。呼ぶ側は <see cref="GetFileLock"/> のロックを取っておくこと</summary>
+    /// <summary>壊れたファイルを退避する</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <param name="error">JSON として読めなかった原因の例外</param>
     /// <returns>ユーザーへ表示するメッセージ</returns>
     /// <remarks>
-    /// 同じフォルダに <c>名前.broken-yyyyMMdd-HHmmss.拡張子</c> で名前を変えて残す。自動では消さない。
+    /// 呼ぶ側は <see cref="GetFileLock"/> のロックを取っておくこと。
+    /// 同じフォルダに <c>名前.broken-yyyyMMdd-HHmmss.拡張子</c> で名前を変えて残す。
+    /// 自動では消さない。
     /// 元のファイルは無くなるので、呼ぶ側は「ファイルが無いとき」と同じように作り直す。
     /// </remarks>
-    /// <exception cref="DataFileException">退避できなかった。</exception>
+    /// <exception cref="DataFileException">退避できなかった</exception>
     private string TryRecover(string fileName, JsonException error)
     {
         var path = GetPath(fileName);
@@ -246,8 +267,15 @@ public sealed class JsonFileStore(string dataDirectory) : IJsonFileStore
     /// <summary>ファイルのフルパスを返す</summary>
     /// <param name="fileName">データフォルダ内のファイル名</param>
     /// <returns>データフォルダと結合したパス</returns>
-    /// <remarks>ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入ると、データフォルダの外を読み書きできてしまう。<c>:</c> が入ると、代替データストリーム (<c>x.json:ads</c>)として、見えない場所に読み書きできてしまう。そのため、ファイル名だけを受け付ける。</remarks>
-    /// <exception cref="ArgumentException"><paramref name="fileName"/> が空、またはフォルダや <c>:</c> を含んでいる。呼ぶ側のバグ。</exception>
+    /// <remarks>
+    /// ファイル名にフォルダの区切り・ドライブ・<c>..</c> が入るとデータフォルダの外を読み書きできてしまう。
+    /// <c>:</c> が入ると、代替データストリーム (<c>x.json:ads</c>)として、見えない場所に読み書きできてしまう。
+    /// そのため、ファイル名だけを受け付ける。
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="fileName"/> が空、またはフォルダや <c>:</c> を含んでいる。
+    /// 呼ぶ側のバグ。
+    /// </exception>
     private string GetPath(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName) || Path.GetFileName(fileName) != fileName || fileName is "." or ".." || fileName.Contains(':'))

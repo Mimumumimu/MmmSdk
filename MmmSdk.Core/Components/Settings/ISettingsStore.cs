@@ -3,67 +3,95 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace MmmSdk.Core.Components.Settings;
 
-/// <summary>
-/// キーに対して任意の型の値を保存・取得する、アプリ共通の汎用設定ストア。
-/// </summary>
+/// <summary>アプリ共通の汎用設定ストア</summary>
 /// <remarks>
-/// 機能ごとの設定サービスは、キーに接頭辞を付けて委譲すると衝突しない。例は <c>WindowPosition.&lt;キー&gt;</c>、<c>Reminder.&lt;項目&gt;</c>。
+/// キーに対して任意の型の値を保存・取得する。
+/// 機能ごとの設定サービスはキーに接頭辞を付けて委譲すると衝突しない。
+/// 例は <c>WindowPosition.&lt;キー&gt;</c>、<c>Reminder.&lt;項目&gt;</c>。
 /// 値は JSON で持つので、使う側が <c>JsonSerializable</c> で登録した <see cref="JsonTypeInfo{T}"/> を渡して読み書きする。
-/// string / bool / int / long / double は、<see cref="SettingsStoreExtensions"/> の型ごとの専用のメソッドで、型情報なしで使える。それ以外の型を渡すと、実行時ではなく、ビルドで誤りになる。
-/// 保存先を替えるときに実装するのは、このインターフェースの型情報つきのメソッドだけ。型ごとの専用のメソッドは、それを呼ぶ拡張メソッド。
-/// 読み書きはスレッドセーフ。ファイルが無い・空・壊れているときは空の設定として扱い、例外は投げない。
-/// 壊れていたファイルは退避してから作り直す。知らせるのは <see cref="RecoveryMessage"/>。
-/// ロック・権限などで読めなかったときも、空の設定として扱うが、元のファイルを空で上書きしないよう、保存はしない。判定は <see cref="IsReadOnly"/> で、例外ではなく、保存の結果の false で知らせる。
-/// 値の取得は、無い・型違いのときに既定値を返す <c>Get</c> と、有無を結果で返す <c>TryGet</c>(既定値と区別したいとき)がある。
+/// string / bool / int / long / double は <see cref="SettingsStoreExtensions"/> の型ごとの専用のメソッドで、型情報なしで使える。
+/// それ以外の型を渡すと、実行時ではなく、ビルドで誤りになる。
+/// 保存先を替えるときに実装するのはこのインターフェースの型情報つきのメソッドだけ。
+/// 型ごとの専用のメソッドはそれを呼ぶ拡張メソッド。
+/// 読み書きはスレッドセーフ。
+/// ファイルが無い・空・壊れているときは空の設定として扱い、例外は投げない。
+/// 壊れていたファイルは退避してから作り直す。
+/// 知らせるのは <see cref="RecoveryMessage"/>。
+/// ロック・権限などで読めなかったときも、空の設定として扱うが、元のファイルを空で上書きしないよう、保存はしない。
+/// 判定は <see cref="IsReadOnly"/> で、例外ではなく、保存の結果の false で知らせる。
+/// 値の取得は無い・型違いのときに既定値を返す <c>Get</c> と、有無を結果で返す <c>TryGet</c>(既定値と区別したいとき)がある。
 /// </remarks>
 public interface ISettingsStore
 {
-    /// <summary>ファイルを読めなかったときのメッセージ。正常なら null。</summary>
-    /// <remarks>ロック・権限などで読めなかったとき。このときは空の設定として扱い、保存はしない。判定は <see cref="IsReadOnly"/>。</remarks>
+    /// <summary>ファイルを読めなかったときのメッセージ</summary>
+    /// <remarks>
+    /// 正常なら null。
+    /// ロック・権限などで読めなかったとき。
+    /// このときは空の設定として扱い、保存はしない。
+    /// 判定は <see cref="IsReadOnly"/>。
+    /// </remarks>
     string? LoadError { get; }
 
-    /// <summary>読み取り専用か (読み込みに失敗していて、保存できない状態か)</summary>
+    /// <summary>読み取り専用か</summary>
     /// <remarks>
-    /// true の間、<c>SetAsync</c> / <c>RemoveAsync</c> は何も書かず、保存しなかったことを結果の false で返す。保存のたびに、1 度だけ読み直しを試みる。読めるようになっていれば、そのまま保存する。
-    /// 空の設定でファイルを上書きして、読めなかっただけの既存の設定を失うのを防ぐ。呼ぶ側は、保存の前にこれで確かめて、画面で知らせてもよい。
+    /// 読み込みに失敗していて、保存できない状態かを表す。
+    /// true の間、<c>SetAsync</c> / <c>RemoveAsync</c> は何も書かず、保存しなかったことを結果の false で返す。
+    /// 保存のたびに 1 度だけ読み直しを試みる。
+    /// 読めるようになっていれば、そのまま保存する。
+    /// 空の設定でファイルを上書きして、読めなかっただけの既存の設定を失うのを防ぐ。
+    /// 呼ぶ側は保存の前にこれで確かめて、画面で知らせてもよい。
     /// </remarks>
     bool IsReadOnly { get; }
 
-    /// <summary>壊れていたファイルを退避して作り直したときのメッセージ。通常は null。</summary>
+    /// <summary>壊れていたファイルを退避して作り直したときのメッセージ</summary>
     string? RecoveryMessage { get; }
 
-    /// <summary>設定ファイルを、まだ読んでいなければ非同期で読み込んでおく</summary>
+    /// <summary>設定ファイルをまだ読んでいなければ非同期で読み込んでおく</summary>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>読み込みの完了を表すタスク</returns>
     /// <remarks>
-    /// 読み込まなくても、最初の <c>Get</c> などで同期で読まれる。UI スレッドを、ファイルの読み込みの間だけ止める。起動時の準備で呼んでおけば、止めずに済む。
-    /// 読めなかったときも例外は投げず、<see cref="LoadError"/> に残す。読み込み済みなら、何もしない。
+    /// 読み込まなくても最初の <c>Get</c> などで同期で読まれる。
+    /// UI スレッドをファイルの読み込みの間だけ止める。
+    /// 起動時の準備で呼んでおけば、止めずに済む。
+    /// 読めなかったときも例外は投げず、<see cref="LoadError"/> に残す。
+    /// 読み込み済みなら、何もしない。
     /// </remarks>
     Task EnsureLoadedAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>値を取得する。無い・型が合わないときは既定値を返す。</summary>
+    /// <summary>値を取得する</summary>
     /// <typeparam name="T">値の型</typeparam>
     /// <param name="key">設定のキー</param>
     /// <param name="defaultValue">値が無い・型が合わないときに返す値</param>
     /// <param name="typeInfo">値の型のソース生成メタデータ</param>
-    /// <returns>保存されている値。無い・型が合わないときは既定値</returns>
+    /// <returns>
+    /// 保存されている値
+    /// 無い・型が合わないときは既定値
+    /// </returns>
+    /// <remarks>無い・型が合わないときは既定値を返す</remarks>
     T Get<T>(string key, T defaultValue, JsonTypeInfo<T> typeInfo);
 
-    /// <summary>値を取得する。無い・型が合わないときは false を返す。</summary>
+    /// <summary>値を取得できるか試す</summary>
     /// <typeparam name="T">値の型</typeparam>
     /// <param name="key">設定のキー</param>
     /// <param name="typeInfo">値の型のソース生成メタデータ</param>
-    /// <param name="value">保存されている値。取得できなかったときは既定値</param>
+    /// <param name="value">
+    /// 保存されている値
+    /// 取得できなかったときは既定値
+    /// </param>
     /// <returns>取得できれば true (無い・型が合わないときは false)</returns>
+    /// <remarks>無い・型が合わないときは false を返す</remarks>
     bool TryGet<T>(string key, JsonTypeInfo<T> typeInfo, [MaybeNullWhen(false)] out T value);
 
-    /// <summary>値を保存する。保存し終えるまで待つ。</summary>
+    /// <summary>値を保存する</summary>
     /// <typeparam name="T">値の型</typeparam>
     /// <param name="key">設定のキー</param>
     /// <param name="value">保存する値</param>
     /// <param name="typeInfo">値の型のソース生成メタデータ</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
-    /// <returns>保存したら true。読み取り専用 (読み込みに失敗している)ため保存しなかったら false</returns>
+    /// <returns>
+    /// 保存したら true
+    /// 読み取り専用 (読み込みに失敗している)ため保存しなかったら false
+    /// </returns>
     Task<bool> SetAsync<T>(string key, T value, JsonTypeInfo<T> typeInfo, CancellationToken cancellationToken = default);
 
     /// <summary>キーが存在するか</summary>
@@ -71,9 +99,10 @@ public interface ISettingsStore
     /// <returns>存在すれば true</returns>
     bool Contains(string key);
 
-    /// <summary>キーを削除する。存在して削除して保存したときは true。</summary>
+    /// <summary>キーを削除する</summary>
     /// <param name="key">設定のキー</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
-    /// <returns>存在して削除して保存したとき true (存在しない、または読み取り専用のため保存しなかったときは false)</returns>
+    /// <returns>存在して削除して保存したとき true (存在しない、または読み取り専用のため保存しなかったときは false)。</returns>
+    /// <remarks>存在して削除して保存したときは true を返す</remarks>
     Task<bool> RemoveAsync(string key, CancellationToken cancellationToken = default);
 }

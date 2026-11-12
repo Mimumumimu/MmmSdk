@@ -2,9 +2,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MmmSdk.WinUI.Components.Pages;
 
-/// <summary>
-/// サイドバーのページを、機能から開く口の実装。
-/// </summary>
+/// <summary>サイドバーのページを機能から開く口の実装</summary>
 /// <param name="viewModel">サイドバーの項目と選択</param>
 /// <param name="detacher">別のウィンドウに外したページ</param>
 public sealed class NavigationService(NavigationHostViewModel viewModel, PageDetacher detacher) : INavigationService
@@ -13,7 +11,10 @@ public sealed class NavigationService(NavigationHostViewModel viewModel, PageDet
     public event EventHandler? ShowRequested;
 
     /// <inheritdoc />
-    /// <remarks>ページを別のウィンドウに外しているときは、そのウィンドウを前に出す。メインウィンドウは出さない。</remarks>
+    /// <remarks>
+    /// ページを別のウィンドウに外しているときはそのウィンドウを前に出す
+    /// メインウィンドウは出さない
+    /// </remarks>
     public bool Open<TPage>()
         where TPage : Page
     {

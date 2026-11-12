@@ -4,19 +4,24 @@ namespace MmmSdk.Core.Components.Scheduling;
 /// <param name="ticker">毎分の合図</param>
 /// <remarks>
 /// 「次の 0 時まであと何時間」と時間の長さで予約すると、スタンバイや時計の変更でずれたときに、日付が変わったことに気づけない。
-/// そのため、予約はせず、<see cref="ITicker"/> の毎分の合図で日付を比べる。ずれても、最大 1 分で追いつく。
-/// 画面に出している日付は、画面を作り直したあとに <see cref="MarkShown"/> で覚えさせる。覚えている日付が無いときも、違うものとして知らせる。
-/// 知らせる処理は、合図を受けたスレッドプールのスレッドで動く。違いが直るまで、つまり <see cref="MarkShown"/> されるまで、毎分知らせる。
+/// そのため、予約はせず、<see cref="ITicker"/> の毎分の合図で日付を比べる。
+/// ずれても最大 1 分で追いつく。
+/// 画面に出している日付は画面を作り直したあとに <see cref="MarkShown"/> で覚えさせる。
+/// 覚えている日付が無いときも違うものとして知らせる。
+/// 知らせる処理は合図を受けたスレッドプールのスレッドで動く。
+/// 違いが直るまで、つまり <see cref="MarkShown"/> されるまで、毎分知らせる。
 /// </remarks>
 public sealed class DayChangeWatcher(ITicker ticker) : IDisposable
 {
     /// <summary>状態を守るロック</summary>
     private readonly Lock _gate = new();
 
-    /// <summary>画面に出している日付。まだ無ければ null</summary>
+    /// <summary>画面に出している日付</summary>
+    /// <remarks>まだ無ければ null</remarks>
     private DateOnly? _shownDate;
 
-    /// <summary>毎分の合図の登録。開始前・破棄後は null</summary>
+    /// <summary>毎分の合図の登録</summary>
+    /// <remarks>開始前・破棄後は null</remarks>
     private ITickSubscription? _subscription;
 
     /// <summary>破棄したか</summary>
@@ -26,11 +31,15 @@ public sealed class DayChangeWatcher(ITicker ticker) : IDisposable
     private Action? _onDayChanged;
 
     /// <summary>始める</summary>
-    /// <param name="onDayChanged">日付が違っていたときに呼ぶ処理。スレッドプールのスレッドから呼ぶので、UI スレッドへの切り替えは渡す側で行う</param>
-    /// <exception cref="InvalidOperationException">すでに開始している。</exception>
+    /// <param name="onDayChanged">
+    /// 日付が違っていたときに呼ぶ処理。
+    /// スレッドプールのスレッドから呼ぶので、UI スレッドへの切り替えは渡す側で行う。
+    /// </param>
+    /// <exception cref="InvalidOperationException">すでに開始している</exception>
     /// <remarks>
     /// 始めた直後にも 1 回比べる。
-    /// 破棄したあとに呼んでも、何もしない。画面の最初の読み込みを待つ間に画面が閉じて、読み込みの後で呼ばれることがあるため。
+    /// 破棄したあとに呼んでも何もしない。
+    /// 画面の最初の読み込みを待つ間に画面が閉じて、読み込みの後で呼ばれることがあるため。
     /// </remarks>
     public void Start(Action onDayChanged)
     {
@@ -73,7 +82,7 @@ public sealed class DayChangeWatcher(ITicker ticker) : IDisposable
         subscription?.Dispose();
     }
 
-    /// <summary>毎分、今の日付と画面に出している日付を比べる</summary>
+    /// <summary>毎分今の日付と画面に出している日付を比べる</summary>
     /// <param name="now">現在の日時</param>
     /// <returns>比較の完了を表すタスク</returns>
     private Task OnMinute(DateTime now)

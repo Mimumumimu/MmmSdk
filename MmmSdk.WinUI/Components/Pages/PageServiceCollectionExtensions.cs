@@ -5,7 +5,8 @@ using MmmSdk.Core.Components.Features;
 
 namespace MmmSdk.WinUI.Components.Pages;
 
-/// <summary>機能 (プラグイン)が、サイドバーのページと設定の部品を登録するための拡張メソッド</summary>
+/// <summary>機能がサイドバーのページと設定の部品を登録するための拡張メソッド</summary>
+/// <remarks>機能はプラグインとして登録する</remarks>
 public static class PageServiceCollectionExtensions
 {
     /// <summary>サイドバーにページを登録する</summary>
@@ -14,11 +15,28 @@ public static class PageServiceCollectionExtensions
     /// <param name="title">サイドバーの表示名</param>
     /// <param name="glyph">サイドバーのアイコン (Segoe Fluent Icons のグリフ)</param>
     /// <param name="area">サイドバーの中で出す場所</param>
-    /// <param name="featureKey">属する機能のキーで、<c>AddFeature</c> で登録したもの。オフにできない機能は null</param>
-    /// <param name="order">並び順の値。null なら、登録中の機能の値。<c>AddFeaturePlugin</c> で渡したもので、機能の外では 0</param>
-    /// <param name="canDetach">ページを別のウィンドウに外せるようにするか。外せる項目には、マウスを乗せると外すボタンが出て、ドラッグでも外せる</param>
+    /// <param name="featureKey">
+    /// 属する機能のキーで、<c>AddFeature</c> で登録したもの。
+    /// オフにできない機能は null。
+    /// </param>
+    /// <param name="order">
+    /// 並び順の値。
+    /// null なら、登録中の機能の値。
+    /// <c>AddFeaturePlugin</c> で渡したもので、機能の外では 0。
+    /// </param>
+    /// <param name="canDetach">
+    /// ページを別のウィンドウに外せるようにするか。
+    /// 外せる項目にはマウスを乗せると外すボタンが出て、ドラッグでも外せる。
+    /// </param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
-    /// <remarks>項目は場所ごとに並び順の値の順に並ぶ。同じ値は登録順。<paramref name="featureKey"/> が登録された機能 (<c>AddFeature</c> / <c>AddAlwaysOnFeature</c>)のときは、利用者が決めた機能の並びが優先される。判定は <c>FeatureService.OrderOf</c>。項目のキーはページの型名。機能がオフの間は出さない。</remarks>
+    /// <remarks>
+    /// 項目は場所ごとに並び順の値の順に並ぶ
+    /// 同じ値は登録順
+    /// <paramref name="featureKey"/> が登録された機能 (<c>AddFeature</c> / <c>AddAlwaysOnFeature</c>)のときは利用者が決めた機能の並びが優先される
+    /// 判定は <c>FeatureService.OrderOf</c>
+    /// 項目のキーはページの型名
+    /// 機能がオフの間は出さない
+    /// </remarks>
     public static IServiceCollection AddNavigationPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TPage>(this IServiceCollection services, string title, string glyph, NavigationArea area, string? featureKey = null, int? order = null, bool canDetach = false)
         where TPage : Page
     {
@@ -27,19 +45,31 @@ public static class PageServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>サイドバーに、別のページの子の項目として、ページを登録する</summary>
+    /// <summary>サイドバーに別のページの子の項目としてページを登録する</summary>
     /// <typeparam name="TPage">表示するページの型</typeparam>
     /// <typeparam name="TParentPage">親の項目のページの型 (<see cref="AddNavigationPage{TPage}"/> で登録したもの)</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <param name="title">サイドバーの表示名</param>
     /// <param name="glyph">サイドバーのアイコン (Segoe Fluent Icons のグリフ)</param>
-    /// <param name="featureKey">属する機能のキーで、<c>AddFeature</c> で登録したもの。オフにできない機能は null</param>
-    /// <param name="order">親の下での並び順の値。null なら、登録中の機能の値。<c>AddFeaturePlugin</c> で渡したもので、機能の外では 0</param>
+    /// <param name="featureKey">
+    /// 属する機能のキーで、<c>AddFeature</c> で登録したもの。
+    /// オフにできない機能は null。
+    /// </param>
+    /// <param name="order">
+    /// 親の下での並び順の値。
+    /// null なら、登録中の機能の値。
+    /// <c>AddFeaturePlugin</c> で渡したもので、機能の外では 0。
+    /// </param>
     /// <param name="canDetach">ページを別のウィンドウに外せるようにするか</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
-    /// 子の項目は、サイドバーの上部の、親の項目の直後に、字下げして並べる。下部には出さない。開閉は無く、常に出す。親がオフの間は出さない。子の下に、さらに子は持てない。
-    /// 項目のキーはページの型名。親の項目は、この呼び出しより前でも後でも、登録されていればよい。
+    /// 子の項目はサイドバーの上部の、親の項目の直後に字下げして並べる。
+    /// 下部には出さない。
+    /// 開閉は無く、常に出す。
+    /// 親がオフの間は出さない。
+    /// 子の下にさらに子は持てない。
+    /// 項目のキーはページの型名。
+    /// 親の項目はこの呼び出しより前でも後でも、登録されていればよい。
     /// </remarks>
     public static IServiceCollection AddNavigationChildPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TPage, TParentPage>(this IServiceCollection services, string title, string glyph, string? featureKey = null, int? order = null, bool canDetach = false)
         where TPage : Page
@@ -50,13 +80,18 @@ public static class PageServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>サイドバーの本体 (<see cref="NavigationHost"/>)と、その部品を登録する</summary>
+    /// <summary>サイドバーの本体とその部品を登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
-    /// ホストアプリだけが呼ぶ。機能は呼ばない。<c>FeatureService</c>(<c>AddFeatureService</c>)を先に登録すること。
-    /// <see cref="NavigationHost"/> は UI スレッドで解決すること。<see cref="IPageCache"/> は <see cref="PageProvider"/> と同じインスタンスを返す。
-    /// 機能がページを開いてもらう口 (<see cref="INavigationService"/>)も登録する。ホストのウィンドウを前面に出すのは、ホストアプリが <see cref="INavigationService.ShowRequested"/> で行う。
+    /// 本体は <see cref="NavigationHost"/>
+    /// ホストアプリだけが呼ぶ
+    /// 機能は呼ばない
+    /// <c>FeatureService</c>(<c>AddFeatureService</c>)を先に登録すること
+    /// <see cref="NavigationHost"/> は UI スレッドで解決すること
+    /// <see cref="IPageCache"/> は <see cref="PageProvider"/> と同じインスタンスを返す
+    /// 機能がページを開いてもらう口 (<see cref="INavigationService"/>)も登録する
+    /// ホストのウィンドウを前面に出すのはホストアプリが <see cref="INavigationService.ShowRequested"/> で行う
     /// </remarks>
     public static IServiceCollection AddNavigationHost(this IServiceCollection services)
     {
@@ -70,13 +105,27 @@ public static class PageServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>設定ページに、機能ごとの設定の部品を登録する</summary>
+    /// <summary>設定ページに機能ごとの設定の部品を登録する</summary>
     /// <typeparam name="TControl">設定の部品 (<c>UserControl</c>)の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="featureKey">属する機能のキーで、<c>AddFeature</c> で登録したもの。オフにできない機能は null</param>
-    /// <param name="order">並び順の値。null なら、登録中の機能の値。<c>AddFeaturePlugin</c> で渡したもので、機能の外では 0</param>
+    /// <param name="featureKey">
+    /// 属する機能のキーで、<c>AddFeature</c> で登録したもの。
+    /// オフにできない機能は null。
+    /// </param>
+    /// <param name="order">
+    /// 並び順の値。
+    /// null なら、登録中の機能の値。
+    /// <c>AddFeaturePlugin</c> で渡したもので、機能の外では 0。
+    /// </param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
-    /// <remarks>部品は設定ページを開くときに DI から作る。登録は Transient。並び順の値の順に並ぶ。同じ値は登録順で、登録された機能のものは、利用者が決めた機能の並びが優先される。値の読み書きと画面の状態は、その機能の ViewModel・サービスが持つ。機能がオフの間は並べない。</remarks>
+    /// <remarks>
+    /// 部品は設定ページを開くときに DI から作る。
+    /// 登録は Transient。
+    /// 並び順の値の順に並ぶ。
+    /// 同じ値は登録順で、登録された機能のものは利用者が決めた機能の並びが優先される。
+    /// 値の読み書きと画面の状態はその機能の ViewModel・サービスが持つ。
+    /// 機能がオフの間は並べない。
+    /// </remarks>
     public static IServiceCollection AddSettingsSection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TControl>(this IServiceCollection services, string? featureKey = null, int? order = null)
         where TControl : UserControl
     {

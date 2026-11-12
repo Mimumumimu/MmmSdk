@@ -8,11 +8,15 @@ using Microsoft.UI.Xaml.Media;
 
 namespace MmmSdk.WinUI.Controls;
 
-/// <summary><see cref="TreeGridView"/> の 1 行の表示部品 (行の一覧の要素ごとに、使い回される)</summary>
+/// <summary>表の 1 行の表示部品</summary>
 /// <remarks>
-/// 固定の列を並べた部分と、スクロールする列を並べた部分の 2 つを持つ。固定の部分は不透明で、スクロールの位置に合わせて逆向きに動かし、左に残す。
-/// セルは、列ごとに <see cref="ContentControl"/> を 1 つ作り、列の <see cref="TreeGridColumn.CellTemplate"/> に行を渡して描く。使い回すときは、行だけを差し替える。
-/// 表の中で使う部品で、単独では使わない。表の項目のテンプレートが作る。
+/// 行の一覧の要素ごとに使い回される。
+/// 固定の列を並べた部分とスクロールする列を並べた部分の 2 つを持つ。
+/// 固定の部分は不透明で、スクロールの位置に合わせて逆向きに動かし、左に残す。
+/// セルは列ごとに <see cref="ContentControl"/> を 1 つ作り、列の <see cref="TreeGridColumn.CellTemplate"/> に行を渡して描く。
+/// 使い回すときは行だけを差し替える。
+/// 表の中で使う部品で、単独では使わない。
+/// 表の項目のテンプレートが作る。
 /// </remarks>
 public sealed partial class TreeGridRowPresenter : Grid
 {
@@ -28,29 +32,38 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>スクロールする列を並べる Grid</summary>
     private readonly Grid _scrollGrid = new();
 
-    /// <summary>行の色 (固定の部分)</summary>
+    /// <summary>行の色</summary>
     private readonly Border _frozenTint = new() { IsHitTestVisible = false };
 
-    /// <summary>スクロールする列ごとの、集計の行の背景と行の色 (列ごとに分けて、一部の列だけ表の面の色のままにできるようにする)</summary>
+    /// <summary>スクロールする列ごとの集計の行の背景と行の色</summary>
+    /// <remarks>列ごとに分けて、一部の列だけ表の面の色のままにできるようにする。</remarks>
     private readonly List<(TreeGridColumn Column, Border Backing, Border Tint)> _scrollBackings = [];
 
-    /// <summary>選んだ行の枠で、固定の列の部分。行の背景の色と混ざらない</summary>
-    /// <remarks>セルのフォーカスの枠より後ろに描くため、行全体ではなく、固定の列・スクロールする列それぞれの Grid の中に置く。</remarks>
+    /// <summary>選んだ行の枠の固定の列の部分</summary>
+    /// <remarks>
+    /// 行の背景の色と混ざらない。
+    /// セルのフォーカスの枠より後ろに描くため、行全体ではなく、固定の列・スクロールする列それぞれの Grid の中に置く。
+    /// </remarks>
     private readonly Border _frozenSelection = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, -1) };
 
-    /// <summary>選んだ行の枠 (スクロールする列の部分)</summary>
+    /// <summary>選んだ行の枠</summary>
+    /// <remarks>スクロールする列の部分</remarks>
     private readonly Border _scrollSelection = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, -1) };
 
-    /// <summary>セル (表示する列の順)</summary>
+    /// <summary>セル</summary>
+    /// <remarks>表示する列の順</remarks>
     private readonly List<(TreeGridColumn Column, ContentControl Cell)> _cells = [];
 
-    /// <summary>列ごとの、作ったセル (列を変えて作り直すとき、表示を続ける列のセルを使い回すため)</summary>
+    /// <summary>列ごとの作ったセル</summary>
+    /// <remarks>列を変えて作り直すとき、表示を続ける列のセルを使い回すために持つ。</remarks>
     private readonly Dictionary<TreeGridColumn, ContentControl> _cellCache = [];
 
-    /// <summary>セルごとの、フォーカスの枠 (セルの上に重ねる)</summary>
+    /// <summary>セルごとのフォーカスの枠</summary>
+    /// <remarks>セルの上に重ねる</remarks>
     private readonly Dictionary<ContentControl, Border> _frames = [];
 
-    /// <summary>木構造の列のセルを並べた入れ物 (字下げ・開閉ボタン・セル)</summary>
+    /// <summary>木構造の列のセルを並べた入れ物</summary>
+    /// <remarks>字下げ・開閉ボタン・セルを並べる</remarks>
     private Grid? _treeGrid;
 
     /// <summary>木構造の列の字下げ</summary>
@@ -68,9 +81,16 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>今の行</summary>
     private ITreeGridRow? _row;
 
-    /// <summary>要素がセルの中にあるとき、そのセルの列のキーを返す (入力中でなくてもよい)</summary>
+    /// <summary>要素が属するセルの列のキーを返す</summary>
     /// <param name="element">フォーカスのある要素など</param>
-    /// <returns>列のキー。どのセルの中でもなければ null</returns>
+    /// <returns>
+    /// 列のキー
+    /// どのセルの中でもなければ null
+    /// </returns>
+    /// <remarks>
+    /// 要素がセルの中にあるときだけ返す
+    /// 入力中でなくてもよい
+    /// </remarks>
     internal string? GetFocusedColumnKey(DependencyObject? element)
     {
         foreach (var (column, cell) in _cells)
@@ -83,19 +103,22 @@ public sealed partial class TreeGridRowPresenter : Grid
         return null;
     }
 
-    /// <summary>入力用の見た目になっているセル。無ければ null で、1 行に 1 つだけ</summary>
+    /// <summary>入力用の見た目になっているセル</summary>
+    /// <remarks>1 行に 1 つだけ</remarks>
     private (TreeGridColumn Column, ContentControl Cell)? _editing;
 
-    /// <summary>セルを作ったときの、表の列の版</summary>
+    /// <summary>セルを作ったときの表の列の版</summary>
     private int _columnsVersion = -1;
 
-    /// <summary>固定の列の部分を、スクロールに合わせて動かす式を設定済みか</summary>
+    /// <summary>固定の列の部分をスクロールに合わせて動かす式を設定済みか</summary>
     private bool _anchored;
 
-    /// <summary>今の行 (使い回しに戻している間は null)</summary>
+    /// <summary>今の行</summary>
+    /// <remarks>使い回しに戻している間は null</remarks>
     public ITreeGridRow? Row => _row;
 
-    /// <summary>上に固定する行 (<see cref="TreeGridView.PinnedTopRows"/>)の表示部品か</summary>
+    /// <summary>上に固定する行の表示部品か</summary>
+    /// <remarks>上に固定する行は <see cref="TreeGridView.PinnedTopRows"/></remarks>
     internal bool IsPinned { get; init; }
 
     /// <summary>行の表示部品を作る</summary>
@@ -214,7 +237,8 @@ public sealed partial class TreeGridRowPresenter : Grid
         UpdateSelected();
     }
 
-    /// <summary>行の色 (<see cref="ITreeGridRow.RowTint"/>)を、両方の部分に重ねる</summary>
+    /// <summary>行の色を両方の部分に重ねる</summary>
+    /// <remarks>行の色は <see cref="ITreeGridRow.RowTint"/></remarks>
     private void UpdateTint()
     {
         Microsoft.UI.Xaml.Media.Brush? brush = _row?.RowTint is { } color ? new SolidColorBrush(color) : null;
@@ -225,10 +249,13 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>行の背景を直す。集計の行は、固定の部分・スクロールする部分とも、集計の行の背景にする。入力できる行は、固定の部分だけ、固定の列の背景にする</summary>
+    /// <summary>行の背景を直す</summary>
     /// <remarks>
+    /// 集計の行は固定の部分・スクロールする部分とも、集計の行の背景にする。
+    /// 入力できる行は固定の部分だけ、固定の列の背景にする。
     /// 入力できる行 (入力欄が並ぶ)と、入力できない集計の行を、背景の色で見分けられるようにする。
-    /// 使う側が色を渡していれば、その色にする。対象は <see cref="TreeGridView.SummaryBackground"/>・<see cref="TreeGridView.FrozenBackground"/>。
+    /// 使う側が色を渡していれば、その色にする。
+    /// 対象は <see cref="TreeGridView.SummaryBackground"/>・<see cref="TreeGridView.FrozenBackground"/>。
     /// </remarks>
     internal void UpdateSummary()
     {
@@ -273,7 +300,8 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>行との結び付きを外す (使い回しに戻すとき)</summary>
+    /// <summary>行との結び付きを外す</summary>
+    /// <remarks>使い回しに戻すときに呼ぶ</remarks>
     internal void Unbind()
     {
         ResetEdit(raiseEnding: false);
@@ -284,8 +312,11 @@ public sealed partial class TreeGridRowPresenter : Grid
         _row = null;
     }
 
-    /// <summary>行との結び付きを外し、セルからも行を外す (使い回さずに、捨てるとき)</summary>
-    /// <remarks>セルの中の部品が、行の通知を購読したまま残り、長く生きる行から、捨てた表示部品がたどれてしまうのを防ぐ。</remarks>
+    /// <summary>行との結び付きとセルの行を外す</summary>
+    /// <remarks>
+    /// 使い回さずに捨てるときに呼ぶ。
+    /// セルの中の部品が行の通知を購読したまま残り、長く生きる行から、捨てた表示部品がたどれてしまうのを防ぐ。
+    /// </remarks>
     internal void Release()
     {
         Unbind();
@@ -295,7 +326,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>列に合わせて、セルを作り直す</summary>
+    /// <summary>列に合わせてセルを作り直す</summary>
     internal void Rebuild()
     {
         if (_owner is null)
@@ -413,7 +444,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         UpdateSelected();
     }
 
-    /// <summary>列の定義の幅を、違うときだけ変える</summary>
+    /// <summary>列の定義の幅を違うときだけ変える</summary>
     /// <param name="definition">列の定義</param>
     /// <param name="width">幅</param>
     private static void SetWidth(ColumnDefinition definition, double width)
@@ -424,7 +455,8 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>列の幅だけを、表の今の値に合わせる (セルは作り直さない)</summary>
+    /// <summary>列の幅を表の今の値に合わせる</summary>
+    /// <remarks>セルは作り直さない</remarks>
     internal void UpdateWidths()
     {
         if (_owner is null || _columnsVersion != _owner.ColumnsVersion)
@@ -455,8 +487,14 @@ public sealed partial class TreeGridRowPresenter : Grid
         _scrollPanel.Margin = new Thickness(frozenWidth, 0, 0, 0);
     }
 
-    /// <summary>固定の部分を、スクロールの位置に合わせて動かす式を設定する (表を画面に出したあとから)</summary>
-    /// <remarks>横のスクロールの分だけ逆向きに動かして、左に残す。表がまだ画面に出ていなければ、何もしない。表が出たときに、もう一度呼ばれる。</remarks>
+    /// <summary>固定の部分を動かす式を設定する</summary>
+    /// <remarks>
+    /// スクロールの位置に合わせて動かす式を設定する。
+    /// 表を画面に出したあとから設定できる。
+    /// 横のスクロールの分だけ逆向きに動かして、左に残す。
+    /// 表がまだ画面に出ていなければ、何もしない。
+    /// 表が出たときにもう一度呼ばれる。
+    /// </remarks>
     internal void TryAnchor()
     {
         if (_anchored || _owner is not { IsLoaded: true })
@@ -468,7 +506,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         _anchored = true;
     }
 
-    /// <summary>選んだ行かどうかに合わせて、選んだ行の枠を出す・消す</summary>
+    /// <summary>選んだ行かどうかに合わせて選んだ行の枠を出す・消す</summary>
     internal void UpdateSelected()
     {
         var selected = _row is not null && _owner is not null && ReferenceEquals(_owner.SelectedRow, _row);
@@ -478,7 +516,10 @@ public sealed partial class TreeGridRowPresenter : Grid
 
     /// <summary>行のセルにフォーカスを移す</summary>
     /// <param name="columnKey">列のキー</param>
-    /// <param name="edit">入力も始めるなら true。フォーカスだけ移す (枠が出るだけ)なら false</param>
+    /// <param name="edit">
+    /// 入力も始めるなら true
+    /// フォーカスだけ移す (枠が出るだけ)なら false
+    /// </param>
     internal void FocusCell(string columnKey, bool edit)
     {
         foreach (var (column, cell) in _cells)
@@ -503,7 +544,10 @@ public sealed partial class TreeGridRowPresenter : Grid
 
     /// <summary>列のキーのセルを返す</summary>
     /// <param name="columnKey">列のキー</param>
-    /// <returns>セル。その列が無いか、表示していなければ null</returns>
+    /// <returns>
+    /// セル。
+    /// その列が無いか、表示していなければ null。
+    /// </returns>
     internal FrameworkElement? FindCell(string columnKey)
     {
         foreach (var (column, cell) in _cells)
@@ -516,13 +560,16 @@ public sealed partial class TreeGridRowPresenter : Grid
         return null;
     }
 
-    /// <summary>セルに、フォーカスの枠・キー操作の仕組みを付ける</summary>
+    /// <summary>セルにフォーカスの枠・キー操作の仕組みを付ける</summary>
     /// <param name="column">列</param>
     /// <param name="cell">セル</param>
     /// <remarks>
-    /// フォーカスの来たセルが「今のセル」になり、枠が出る。入力中も、入力できないセルも同じ。
-    /// キーボードでフォーカスが来ただけでは、入力を始めない。メニュー・カレンダーが、閉じたあとに戻るフォーカスで開き直し続けるため。
-    /// フォーカスのあるセルで Enter か Space を押すと、入力を始める。入力できないセルは、中のボタンを押す。
+    /// フォーカスの来たセルが「今のセル」になり、枠が出る。
+    /// 入力中も入力できないセルも同じ。
+    /// キーボードでフォーカスが来ただけでは入力を始めない。
+    /// メニュー・カレンダーが閉じたあとに戻るフォーカスで開き直し続けるため。
+    /// フォーカスのあるセルで Enter か Space を押すと入力を始める。
+    /// 入力できないセルは中のボタンを押す。
     /// </remarks>
     private void AttachCell(TreeGridColumn column, ContentControl cell)
     {
@@ -571,7 +618,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         };
     }
 
-    /// <summary>今のセルかどうかに合わせて、すべてのセルの枠を直す</summary>
+    /// <summary>今のセルかどうかに合わせてすべてのセルの枠を直す</summary>
     internal void RefreshFrames()
     {
         foreach (var cell in _frames.Keys)
@@ -585,15 +632,22 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <returns>セルそのもの (入力欄・ボタンの中ではない)にフォーカスがあるとき true</returns>
     internal bool IsCellItself(DependencyObject? element) => _cells.Any(c => ReferenceEquals(c.Cell, element));
 
-    /// <summary>入力できるセルのうち、行の上の位置にあるものを返す</summary>
+    /// <summary>入力できるセルのうち行の上の位置にあるものを返す</summary>
     /// <param name="position">行の左上を原点にした位置</param>
-    /// <returns>セル。無ければ null</returns>
+    /// <returns>
+    /// セル
+    /// 無ければ null
+    /// </returns>
     private (TreeGridColumn Column, ContentControl Cell)? FindEditableCellAt(Windows.Foundation.Point position)
         => FindCellAt(position) is { } found && found.Column.IsEditable && _row is not null && _row.CanEdit(found.Column.Key) ? found : null;
 
-    /// <summary>行の上の位置にあるセルを返す (入力できないセルも)</summary>
+    /// <summary>行の上の位置にあるセルを返す</summary>
     /// <param name="position">行の左上を原点にした位置</param>
-    /// <returns>セル。無ければ null</returns>
+    /// <returns>
+    /// セル
+    /// 無ければ null
+    /// </returns>
+    /// <remarks>入力できないセルも対象</remarks>
     private (TreeGridColumn Column, ContentControl Cell)? FindCellAt(Windows.Foundation.Point position)
     {
         foreach (var (column, cell) in _cells)
@@ -615,7 +669,10 @@ public sealed partial class TreeGridRowPresenter : Grid
     /// <summary>行の上を左クリックしたとき、その位置のセルを入力用にする</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">タップの情報</param>
-    /// <remarks>セルの中のボタン (使う側が置いた、押すと動く部品)が押されたときは、そのボタンの処理に任せて、入力は始めない。このイベントは、ボタンが処理済みにしても届くため、ここで除く。</remarks>
+    /// <remarks>
+    /// セルの中のボタン (使う側が置いた、押すと動く部品)が押されたときはそのボタンの処理に任せて、入力は始めない。
+    /// このイベントはボタンが処理済みにしても届くため、ここで除く。
+    /// </remarks>
     private void OnRowTapped(object sender, TappedRoutedEventArgs e)
     {
         if (IsInsideButton(e.OriginalSource as DependencyObject))
@@ -640,9 +697,13 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>セルの入力を始める。入力欄に切り替え、クリックで選ぶ列は、使う側に知らせる</summary>
+    /// <summary>セルの入力を始める</summary>
     /// <param name="column">列</param>
     /// <param name="cell">セル</param>
+    /// <remarks>
+    /// 入力欄に切り替える
+    /// クリックで選ぶ列は使う側に知らせる
+    /// </remarks>
     private void StartEdit(TreeGridColumn column, ContentControl cell)
     {
         if (_row is null || _owner is null || !column.IsEditable || !_row.CanEdit(column.Key))
@@ -664,7 +725,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>セルを入力用の見た目にして、入力欄にフォーカスを移す</summary>
+    /// <summary>セルを入力用の見た目にして入力欄にフォーカスを移す</summary>
     /// <param name="column">列</param>
     /// <param name="cell">セル</param>
     private void BeginEdit(TreeGridColumn column, ContentControl cell)
@@ -697,9 +758,12 @@ public sealed partial class TreeGridRowPresenter : Grid
         _owner?.RevealCell(cell, column.IsFrozen, IsPinned);
     }
 
-    /// <summary>フォーカスのあるセルに、枠を付ける (入力中・入力を終えてセルにフォーカスが残っている間)</summary>
+    /// <summary>フォーカスのあるセルに枠を付ける</summary>
     /// <param name="cell">セル</param>
-    /// <remarks>今のセルで、フォーカスがセルの中 (入力欄を含む)にあるか、メニューなどのポップアップが開いている間だけ付ける。</remarks>
+    /// <remarks>
+    /// 入力中と入力を終えてセルにフォーカスが残っている間が対象。
+    /// 今のセルで、フォーカスがセルの中 (入力欄を含む)にあるか、メニューなどのポップアップが開いている間だけ付ける。
+    /// </remarks>
     private void UpdateFrame(ContentControl cell)
     {
         if (!_frames.TryGetValue(cell, out var frame))
@@ -713,10 +777,14 @@ public sealed partial class TreeGridRowPresenter : Grid
         frame.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// <summary>入力中のセルの中のキー入力 (Esc)で、入力を取りやめる</summary>
+    /// <summary>入力中のセルの中のキー入力で入力を取りやめる</summary>
     /// <param name="source">キーを受けた要素</param>
-    /// <returns>入力中のセルの中で、取りやめたら true</returns>
-    /// <remarks>使う側に知らせて、入力欄を元の値に戻してもらってから、表示用に戻す。戻すときのフォーカスの外れでは、元の値なので、保存されない。</remarks>
+    /// <returns>入力中のセルの中で、取りやめたら true。</returns>
+    /// <remarks>
+    /// 対象のキーは Esc。
+    /// 使う側に知らせて、入力欄を元の値に戻してもらってから、表示用に戻す。
+    /// 戻すときのフォーカスの外れでは元の値なので、保存されない。
+    /// </remarks>
     internal bool TryCancelEdit(DependencyObject? source)
     {
         if (_editing is not { } editing || _row is null || _owner is null || !IsInside(editing.Cell, source))
@@ -729,8 +797,9 @@ public sealed partial class TreeGridRowPresenter : Grid
         return true;
     }
 
-    /// <summary>入力用の見た目を、表示用に戻す (使う側の確定が済んでから)</summary>
-    /// <param name="raiseEnding">戻す直前に、使う側へ知らせるか (Esc の取りやめでは知らせない)</param>
+    /// <summary>入力用の見た目を表示用に戻す</summary>
+    /// <param name="raiseEnding">戻す直前に、使う側へ知らせるか (Esc の取りやめでは知らせない)。</param>
+    /// <remarks>使う側の確定が済んでから戻す</remarks>
     internal void EndEditLater(bool raiseEnding = true) => DispatcherQueue.TryEnqueue(() => ResetEdit(raiseEnding));
 
     /// <summary>フォーカスがセルの外に出ていて、開いたままのプルダウン・日付の選択も無ければ、表示用に戻す</summary>
@@ -750,12 +819,15 @@ public sealed partial class TreeGridRowPresenter : Grid
         ResetEdit();
     }
 
-    /// <summary>入力用の見た目を、すぐ表示用に戻す</summary>
-    /// <param name="raiseEnding">戻す直前に、使う側へ知らせるか。知らせるのは <see cref="TreeGridView.EditEnding"/> で、行の使い回し・Esc の取りやめでは知らせない</param>
+    /// <summary>入力用の見た目をすぐ表示用に戻す</summary>
+    /// <param name="raiseEnding">
+    /// 戻す直前に、使う側へ知らせるか。
+    /// 知らせるのは <see cref="TreeGridView.EditEnding"/> で、行の使い回し・Esc の取りやめでは知らせない。
+    /// </param>
     /// <remarks>
-    /// フォーカスのある入力欄を、フォーカスごと消すと、フォーカスが、画面の最初の要素 (表の 1 行目のセル)に飛び、行の選択まで 1 行目に移る。
-    /// そこで、入力欄にフォーカスがあるときは、先にセル自身へ移してから、入力用の見た目を外す。
-    /// 入力欄を外すと、フォーカスが外れた通知 (<c>LostFocus</c>)は、入力欄から行をたどれない状態で届くか、届かないことがあるので、
+    /// フォーカスのある入力欄を、フォーカスごと消すと、フォーカスが画面の最初の要素 (表の 1 行目のセル)に飛び、行の選択まで 1 行目に移る。
+    /// そこで、入力欄にフォーカスがあるときは先にセル自身へ移してから、入力用の見た目を外す。
+    /// 入力欄を外すと、フォーカスが外れた通知 (<c>LostFocus</c>)は入力欄から行をたどれない状態で届くか、届かないことがあるので、
     /// 外す前に <see cref="TreeGridView.EditEnding"/> で、使う側に確定させる。
     /// </remarks>
     private void ResetEdit(bool raiseEnding = true)
@@ -781,7 +853,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         UpdateFrame(editing.Cell);
     }
 
-    /// <summary>要素が、親の中にあるか</summary>
+    /// <summary>要素が親の中にあるか</summary>
     /// <param name="parent">親</param>
     /// <param name="element">調べる要素 (null でもよい)</param>
     /// <returns>親の中 (親そのものを含む)なら true</returns>
@@ -797,9 +869,10 @@ public sealed partial class TreeGridRowPresenter : Grid
         return false;
     }
 
-    /// <summary>要素が、ボタンか、入力を始めない場所 (<see cref="TreeGridView.NoEditAreaProperty"/>)の中にあるか</summary>
+    /// <summary>要素がボタンか入力を始めない場所の中にあるか</summary>
     /// <param name="element">調べる要素 (null でもよい)</param>
-    /// <returns>ボタン (押すと動く部品)か入力を始めない場所の、自身か中なら true</returns>
+    /// <returns>ボタン (押すと動く部品)か入力を始めない場所の、自身か中なら true。</returns>
+    /// <remarks>入力を始めない場所は <see cref="TreeGridView.NoEditAreaProperty"/></remarks>
     private static bool IsInsideButton(DependencyObject? element)
     {
         for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
@@ -812,7 +885,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         return false;
     }
 
-    /// <summary>セルの中に、開いたままのプルダウン・日付の選択があるか</summary>
+    /// <summary>セルの中に開いたままのプルダウン・日付の選択があるか</summary>
     /// <param name="element">調べる要素</param>
     /// <returns>あれば true</returns>
     private static bool HasOpenPopup(DependencyObject element)
@@ -831,7 +904,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         return false;
     }
 
-    /// <summary>木構造の列のセルに、字下げと開閉ボタンを付ける</summary>
+    /// <summary>木構造の列のセルに字下げと開閉ボタンを付ける</summary>
     /// <param name="cell">列のセル</param>
     /// <returns>字下げ・開閉ボタン・セルを並べたもの</returns>
     private Grid BuildTreeCell(ContentControl cell)
@@ -849,7 +922,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         return grid;
     }
 
-    /// <summary>字下げと開閉ボタンを、行の値に合わせる</summary>
+    /// <summary>字下げと開閉ボタンを行の値に合わせる</summary>
     private void UpdateTree()
     {
         if (_row is null || _owner is null)
@@ -879,7 +952,7 @@ public sealed partial class TreeGridRowPresenter : Grid
         }
     }
 
-    /// <summary>この行を、表の選んだ行にする</summary>
+    /// <summary>この行を表の選んだ行にする</summary>
     private void Activate()
     {
         if (_owner is not null && _row is not null)

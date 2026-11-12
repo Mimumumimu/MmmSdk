@@ -2,67 +2,76 @@ using MmmSdk.Core.Components.Shells;
 
 namespace MmmSdk.WinUI.Components.Terminal;
 
-/// <summary>
-/// 擬似コンソール上で動くシェル 1 つ分のセッション。
-/// </summary>
+/// <summary>擬似コンソール上で動くシェル 1 つ分のセッション</summary>
 public interface ITerminalSession : IDisposable
 {
     /// <summary>起動するシェル</summary>
-    /// <remarks>Start 前に設定する。</remarks>
+    /// <remarks>Start 前に設定する</remarks>
     ShellInfo Shell { get; set; }
 
     /// <summary>起動時の作業ディレクトリ</summary>
-    /// <remarks>Start 前に設定する。</remarks>
+    /// <remarks>Start 前に設定する</remarks>
     string WorkingDirectory { get; set; }
 
-    /// <summary>シェルを起動済みかどうか。</summary>
+    /// <summary>シェルを起動済みかどうか</summary>
     bool IsStarted { get; }
 
-    /// <summary>起動したシェルが終了済みかどうか。</summary>
+    /// <summary>起動したシェルが終了済みかどうか</summary>
     bool HasExited { get; }
 
     /// <summary>シェルの出力</summary>
-    /// <remarks>バックグラウンドスレッドから通知される。</remarks>
+    /// <remarks>バックグラウンドスレッドから通知される</remarks>
     event EventHandler<string>? OutputReceived;
 
     /// <summary>シェルのプロセスが終了した</summary>
-    /// <remarks>バックグラウンドスレッドから通知される。</remarks>
+    /// <remarks>バックグラウンドスレッドから通知される</remarks>
     event EventHandler? Exited;
 
-    /// <summary>シェルへ、利用者の入力が送られた</summary>
+    /// <summary>シェルへ利用者の入力が送られた</summary>
     /// <remarks>
-    /// キー入力と、<see cref="Submit"/> の貼り付けが当たる。端末が自動で返す報告 (フォーカスの出入り・マウス・端末の問い合わせへの返事)は含めない。
-    /// 呼び出したスレッドから通知される。
+    /// キー入力と <see cref="Submit"/> の貼り付けが当たる
+    /// 端末が自動で返す報告 (フォーカスの出入り・マウス・端末の問い合わせへの返事)は含めない
+    /// 呼び出したスレッドから通知される
     /// </remarks>
     event EventHandler? InputWritten;
 
-    /// <summary><see cref="Submit"/> が呼ばれた</summary>
-    /// <remarks>端末の表示側が貼り付けとして入力する。</remarks>
+    /// <summary>送信が依頼された</summary>
+    /// <remarks>
+    /// <see cref="Submit"/> が呼ばれた
+    /// 端末の表示側が貼り付けとして入力する
+    /// </remarks>
     event EventHandler<SubmitRequest>? SubmitRequested;
 
-    /// <summary>指定の端末サイズでシェルを起動する。</summary>
+    /// <summary>指定の端末サイズでシェルを起動する</summary>
     /// <param name="columns">端末の桁数</param>
     /// <param name="rows">端末の行数</param>
     void Start(int columns, int rows);
 
-    /// <summary>現在のシェルを終了して、同じ設定で起動し直す。</summary>
+    /// <summary>現在のシェルを終了して同じ設定で起動し直す</summary>
     /// <param name="columns">端末の桁数</param>
     /// <param name="rows">端末の行数</param>
     /// <returns>起動し直し終わったら完了するタスク</returns>
     /// <remarks>シェルの終了待ちで UI スレッドを止めないよう、終了処理はバックグラウンドで行う。</remarks>
     Task RestartAsync(int columns, int rows);
 
-    /// <summary>シェルへ入力をそのまま送る。キー入力などに使う。</summary>
+    /// <summary>シェルへ入力をそのまま送る</summary>
     /// <param name="text">送る文字列</param>
+    /// <remarks>キー入力などに使う</remarks>
     void Write(string text);
 
-    /// <summary>テキストを貼り付けとして入力し、続けて Enter で確定する。</summary>
+    /// <summary>テキストを貼り付けとして入力し、続けて Enter で確定する</summary>
     /// <param name="text">入力するテキスト</param>
-    /// <param name="readyMarker">貼り付けの取り込みが終わった合図になる、画面の出力に含まれる文字列。指定すると、出力に現れるまで (最長 2 秒)Enter を送らずに待つ</param>
-    /// <remarks>端末の表示側を通すことで、複数行でも CLI が 1 行ずつ実行せずひとまとまりで受け取れる。方式はブラケットペースト。</remarks>
+    /// <param name="readyMarker">
+    /// 貼り付けの取り込みが終わった合図になる、画面の出力に含まれる文字列。
+    /// 指定すると、出力に現れるまで (最長 2 秒)Enter を送らずに待つ。
+    /// </param>
+    /// <remarks>
+    /// 端末の表示側を通すことで、複数行でも CLI が 1 行ずつ実行せずひとまとまりで受け取れる。
+    /// 方式はブラケットペースト。
+    /// </remarks>
     void Submit(string text, string? readyMarker = null);
 
-    /// <summary>端末サイズを変更する。</summary>
+    /// <summary>端末サイズを変更する</summary>
     /// <param name="columns">端末の桁数</param>
     /// <param name="rows">端末の行数</param>
     void Resize(int columns, int rows);

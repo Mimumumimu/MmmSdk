@@ -1,8 +1,10 @@
 namespace MmmSdk.Core.Components.Storage;
 
-/// <summary>
-/// 保存データの読み書きに失敗した。メッセージはそのままユーザーへ表示できる形にする。
-/// </summary>
+/// <summary>保存データの読み書きの失敗</summary>
 /// <param name="message">ユーザーへ表示できるメッセージ</param>
 /// <param name="innerException">原因の例外</param>
+/// <remarks>
+/// 保存データの読み書きに失敗した
+/// メッセージはそのままユーザーへ表示できる形にする
+/// </remarks>
 public sealed class DataFileException(string message, Exception innerException) : Exception(message, innerException);

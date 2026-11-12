@@ -4,25 +4,43 @@ using MmmSdk.WinUI.Utilities;
 
 namespace MmmSdk.WinUI.Components.Dialogs;
 
-/// <summary>ダイアログの親を決めて、ダイアログ・モーダルウィンドウを開く</summary>
+/// <summary>ダイアログの親を決めてダイアログ・モーダルウィンドウを開く</summary>
 /// <remarks>
-/// 最後に操作した (アクティブになった)ウィンドウの上に表示する。対象は、<see cref="TrackWindow"/> で登録した普通のウィンドウと、開いているモーダルウィンドウ。開くのは <see cref="ShowModalAsync"/>。
-/// 操作したウィンドウの上に出すので、別のウィンドウでモーダルが開いていても、操作したほうの上に出る。メイン画面の一覧から開いた入力画面が、リマインダーのメイン画面から開いた一覧の上に出ない。
-/// まだアクティブになったことがないとき (開く直前のモーダルなど)は、いちばん手前のモーダルウィンドウ、無ければ登録した普通のウィンドウの順に選ぶ。
-/// 親にするのは、見えているウィンドウだけ。× でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えない。見えているものが無いときだけ、隠れたウィンドウを返す。返すのは <see cref="Owner"/>。
-/// 確認ダイアログは、同時に 1 つしか開けない (<c>ContentDialog</c> は、同じ画面に 2 つ同時に開くと例外になる)ので、順番に開く。
-/// モーダルウィンドウは開いている間だけ覚えておき、その上で開くダイアログの親にする。一覧の上に入力画面・確認を重ねるため。
-/// アプリ固有の画面は、アプリ側のサービスが <see cref="IDialogHost"/> の <see cref="Owner"/> と <see cref="ShowModalAsync"/> でウィンドウを、<see cref="Attach"/> で <c>ContentDialog</c> を開く。<see cref="Attach"/> には親の画面とテーマを渡す。開くときは、具象型ではなく、<see cref="IDialogHost"/> / <see cref="IDialogService"/> に依存する。UI スレッドから呼ぶ。
+/// 最後に操作した (アクティブになった)ウィンドウの上に表示する。
+/// 対象は <see cref="TrackWindow"/> で登録した普通のウィンドウと、開いているモーダルウィンドウ。
+/// 開くのは <see cref="ShowModalAsync"/>。
+/// 操作したウィンドウの上に出すので、別のウィンドウでモーダルが開いていても、操作したほうの上に出る。
+/// メイン画面の一覧から開いた入力画面がリマインダーのメイン画面から開いた一覧の上に出ない。
+/// まだアクティブになったことがないとき (開く直前のモーダルなど)はいちばん手前のモーダルウィンドウ、無ければ登録した普通のウィンドウの順に選ぶ。
+/// 親にするのは見えているウィンドウだけ。
+/// × でトレイへ退避した、隠れたウィンドウの上に出すと、ダイアログが見えない。
+/// 見えているものが無いときだけ、隠れたウィンドウを返す。
+/// 返すのは <see cref="Owner"/>。
+/// 確認ダイアログは同時に 1 つしか開けない (<c>ContentDialog</c> は同じ画面に 2 つ同時に開くと例外になる)ので順番に開く。
+/// モーダルウィンドウは開いている間だけ覚えておき、その上で開くダイアログの親にする。
+/// 一覧の上に入力画面・確認を重ねるため。
+/// アプリ固有の画面はアプリ側のサービスが <see cref="IDialogHost"/> の <see cref="Owner"/> と <see cref="ShowModalAsync"/> でウィンドウを、<see cref="Attach"/> で <c>ContentDialog</c> を開く。
+/// <see cref="Attach"/> には親の画面とテーマを渡す。
+/// 開くときは具象型ではなく、<see cref="IDialogHost"/> / <see cref="IDialogService"/> に依存する。
+/// UI スレッドから呼ぶ。
 /// </remarks>
 public sealed class DialogService : IDialogService, IDialogHost
 {
-    /// <summary>開いているモーダルウィンドウ (開いた順)</summary>
+    /// <summary>開いているモーダルウィンドウ</summary>
     private readonly List<Window> _modals = [];
 
-    /// <summary>親の候補にした普通のウィンドウ。登録順で、閉じられたら外す</summary>
+    /// <summary>親の候補にした普通のウィンドウ</summary>
+    /// <remarks>
+    /// 登録順に持つ
+    /// 閉じられたら外す
+    /// </remarks>
     private readonly List<Window> _tracked = [];
 
-    /// <summary>最後に操作した (アクティブになった)ウィンドウで、普通のウィンドウ・モーダルウィンドウ。無い・閉じられたら null</summary>
+    /// <summary>最後に操作したウィンドウ</summary>
+    /// <remarks>
+    /// アクティブになったウィンドウで、普通のウィンドウとモーダルウィンドウが対象。
+    /// 無いか、閉じられたら null。
+    /// </remarks>
     private Window? _lastActive;
 
     /// <summary>確認ダイアログを順番に開くためのロック</summary>

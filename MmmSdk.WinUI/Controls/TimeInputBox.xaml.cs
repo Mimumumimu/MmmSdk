@@ -6,18 +6,21 @@ using Windows.System;
 
 namespace MmmSdk.WinUI.Controls;
 
-/// <summary>時刻の入力欄。24 時間で、1 つの枠の中に「時 : 分」の 2 区画</summary>
+/// <summary>時刻の入力欄</summary>
 /// <remarks>
-/// 区画を押して直接打つ (2 桁打つと時から分へ移る)か、↑↓ キー・マウスホイールで 1 ずつ増減する。端まで行ったら反対の端へ回る。
-/// 打った値は区画を離れたときに確定し、空なら元の値に戻し、範囲を超えたら最大値に収める。ボタン類は置かない。
+/// 24 時間で、1 つの枠の中に「時 : 分」の 2 区画を持つ。
+/// 区画を押して直接打つ (2 桁打つと時から分へ移る)か、↑↓ キー・マウスホイールで 1 ずつ増減する。
+/// 端まで行ったら反対の端へ回る。
+/// 打った値は区画を離れたときに確定し、空なら元の値に戻し、範囲を超えたら最大値に収める。
+/// ボタン類は置かない。
 /// </remarks>
 public sealed partial class TimeInputBox : UserControl
 {
-    /// <summary><see cref="Hour"/> の依存関係プロパティ</summary>
+    /// <summary>時の依存関係プロパティ</summary>
     public static readonly DependencyProperty HourProperty = DependencyProperty.Register(
         nameof(Hour), typeof(int), typeof(TimeInputBox), new PropertyMetadata(0, OnValueChanged));
 
-    /// <summary><see cref="Minute"/> の依存関係プロパティ</summary>
+    /// <summary>分の依存関係プロパティ</summary>
     public static readonly DependencyProperty MinuteProperty = DependencyProperty.Register(
         nameof(Minute), typeof(int), typeof(TimeInputBox), new PropertyMetadata(0, OnValueChanged));
 
@@ -47,24 +50,29 @@ public sealed partial class TimeInputBox : UserControl
         ShowValues();
     }
 
-    /// <summary>時 (0〜23)</summary>
+    /// <summary>時</summary>
+    /// <remarks>0〜23</remarks>
     public int Hour
     {
         get => (int)GetValue(HourProperty);
         set => SetValue(HourProperty, value);
     }
 
-    /// <summary>分 (0〜59)</summary>
+    /// <summary>分</summary>
+    /// <remarks>0〜59</remarks>
     public int Minute
     {
         get => (int)GetValue(MinuteProperty);
         set => SetValue(MinuteProperty, value);
     }
 
-    /// <summary>値が変わったら、区画の表示を合わせる (範囲外の値は範囲内に収める)</summary>
+    /// <summary>値が変わったら区画の表示を合わせる</summary>
     /// <param name="sender">変更されたコントロール</param>
     /// <param name="e">変更の情報</param>
-    /// <remarks>バインドなど外から来た範囲外の値 (負の値・24 時など)は、表示と値がずれないよう、範囲内 (時は 0〜23・分は 0〜59)に収め直す。</remarks>
+    /// <remarks>
+    /// 範囲外の値は範囲内に収める。
+    /// バインドなど外から来た範囲外の値 (負の値・24 時など)は表示と値がずれないよう、範囲内 (時は 0〜23・分は 0〜59)に収め直す。
+    /// </remarks>
     private static void OnValueChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
     {
         var max = e.Property == HourProperty ? MaxHour : MaxMinute;
@@ -93,7 +101,10 @@ public sealed partial class TimeInputBox : UserControl
     /// <summary>時を 2 桁打ったら分へ移る</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">イベントの情報</param>
-    /// <remarks>フォーカス中のキー入力のときだけ。値の表示を更新したときは移らない。</remarks>
+    /// <remarks>
+    /// フォーカス中のキー入力のときだけ
+    /// 値の表示を更新したときは移らない
+    /// </remarks>
     private void OnHourTextChanged(object sender, TextChangedEventArgs e)
     {
         if (HourBox.FocusState == FocusState.Keyboard || HourBox.FocusState == FocusState.Pointer)
@@ -115,7 +126,7 @@ public sealed partial class TimeInputBox : UserControl
         UpdateFrame();
     }
 
-    /// <summary>区画を離れたら、打った値を確定する</summary>
+    /// <summary>区画を離れたら打った値を確定する</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">イベントの情報</param>
     private void OnSegmentLostFocus(object sender, RoutedEventArgs e)
@@ -124,7 +135,7 @@ public sealed partial class TimeInputBox : UserControl
         UpdateFrame();
     }
 
-    /// <summary>↑↓ で増減、←→ で区画を移る</summary>
+    /// <summary>↑↓ で増減←→ で区画を移る</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">キー入力の情報</param>
     private void OnSegmentKeyDown(object sender, KeyRoutedEventArgs e)
@@ -151,9 +162,10 @@ public sealed partial class TimeInputBox : UserControl
         }
     }
 
-    /// <summary>ホイールで増減する (上で増、下で減)</summary>
+    /// <summary>ホイールで増減する</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">ホイールの情報</param>
+    /// <remarks>上で増え、下で減る。</remarks>
     private void OnSegmentWheelChanged(object sender, PointerRoutedEventArgs e)
     {
         var delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
@@ -164,7 +176,7 @@ public sealed partial class TimeInputBox : UserControl
         }
     }
 
-    /// <summary>枠の余白を押しても、時の区画へフォーカスを移す</summary>
+    /// <summary>枠の余白を押しても時の区画へフォーカスを移す</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">タップの情報</param>
     private void OnFrameTapped(object sender, TappedRoutedEventArgs e)
@@ -193,17 +205,21 @@ public sealed partial class TimeInputBox : UserControl
         UpdateFrame();
     }
 
-    /// <summary>枠の見た目 (通常・ポインタ上・フォーカス中)を、標準の入力欄に合わせる</summary>
-    /// <remarks>色は XAML のビジュアルステート (<c>ThemeResource</c>)が持つので、テーマの切り替えに追従する。</remarks>
+    /// <summary>枠の見た目を標準の入力欄に合わせる</summary>
+    /// <remarks>
+    /// 対象は通常・ポインタ上・フォーカス中。
+    /// 色は XAML のビジュアルステート (<c>ThemeResource</c>)が持つので、テーマの切り替えに追従する。
+    /// </remarks>
     private void UpdateFrame()
     {
         var focused = HourBox.FocusState != FocusState.Unfocused || MinuteBox.FocusState != FocusState.Unfocused;
         VisualStateManager.GoToState(this, focused ? "Focused" : _pointerOver ? "PointerOver" : "Normal", false);
     }
 
-    /// <summary>区画の値を 1 つ増減する (端を越えたら反対の端へ)</summary>
+    /// <summary>区画の値を 1 つ増減する</summary>
     /// <param name="box">増減する区画</param>
     /// <param name="delta">増減する量</param>
+    /// <remarks>端を越えたら反対の端へ回る</remarks>
     private void Step(TextBox box, int delta)
     {
         Commit(box);
@@ -218,8 +234,9 @@ public sealed partial class TimeInputBox : UserControl
         box.SelectAll();
     }
 
-    /// <summary>区画に打った値を確定する (空なら元の値、範囲外は最大値)</summary>
+    /// <summary>区画に打った値を確定する</summary>
     /// <param name="box">確定する区画</param>
+    /// <remarks>空なら元の値にし、範囲外は最大値にする。</remarks>
     private void Commit(TextBox box)
     {
         var max = box == HourBox ? MaxHour : MaxMinute;

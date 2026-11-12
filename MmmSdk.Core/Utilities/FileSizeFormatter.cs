@@ -1,11 +1,9 @@
 namespace MmmSdk.Core.Utilities;
 
-/// <summary>
-/// ファイルの大きさ (バイト数)を、画面に出す文字列にする
-/// </summary>
+/// <summary>ファイルの大きさを画面に出す文字列にする</summary>
 public static class FileSizeFormatter
 {
-    /// <summary>バイト数を、読みやすい単位にする</summary>
+    /// <summary>バイト数を読みやすい単位にする</summary>
     /// <param name="bytes">バイト数</param>
     /// <returns>B・KB・MB・GB のいずれかで表した文字列</returns>
     public static string Format(long bytes) => bytes switch

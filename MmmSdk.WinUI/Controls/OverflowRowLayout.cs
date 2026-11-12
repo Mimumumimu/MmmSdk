@@ -4,11 +4,13 @@ using Windows.Foundation;
 
 namespace MmmSdk.WinUI.Controls;
 
-/// <summary>要素を 1 行に並べ、幅に収まらない分を隠すレイアウト (<c>ItemsRepeater</c> 用)</summary>
+/// <summary>幅に収まらない分を隠す 1 行のレイアウト</summary>
 /// <remarks>
-/// 隠した要素は、使う側が「⋯」のようなボタンの一覧に出す。
-/// 収まらないときは、隠した要素の数に関わらず、右に <see cref="ReservedWidth"/> の幅を空けて、そこにボタンを重ねる。
-/// 全部収まるときは、空けない。
+/// 要素を 1 行に並べ、幅に収まらない分を隠す。
+/// <c>ItemsRepeater</c> 用。
+/// 隠した要素は使う側が「⋯」のようなボタンの一覧に出す。
+/// 収まらないときは隠した要素の数に関わらず、右に <see cref="ReservedWidth"/> の幅を空けて、そこにボタンを重ねる。
+/// 全部収まるときは空けない。
 /// </remarks>
 public sealed partial class OverflowRowLayout : NonVirtualizingLayout
 {
@@ -20,10 +22,10 @@ public sealed partial class OverflowRowLayout : NonVirtualizingLayout
     public static readonly DependencyProperty ReservedWidthProperty = DependencyProperty.Register(
         nameof(ReservedWidth), typeof(double), typeof(OverflowRowLayout), new PropertyMetadata(0d, OnLayoutPropertyChanged));
 
-    /// <summary>最後に通知した、隠し始める位置</summary>
+    /// <summary>最後に通知した隠し始める位置</summary>
     private int _notifiedHiddenStartIndex = -1;
 
-    /// <summary>最後に通知した、隠した要素があるか</summary>
+    /// <summary>最後に通知した隠した要素があるか</summary>
     private bool _notifiedHasHidden;
 
     /// <summary>要素どうしの間隔</summary>
@@ -33,7 +35,8 @@ public sealed partial class OverflowRowLayout : NonVirtualizingLayout
         set => SetValue(SpacingProperty, value);
     }
 
-    /// <summary>収まらないとき右に空ける幅 (隠した要素の一覧を開くボタンの幅と間隔)</summary>
+    /// <summary>収まらないとき右に空ける幅</summary>
+    /// <remarks>隠した要素の一覧を開くボタンの幅と間隔</remarks>
     public double ReservedWidth
     {
         get => (double)GetValue(ReservedWidthProperty);
@@ -41,17 +44,23 @@ public sealed partial class OverflowRowLayout : NonVirtualizingLayout
     }
 
     /// <summary>隠し始める要素の位置</summary>
-    /// <remarks>先頭から数えて、この位置以降の要素が隠れる。隠れる要素が無ければ、要素の数と同じ。</remarks>
+    /// <remarks>
+    /// 先頭から数えて、この位置以降の要素が隠れる。
+    /// 隠れる要素が無ければ、要素の数と同じ。
+    /// </remarks>
     public int HiddenStartIndex { get; private set; }
 
-    /// <summary>収まらず、隠した要素があるか</summary>
+    /// <summary>収まらず隠した要素があるか</summary>
     public bool HasHidden { get; private set; }
 
     /// <summary>隠す要素が変わった</summary>
-    /// <remarks>配置の途中で呼ばれる。画面を変えるときは、配置が終わってからにする。</remarks>
+    /// <remarks>
+    /// 配置の途中で呼ばれる
+    /// 画面を変えるときは配置が終わってからにする
+    /// </remarks>
     public event EventHandler? OverflowChanged;
 
-    /// <summary>間隔・空ける幅が変わったら、並べ直す</summary>
+    /// <summary>間隔・空ける幅が変わったら並べ直す</summary>
     /// <param name="d">変更されたレイアウト</param>
     /// <param name="e">変更の情報</param>
     private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

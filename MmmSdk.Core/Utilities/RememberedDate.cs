@@ -1,9 +1,11 @@
 namespace MmmSdk.Core.Utilities;
 
-/// <summary>画面で選んだ日付を、選んだ日の間だけ覚える入れ物</summary>
+/// <summary>画面で選んだ日付を選んだ日の間だけ覚える入れ物</summary>
 /// <remarks>
-/// ページを作り直しても、見ている日付を引き継ぐために使う。画面の状態は、ページの外の状態クラスが持つ。
-/// アプリを起動したまま日をまたぐと、覚えた日付は古くなる。古い日付が「今日」のつもりの入力に残らないよう、日をまたいだあとは使わず、今日にする。
+/// ページを作り直しても見ている日付を引き継ぐために使う。
+/// 画面の状態はページの外の状態クラスが持つ。
+/// アプリを起動したまま日をまたぐと覚えた日付は古くなる。
+/// 古い日付が「今日」のつもりの入力に残らないよう、日をまたいだあとは使わず、今日にする。
 /// 画面のスレッドだけから使う。
 /// </remarks>
 public sealed class RememberedDate
@@ -19,7 +21,10 @@ public sealed class RememberedDate
 
     /// <summary>画面で最初に出す日付を決める</summary>
     /// <param name="today">今日の日付</param>
-    /// <returns>今日に選んだ日付があれば、その日付。無い・日をまたいだときは今日</returns>
+    /// <returns>
+    /// 今日に選んだ日付があれば、その日付。
+    /// 無い・日をまたいだときは今日。
+    /// </returns>
     public DateOnly Resolve(DateOnly today) => _hasValue && _chosenOn == today ? _value : today;
 
     /// <summary>選んだ日付を覚える</summary>

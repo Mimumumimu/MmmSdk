@@ -4,15 +4,18 @@ using MmmSdk.Core.Components.Settings;
 
 namespace MmmSdk.Core.Components.Features;
 
-/// <summary>機能のオン・オフの管理 (状態の保存・起動時の準備の実行・切り替えの通知)</summary>
+/// <summary>機能のオン・オフの管理</summary>
 /// <param name="features">オン・オフを切り替えられる機能</param>
 /// <param name="confirmations">オフにする前の確認</param>
 /// <param name="startups">起動時の準備</param>
 /// <param name="settings">汎用設定ストア</param>
 /// <param name="services">起動時の準備を作る DI のサービスプロバイダー</param>
 /// <remarks>
-/// 状態は設定ストアに、機能のキーごとに保存する。保存が無い機能は、登録の初期値で、既定はオン。
-/// 切り替えはすぐ反映する。画面 (サイドバー・メニュー・設定の画面など)は、<see cref="Changed"/> または <see cref="IsEnabled"/> で見る。
+/// 状態の保存・起動時の準備の実行・切り替えの通知を行う。
+/// 状態は設定ストアに機能のキーごとに保存する。
+/// 保存が無い機能は登録の初期値で、既定はオン。
+/// 切り替えはすぐ反映する。
+/// 画面 (サイドバー・メニュー・設定の画面など)は <see cref="Changed"/> または <see cref="IsEnabled"/> で見る。
 /// 機能の登録 (<see cref="FeatureServiceCollectionExtensions.AddFeature"/> 等)は各機能が行い、このクラスは特定の機能を知らない。
 /// </remarks>
 public sealed class FeatureService(
@@ -22,11 +25,16 @@ public sealed class FeatureService(
     ISettingsStore settings,
     IServiceProvider services) : IFeatureStatus
 {
-    /// <summary>登録された機能。登録の並び順の値の順で、同じ値は登録順</summary>
+    /// <summary>登録された機能</summary>
+    /// <remarks>登録の並び順の値の順で、同じ値は登録順。</remarks>
     private readonly IReadOnlyList<FeatureInfo> _registered = [.. features.OrderBy(f => f.Order)];
 
-    /// <summary>機能で、オフにできない機能も含む。利用者が決めた並び順の順</summary>
-    /// <remarks>保存した並び (<see cref="SetOrderAsync"/>)に載っている機能が先、載っていない機能 (あとから足したもの)は、登録の並び順の値の順で、その後ろ。</remarks>
+    /// <summary>機能の一覧</summary>
+    /// <remarks>
+    /// オフにできない機能も含む。
+    /// 利用者が決めた並び順の順に並ぶ。
+    /// 保存した並び (<see cref="SetOrderAsync"/>)に載っている機能が先、載っていない機能 (あとから足したもの)は登録の並び順の値の順で、その後ろ。
+    /// </remarks>
     public IReadOnlyList<FeatureInfo> Features
     {
         get
@@ -38,20 +46,30 @@ public sealed class FeatureService(
         }
     }
 
-    /// <summary>機能が使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)を満たしているか</summary>
+    /// <summary>機能が使える条件を満たしているか</summary>
     /// <param name="info">機能の登録情報</param>
     /// <returns>条件が無い・満たしているとき true</returns>
+    /// <remarks>使える条件は <see cref="FeatureInfo.AvailableWhen"/> で渡す</remarks>
     private bool IsAvailable(FeatureInfo info) => info.AvailableWhen?.Invoke(services) ?? true;
 
-    /// <summary>機能のオン・オフが切り替わったとき (引数は、切り替わった機能のキー)</summary>
+    /// <summary>機能のオン・オフが切り替わったとき</summary>
+    /// <remarks>引数は切り替わった機能のキー</remarks>
     public event EventHandler<string>? Changed;
 
-    /// <summary>機能の並び順が変わったとき (並べ替え・並び順を戻したとき)</summary>
+    /// <summary>機能の並び順が変わったとき</summary>
+    /// <remarks>並べ替えたときと並び順を戻したとき</remarks>
     public event EventHandler? OrderChanged;
 
     /// <summary>機能がオンか</summary>
-    /// <param name="featureKey">機能のキー。null (どの機能にも属さない)・オフにできない機能なら常にオン</param>
-    /// <returns>オンなら true。保存が無いときは、登録の初期値で、<see cref="FeatureInfo.DefaultEnabled"/> の値。使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)を満たさない機能は、常に false</returns>
+    /// <param name="featureKey">
+    /// 機能のキー
+    /// null (どの機能にも属さない)・オフにできない機能なら常にオン
+    /// </param>
+    /// <returns>
+    /// オンなら true。
+    /// 保存が無いときは登録の初期値で、<see cref="FeatureInfo.DefaultEnabled"/> の値。
+    /// 使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)を満たさない機能は常に false。
+    /// </returns>
     public bool IsEnabled(string? featureKey)
     {
         if (featureKey is null)
@@ -68,10 +86,12 @@ public sealed class FeatureService(
         return info is { CanDisable: false } || settings.Get(SettingKey(featureKey), info?.DefaultEnabled ?? true);
     }
 
-    /// <summary>使える条件 (<see cref="FeatureInfo.AvailableWhen"/>)の結果が変わったことを、画面に知らせる</summary>
+    /// <summary>使える条件の変化を画面に知らせる</summary>
     /// <remarks>
-    /// 使える条件が付いた機能すべてについて、<see cref="Changed"/> を出す。受け取った画面は、サイドバーを作り直し、使えなくなった機能のページを捨てる。
-    /// 条件の元になる値 (サインイン後に読み込む、ユーザーごとの許可など)が、画面を作ったあとで変わったときに呼ぶ。
+    /// <see cref="FeatureInfo.AvailableWhen"/> の結果が変わったことを知らせる。
+    /// 使える条件が付いた機能すべてについて、<see cref="Changed"/> を出す。
+    /// 受け取った画面はサイドバーを作り直し、使えなくなった機能のページを捨てる。
+    /// 条件の元になる値 (サインイン後に読み込む、ユーザーごとの許可など)が画面を作ったあとで変わったときに呼ぶ。
     /// </remarks>
     public void NotifyAvailabilityChanged()
     {
@@ -81,11 +101,20 @@ public sealed class FeatureService(
         }
     }
 
-    /// <summary>画面の並びに使う値を取得する (サイドバー・設定ページの部品)</summary>
-    /// <param name="featureKey">属する機能のキー。null・登録の無いキーのときは <paramref name="registeredOrder"/> のまま</param>
+    /// <summary>画面の並びに使う値を取得する</summary>
+    /// <param name="featureKey">
+    /// 属する機能のキー
+    /// null・登録の無いキーのときは <paramref name="registeredOrder"/> のまま
+    /// </param>
     /// <param name="registeredOrder">登録時の並び順の値</param>
-    /// <returns>機能のキーがあれば、利用者が決めた並び (<see cref="Features"/>)の位置。無ければ登録時の値</returns>
-    /// <remarks>機能に属さない設定の部品は負の値で先頭に固定されているので、0 以上の位置と混ざらない。</remarks>
+    /// <returns>
+    /// 機能のキーがあれば、利用者が決めた並び (<see cref="Features"/>)の位置。
+    /// 無ければ登録時の値。
+    /// </returns>
+    /// <remarks>
+    /// サイドバーと設定ページの部品の並びに使う。
+    /// 機能に属さない設定の部品は負の値で先頭に固定されているので、0 以上の位置と混ざらない。
+    /// </remarks>
     public int OrderOf(string? featureKey, int registeredOrder)
     {
         if (featureKey is null)
@@ -98,9 +127,12 @@ public sealed class FeatureService(
     }
 
     /// <summary>機能の並び順を保存する</summary>
-    /// <param name="keys">機能のキーを、新しい並び順で並べたもの</param>
-    /// <returns>保存したら true。読み取り専用 (読み込みに失敗している)ため保存しなかったら false</returns>
-    /// <remarks>保存してから <see cref="OrderChanged"/> を出す。</remarks>
+    /// <param name="keys">機能のキーを、新しい並び順で並べたもの。</param>
+    /// <returns>
+    /// 保存したら true
+    /// 読み取り専用 (読み込みに失敗している)ため保存しなかったら false
+    /// </returns>
+    /// <remarks>保存してから <see cref="OrderChanged"/> を出す</remarks>
     public async Task<bool> SetOrderAsync(IReadOnlyList<string> keys)
     {
         if (!await settings.SetAsync(OrderKey, [.. keys], FeatureJsonContext.Readable.StringArray))
@@ -112,8 +144,12 @@ public sealed class FeatureService(
         return true;
     }
 
-    /// <summary>機能の並び順を、登録時の並び (<see cref="FeatureInfo.Order"/>の順)に戻す</summary>
-    /// <returns>戻したら true で、保存した並びが無く、すでに登録の順のときも true。読み取り専用のため保存しなかったら false</returns>
+    /// <summary>機能の並び順を登録時の並びに戻す</summary>
+    /// <returns>
+    /// 戻したら true で、保存した並びが無く、すでに登録の順のときも true。
+    /// 読み取り専用のため保存しなかったら false。
+    /// </returns>
+    /// <remarks>登録時の並びは <see cref="FeatureInfo.Order"/> の順</remarks>
     public async Task<bool> ResetOrderAsync()
     {
         if (settings.Contains(OrderKey) && !await settings.RemoveAsync(OrderKey))
@@ -125,11 +161,12 @@ public sealed class FeatureService(
         return true;
     }
 
-    /// <summary>オンの機能の起動時の準備を、登録順に実行する</summary>
+    /// <summary>オンの機能の起動時の準備を登録順に実行する</summary>
     /// <returns>準備の完了を表すタスク</returns>
     /// <remarks>
-    /// 呼ぶスレッドで順に実行する。ホストは、設定ストアの先読みを最初の起動時の準備として登録しておく。
-    /// オン・オフの判定を、読み込み済みの設定で行うため。
+    /// 呼ぶスレッドで順に実行する
+    /// ホストは設定ストアの先読みを最初の起動時の準備として登録しておく
+    /// オン・オフの判定を読み込み済みの設定で行うため
     /// </remarks>
     public async Task StartAsync()
     {
@@ -144,9 +181,10 @@ public sealed class FeatureService(
     /// <param name="enabled">オンにするなら true</param>
     /// <returns>切り替えた結果</returns>
     /// <remarks>
-    /// オフにするときは、先に確認 (<see cref="IFeatureDisableConfirmation"/>)を取る。
-    /// オンにするときは、その機能の起動時の準備を実行してから <see cref="Changed"/> を出す。
-    /// オフにするときは、保存してから <see cref="Changed"/> を出す。受け取った側がページを捨てる。
+    /// オフにするときは先に確認 (<see cref="IFeatureDisableConfirmation"/>)を取る
+    /// オンにするときはその機能の起動時の準備を実行してから <see cref="Changed"/> を出す
+    /// オフにするときは保存してから <see cref="Changed"/> を出す
+    /// 受け取った側がページを捨てる
     /// </remarks>
     public async Task<FeatureChangeResult> SetEnabledAsync(string featureKey, bool enabled)
     {
@@ -185,10 +223,11 @@ public sealed class FeatureService(
     private Task RunAsync(StartupTaskRegistration startup)
         => ((IStartupTask)services.GetRequiredService(startup.TaskType)).StartAsync();
 
-    /// <summary>機能の並び順 (機能のキーの配列)を保存する、設定ストアのキー</summary>
+    /// <summary>機能の並び順を保存する設定ストアのキー</summary>
+    /// <remarks>機能のキーの配列を保存する</remarks>
     private const string OrderKey = "Feature.Order";
 
-    /// <summary>機能のオン・オフを保存する、設定ストアのキー</summary>
+    /// <summary>機能のオン・オフを保存する設定ストアのキー</summary>
     /// <param name="featureKey">機能のキー</param>
     /// <returns>設定ストアのキー</returns>
     private static string SettingKey(string featureKey) => $"Feature.{featureKey}.Enabled";

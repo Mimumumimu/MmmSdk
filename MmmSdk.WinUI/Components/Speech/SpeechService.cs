@@ -5,20 +5,22 @@ using Windows.Media.SpeechSynthesis;
 
 namespace MmmSdk.WinUI.Components.Speech;
 
-/// <summary>
-/// Windows 標準の音声合成で、テキストを日本語の音声で読み上げる。アプリ全体で 1 つ。
-/// </summary>
+/// <summary>テキストを日本語の音声で読み上げる</summary>
 /// <param name="settings">汎用設定ストア (音量の保存)</param>
 /// <remarks>
-/// 合成器と再生器は 1 つを使い回す。新しく読むときは前の読み上げを差し替える。合成の途中で次の依頼が来たら、前の合成結果は捨てる。
-/// 声は、OS の既定の音声が日本語ならそれを、そうでなければ入っている日本語の音声の先頭を使う。
+/// Windows 標準の音声合成を使う。
+/// アプリ全体で 1 つ。
+/// 合成器と再生器は 1 つを使い回す。
+/// 新しく読むときは前の読み上げを差し替える。
+/// 合成の途中で次の依頼が来たら、前の合成結果は捨てる。
+/// 声は OS の既定の音声が日本語ならそれを、そうでなければ入っている日本語の音声の先頭を使う。
 /// </remarks>
 public sealed class SpeechService(ISettingsStore settings) : ISpeechService, IDisposable
 {
-    /// <summary>音量 (%)の設定キー</summary>
+    /// <summary>音量の設定キー</summary>
     private const string VolumeKey = "Speech.VolumePercent";
 
-    /// <summary>音量 (%)の既定値</summary>
+    /// <summary>音量の既定値</summary>
     private const int DefaultVolumePercent = 50;
 
     /// <summary>日本語の音声の言語タグの先頭</summary>
@@ -31,13 +33,16 @@ public sealed class SpeechService(ISettingsStore settings) : ISpeechService, IDi
     /// <remarks>読み上げはメディアの再生ではないので、システムのメディア操作 (音量キーの表示・再生キー)とは連携させない。</remarks>
     private readonly MediaPlayer _player = new() { CommandManager = { IsEnabled = false } };
 
-    /// <summary>今の依頼の通し番号 (合成の途中で次の依頼が来たかを調べる)</summary>
+    /// <summary>今の依頼の通し番号</summary>
+    /// <remarks>合成の途中で次の依頼が来たかを調べるために使う</remarks>
     private int _version;
 
-    /// <summary>再生中 (または再生済み)の音声の元</summary>
+    /// <summary>再生中の音声の元</summary>
+    /// <remarks>再生済みのものも含む</remarks>
     private MediaSource? _currentSource;
 
-    /// <summary>再生中 (または再生済み)の音声のストリーム</summary>
+    /// <summary>再生中の音声のストリーム</summary>
+    /// <remarks>再生済みのものも含む</remarks>
     private SpeechSynthesisStream? _currentStream;
 
     /// <summary>破棄したか</summary>
@@ -97,7 +102,10 @@ public sealed class SpeechService(ISettingsStore settings) : ISpeechService, IDi
     }
 
     /// <summary>日本語の音声を探す</summary>
-    /// <returns>既定の音声が日本語ならそれ、そうでなければ日本語の音声の先頭。無ければ null</returns>
+    /// <returns>
+    /// 既定の音声が日本語ならそれ、そうでなければ日本語の音声の先頭。
+    /// 無ければ null。
+    /// </returns>
     private static VoiceInformation? FindJapaneseVoice()
     {
         var defaultVoice = SpeechSynthesizer.DefaultVoice;

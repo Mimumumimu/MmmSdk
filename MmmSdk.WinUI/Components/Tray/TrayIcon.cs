@@ -12,60 +12,72 @@ using static MmmSdk.WinUI.Interop.NativeMethods;
 
 namespace MmmSdk.WinUI.Components.Tray;
 
-/// <summary>
-/// タスクトレイのアイコンと右クリックメニュー。Win32 の Shell_NotifyIcon を直接使う。メニューの項目は <see cref="ITrayMenuSource"/> から作る。
-/// </summary>
+/// <summary>タスクトレイのアイコンと右クリックメニュー</summary>
 /// <remarks>
-/// トレイからの通知を受けるため、専用の非表示ウィンドウを作る。メインウィンドウとは独立。
-/// メッセージ専用ウィンドウ (HWND_MESSAGE)にしないのは、エクスプローラー再起動の通知 (TaskbarCreated)がブロードキャストで、
-/// メッセージ専用ウィンドウには届かないため。UI スレッドで作り、UI スレッドで破棄する。
+/// Win32 の Shell_NotifyIcon を直接使う。
+/// メニューの項目は <see cref="ITrayMenuSource"/> から作る。
+/// トレイからの通知を受けるため、専用の非表示ウィンドウを作る。
+/// メインウィンドウとは独立。
+/// メッセージ専用ウィンドウ (HWND_MESSAGE)にしないのはエクスプローラー再起動の通知 (TaskbarCreated)がブロードキャストで、
+/// メッセージ専用ウィンドウには届かないため。
+/// UI スレッドで作り、UI スレッドで破棄する。
 /// </remarks>
 public sealed class TrayIcon : IDisposable
 {
     /// <summary>トレイアイコンの識別番号</summary>
     private const uint IconId = 1;
 
-    /// <summary>トレイアイコンの操作 (クリック・右クリック等)の通知。</summary>
+    /// <summary>トレイアイコンの操作の通知</summary>
+    /// <remarks>操作はクリック・右クリック等</remarks>
     private const uint CallbackMessage = PInvoke.WM_APP + 1;
 
-    /// <summary>アイコンがキーボードで選択された通知 (NIN_SELECT に NINF_KEY を足したもの)</summary>
+    /// <summary>アイコンがキーボードで選択された通知</summary>
+    /// <remarks>NIN_SELECT に NINF_KEY を足したもの</remarks>
     private const uint NinKeySelect = PInvoke.NIN_SELECT | 1;
 
     /// <summary>メッセージを受けるインスタンス</summary>
-    /// <remarks>ウィンドウプロシージャは static のため。トレイはアプリに 1 つ。</remarks>
+    /// <remarks>
+    /// ウィンドウプロシージャは static のため
+    /// トレイはアプリに 1 つ
+    /// </remarks>
     private static TrayIcon? s_current;
 
     /// <summary>メニューに項目を出す機能</summary>
     private readonly IEnumerable<ITrayMenuSource> _sources;
-    /// <summary>アプリごとの設定 (文字・クラス名・アイコン)</summary>
+    /// <summary>アプリごとの設定</summary>
     private readonly TrayIconOptions _options;
-    /// <summary>TaskbarCreated (エクスプローラー再起動の通知)のメッセージ番号</summary>
+    /// <summary>TaskbarCreated のメッセージ番号</summary>
+    /// <remarks>TaskbarCreated はエクスプローラー再起動の通知</remarks>
     private readonly uint _taskbarCreatedMessage;
     /// <summary>UI スレッドのディスパッチャー</summary>
     private readonly DispatcherQueue _dispatcher;
     /// <summary>復旧できないエラーの報告先</summary>
     private readonly FatalErrorHandler _fatalErrors;
 
-    /// <summary>表示中のメニューのコマンド ID と処理。</summary>
+    /// <summary>表示中のメニューのコマンド ID と処理</summary>
     private readonly Dictionary<int, Func<Task>> _commands = [];
 
     /// <summary>表示中のメニューの描画</summary>
-    /// <remarks>メニューを開いている間だけ持つ。</remarks>
+    /// <remarks>メニューを開いている間だけ持つ</remarks>
     private TrayMenuRenderer? _renderer;
 
     /// <summary>通知を受けるウィンドウのハンドル</summary>
     private HWND _hwnd;
 
     /// <summary>ファイルから読んだアイコン</summary>
-    /// <remarks>自分で破棄する。標準のアイコンは破棄しないので持たない。</remarks>
+    /// <remarks>
+    /// 自分で破棄する
+    /// 標準のアイコンは破棄しないので持たない
+    /// </remarks>
     private HICON _icon;
     /// <summary>破棄済みか</summary>
     private bool _disposed;
 
-    /// <summary>トレイアイコンを作る (表示は <see cref="Show"/> で行う)</summary>
+    /// <summary>トレイアイコンを作る</summary>
     /// <param name="sources">メニューに項目を出す機能</param>
     /// <param name="options">アプリごとの設定 (ツールチップ・ウィンドウクラス名・アイコン・「終了」の文言)</param>
-    /// <param name="fatalErrors">復旧できないエラーの報告先 (メッセージの処理で予想外の例外が出たとき、ログ・ダイアログ・終了を任せる)</param>
+    /// <param name="fatalErrors">復旧できないエラーの報告先 (メッセージの処理で予想外の例外が出たとき、ログ・ダイアログ・終了を任せる)。</param>
+    /// <remarks>表示は <see cref="Show"/> で行う</remarks>
     public TrayIcon(IEnumerable<ITrayMenuSource> sources, TrayIconOptions options, FatalErrorHandler fatalErrors)
     {
         _sources = sources;
@@ -77,13 +89,14 @@ public sealed class TrayIcon : IDisposable
         _dispatcher = DispatcherQueue.GetForCurrentThread();
     }
 
-    /// <summary>メインウィンドウを出すよう求められた。きっかけはアイコンのクリック。</summary>
+    /// <summary>メインウィンドウを出すよう求められた</summary>
+    /// <remarks>きっかけはアイコンのクリック</remarks>
     public event EventHandler? OpenRequested;
 
-    /// <summary>メニューの「終了」が選ばれた。</summary>
+    /// <summary>メニューの「終了」が選ばれた</summary>
     public event EventHandler? ExitRequested;
 
-    /// <summary>トレイにアイコンを出す。</summary>
+    /// <summary>トレイにアイコンを出す</summary>
     public unsafe void Show()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -120,14 +133,17 @@ public sealed class TrayIcon : IDisposable
     }
 
     /// <summary>トレイに出すアイコン</summary>
-    /// <remarks>読めなければ Windows 標準のアプリアイコン。トレイから操作できなくなるのを避けるため。</remarks>
+    /// <remarks>
+    /// 読めなければ Windows 標準のアプリアイコン
+    /// トレイから操作できなくなるのを避けるため
+    /// </remarks>
     private HICON DisplayIcon => !_icon.IsNull ? _icon : PInvoke.LoadIcon(HINSTANCE.Null, PInvoke.IDI_APPLICATION);
 
     /// <summary>トレイから通知を出す</summary>
     /// <param name="title">通知のタイトル</param>
     /// <param name="message">通知の本文</param>
     /// <param name="isError">エラーのアイコンで出すか (false なら情報のアイコン)</param>
-    /// <remarks>Windows の通知として表示される。</remarks>
+    /// <remarks>Windows の通知として表示される</remarks>
     public unsafe void ShowNotification(string title, string message, bool isError)
     {
         if (_hwnd.IsNull) return;
@@ -152,8 +168,8 @@ public sealed class TrayIcon : IDisposable
         uFlags = flags,
     };
 
-    /// <summary>トレイにアイコンを登録する。</summary>
-    /// <remarks>エクスプローラーがまだ起動していない等で失敗しても、起動後の TaskbarCreated で登録し直す。</remarks>
+    /// <summary>トレイにアイコンを登録する</summary>
+    /// <remarks>エクスプローラーがまだ起動していない等で失敗しても起動後の TaskbarCreated で登録し直す</remarks>
     private unsafe void AddIcon()
     {
         var data = CreateData(NOTIFY_ICON_DATA_FLAGS.NIF_MESSAGE | NOTIFY_ICON_DATA_FLAGS.NIF_ICON | NOTIFY_ICON_DATA_FLAGS.NIF_TIP | NOTIFY_ICON_DATA_FLAGS.NIF_SHOWTIP);
@@ -170,7 +186,7 @@ public sealed class TrayIcon : IDisposable
         PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_SETVERSION, in data);
     }
 
-    /// <summary>異常終了の直前に、トレイからアイコンを消す</summary>
+    /// <summary>異常終了の直前にトレイからアイコンを消す</summary>
     /// <remarks>呼ばれるスレッドは UI スレッドとは限らないので、ウィンドウは壊さず、アイコンの登録だけを外す。</remarks>
     private void RemoveIconBeforeExit()
     {
@@ -187,8 +203,12 @@ public sealed class TrayIcon : IDisposable
         PInvoke.Shell_NotifyIcon(NOTIFY_ICON_MESSAGE.NIM_DELETE, in data);
     }
 
-    /// <summary>指定されたアイコンファイルを、トレイの大きさ (DPI に合わせた小アイコン)で読む。</summary>
-    /// <returns>アイコンのハンドル。パスが未指定・ファイルが無い等で読めなければ null のハンドル (呼び出し側で Windows 標準のアイコンに代える)</returns>
+    /// <summary>指定されたアイコンファイルをトレイの大きさで読む</summary>
+    /// <returns>
+    /// アイコンのハンドル
+    /// パスが未指定・ファイルが無い等で読めなければ null のハンドル (呼び出し側で Windows 標準のアイコンに代える)
+    /// </returns>
+    /// <remarks>トレイの大きさは DPI に合わせた小アイコン</remarks>
     private unsafe HICON LoadTrayIcon()
     {
         if (_options.IconPath is not { } path)
@@ -291,13 +311,19 @@ public sealed class TrayIcon : IDisposable
 
     /// <summary>メニューの項目の元の並び順の値を取得する</summary>
     /// <param name="source">メニューの項目の元</param>
-    /// <returns>並び順の値。登録で付いたもので、付いていない元は 0</returns>
+    /// <returns>
+    /// 並び順の値。
+    /// 登録で付いたもので、付いていない元は 0。
+    /// </returns>
     private static int SourceOrder(ITrayMenuSource source) => source is RegisteredTrayMenuSource registered ? registered.Order : 0;
 
-    /// <summary>右クリックメニューを出し、選ばれた項目の処理を行う。</summary>
+    /// <summary>右クリックメニューを出し、選ばれた項目の処理を行う</summary>
     /// <param name="x">メニューを出す位置の X (画面座標)</param>
     /// <param name="y">メニューを出す位置の Y (画面座標)</param>
-    /// <remarks>メニューは開くたびに作る。各機能の最新の内容を出すため。</remarks>
+    /// <remarks>
+    /// メニューは開くたびに作る
+    /// 各機能の最新の内容を出すため
+    /// </remarks>
     private unsafe void ShowMenu(int x, int y)
     {
         var menu = PInvoke.CreatePopupMenu();
@@ -350,7 +376,10 @@ public sealed class TrayIcon : IDisposable
     /// <summary>項目をメニューに追加する</summary>
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="items">追加する項目</param>
-    /// <param name="nextId">次に割り当てるコマンド ID。使った分だけ進む</param>
+    /// <param name="nextId">
+    /// 次に割り当てるコマンド ID
+    /// 使った分だけ進む
+    /// </param>
     private void AppendItems(HMENU menu, IReadOnlyList<TrayMenuItem> items, ref int nextId)
     {
         var renderer = _renderer!;
@@ -381,7 +410,10 @@ public sealed class TrayIcon : IDisposable
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="text">表示する文字</param>
     /// <param name="invoked">選ばれたときの処理</param>
-    /// <param name="nextId">次に割り当てるコマンド ID。使った分だけ進む</param>
+    /// <param name="nextId">
+    /// 次に割り当てるコマンド ID
+    /// 使った分だけ進む
+    /// </param>
     private void AddCommand(HMENU menu, string text, Func<Task> invoked, ref int nextId)
     {
         var id = nextId++;

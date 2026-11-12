@@ -10,16 +10,19 @@ using Windows.Foundation;
 
 namespace MmmSdk.WinUI.Utilities;
 
-/// <summary>入力した直後に、要素の下へ短く出して、自然に消える警告の吹き出し</summary>
+/// <summary>入力した直後に要素の下へ短く出して自然に消える警告の吹き出し</summary>
 /// <remarks>
-/// 入力のじゃまをしないよう、フォーカスを取らず、クリックも受けない。吹き出しの下の要素を、そのまま押せる。
-/// 決まった秒数のあとにフェードして消える。<see cref="Hide"/> か、次の <see cref="Show"/> では、すぐ消える。
-/// 色は、テーマの標準の注意の色で、<c>SystemFillColorCautionBrush</c>・<c>SystemFillColorCautionBackgroundBrush</c>。
-/// ライト・ダーク・ハイコントラストへの切り替えに、標準のとおり追従する。
+/// 入力のじゃまをしないよう、フォーカスを取らず、クリックも受けない。
+/// 吹き出しの下の要素をそのまま押せる。
+/// 決まった秒数のあとにフェードして消える。
+/// <see cref="Hide"/> か、次の <see cref="Show"/> ではすぐ消える。
+/// 色はテーマの標準の注意の色で、<c>SystemFillColorCautionBrush</c>・<c>SystemFillColorCautionBackgroundBrush</c>。
+/// ライト・ダーク・ハイコントラストへの切り替えに標準のとおり追従する。
 /// </remarks>
 public sealed class WarningBubble
 {
-    /// <summary>吹き出しの見た目 (色は、テーマの標準の注意の色を、出すときに引く)</summary>
+    /// <summary>吹き出しの見た目</summary>
+    /// <remarks>色はテーマの標準の注意の色を、出すときに引く。</remarks>
     private const string BubbleXaml = """
         <Border xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
@@ -43,20 +46,32 @@ public sealed class WarningBubble
     /// <summary>フェードして出る・消えるのにかける時間</summary>
     private static readonly Duration FadeDuration = new(TimeSpan.FromMilliseconds(150));
 
-    /// <summary>吹き出しと要素の間の余白 (ピクセル)</summary>
+    /// <summary>吹き出しと要素の間の余白</summary>
+    /// <remarks>単位はピクセル</remarks>
     private const double Gap = 2;
 
-    /// <summary>吹き出しを出す入れ物 (出していないときは null)</summary>
+    /// <summary>吹き出しを出す入れ物</summary>
+    /// <remarks>出していないときは null</remarks>
     private Popup? _popup;
 
     /// <summary>消えるまでの時間を測るタイマー</summary>
     private DispatcherQueueTimer? _timer;
 
-    /// <summary>吹き出しを、要素の下に出す</summary>
-    /// <param name="target">出す場所の要素。入力したセルなどで、この要素の左下に合わせる</param>
+    /// <summary>吹き出しを要素の下に出す</summary>
+    /// <param name="target">
+    /// 出す場所の要素。
+    /// 入力したセルなどで、この要素の左下に合わせる。
+    /// </param>
     /// <param name="message">警告の文</param>
-    /// <param name="duration">出しておく時間。省略すると 4 秒</param>
-    /// <remarks>すでに出ている吹き出しは、すぐ消す。要素が画面の下端・右端にかかるときは、収まる位置にずらす。下に収まらなければ、要素の上に出す。</remarks>
+    /// <param name="duration">
+    /// 出しておく時間
+    /// 省略すると 4 秒
+    /// </param>
+    /// <remarks>
+    /// すでに出ている吹き出しはすぐ消す。
+    /// 要素が画面の下端・右端にかかるときは収まる位置にずらす。
+    /// 下に収まらなければ、要素の上に出す。
+    /// </remarks>
     public void Show(FrameworkElement target, string message, TimeSpan? duration = null)
     {
         Hide(animate: false);
@@ -97,8 +112,12 @@ public sealed class WarningBubble
         _timer.Start();
     }
 
-    /// <summary>吹き出しを消す (出ていなければ、何もしない)</summary>
-    /// <param name="animate">フェードして消すなら true。すぐ消すなら false</param>
+    /// <summary>吹き出しを消す</summary>
+    /// <param name="animate">
+    /// フェードして消すなら true
+    /// すぐ消すなら false
+    /// </param>
+    /// <remarks>出ていなければ、何もしない。</remarks>
     public void Hide(bool animate = false)
     {
         _timer?.Stop();
@@ -119,9 +138,13 @@ public sealed class WarningBubble
         }
     }
 
-    /// <summary>画面の読み上げ (スクリーンリーダー)に、吹き出しが出たことを知らせる</summary>
+    /// <summary>画面の読み上げに吹き出しが出たことを知らせる</summary>
     /// <param name="bubble">吹き出し</param>
-    /// <remarks>ライブ領域の指定だけでは、中身が出たことは伝わらない。ライブ領域の変更の通知を、自分で上げる。</remarks>
+    /// <remarks>
+    /// 画面の読み上げはスクリーンリーダー
+    /// ライブ領域の指定だけでは中身が出たことは伝わらない
+    /// ライブ領域の変更の通知を自分で上げる
+    /// </remarks>
     private static void Announce(Border bubble)
     {
         if (AutomationPeer.ListenerExists(AutomationEvents.LiveRegionChanged))
@@ -131,7 +154,7 @@ public sealed class WarningBubble
         }
     }
 
-    /// <summary>吹き出しの不透明度を、決まった時間で変える</summary>
+    /// <summary>吹き出しの不透明度を決まった時間で変える</summary>
     /// <param name="bubble">吹き出し</param>
     /// <param name="to">変えたあとの不透明度</param>
     /// <param name="completed">変え終わったときの処理 (無ければ null)</param>

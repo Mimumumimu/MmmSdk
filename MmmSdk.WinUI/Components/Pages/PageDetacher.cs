@@ -9,32 +9,40 @@ using Windows.Graphics;
 
 namespace MmmSdk.WinUI.Components.Pages;
 
-/// <summary>サイドバーの項目のページを、別のウィンドウに外して持つ</summary>
+/// <summary>サイドバーの項目のページを別のウィンドウに外して持つ</summary>
 /// <remarks>
-/// 外すときは、外すウィンドウ用にページを新しく作る。引き継げるページ (<see cref="IHandoverPage"/>)は、同じスコープから作って、シェルなどの状態と画面の内容を引き継ぐ。それ以外は、メインに残る同じ機能のページを捨てて、作り直す。
-/// 閉じるとき、引き継げるページは、メインのページへ作り直して渡す。それ以外は、外したページを破棄する。
+/// 外すときは外すウィンドウ用にページを新しく作る。
+/// 引き継げるページ (<see cref="IHandoverPage"/>)は同じスコープから作って、シェルなどの状態と画面の内容を引き継ぐ。
+/// それ以外はメインに残る同じ機能のページを捨てて、作り直す。
+/// 閉じるとき、引き継げるページはメインのページへ作り直して渡す。
+/// それ以外は外したページを破棄する。
 /// 閉じたあと、サイドバーで項目を押すと、メインの表示領域に、新しく作ったページが出る。
-/// 1 つの機能のページは同時に 1 か所にしか出せないので、外している間は、メインの表示領域に出さない。
-/// 機能をオフにしたときは、ページを捨てる前に、外したウィンドウも閉じる。
-/// 外したウィンドウの大きさは、機能ごとに <see cref="WindowBoundsKeeper"/> で覚える。キーは <c>DetachedPage.&lt;項目のキー&gt;</c>。
+/// 1 つの機能のページは同時に 1 か所にしか出せないので、外している間はメインの表示領域に出さない。
+/// 機能をオフにしたときはページを捨てる前に外したウィンドウも閉じる。
+/// 外したウィンドウの大きさは機能ごとに <see cref="WindowBoundsKeeper"/> で覚える。
+/// キーは <c>DetachedPage.&lt;項目のキー&gt;</c>。
 /// </remarks>
 public sealed class PageDetacher
 {
     /// <summary>ウィンドウの大きさを覚えるキーの前に付ける名前</summary>
     private const string BoundsKeyPrefix = "DetachedPage.";
 
-    /// <summary>タイトルバーの高さ (DIP)</summary>
-    /// <remarks>外したウィンドウの高さは、ページの高さにこれを足した値にする。</remarks>
+    /// <summary>タイトルバーの高さ</summary>
+    /// <remarks>外したウィンドウの高さはページの高さにこれを足した値にする</remarks>
     private const double TitleBarDip = 32;
 
-    /// <summary>ボタンで外したとき、メインウィンドウの左上からずらす距離 (DIP)</summary>
+    /// <summary>ボタンで外したときにずらす距離</summary>
+    /// <remarks>メインウィンドウの左上からずらす</remarks>
     private const double CascadeOffsetDip = 40;
 
-    /// <summary>メインのウィンドウ (外すときに渡されたもの)</summary>
-    /// <remarks>ウィンドウを閉じて、メインのページへ引き継ぐとき、ページが載るウィンドウとして渡す。</remarks>
+    /// <summary>メインのウィンドウ</summary>
+    /// <remarks>
+    /// 外すときに渡されたもの。
+    /// ウィンドウを閉じて、メインのページへ引き継ぐとき、ページが載るウィンドウとして渡す。
+    /// </remarks>
     private AppWindow? _mainWindow;
 
-    /// <summary>外したページと、そのウィンドウ (項目のキー → 項目・ウィンドウ)</summary>
+    /// <summary>外したページとそのウィンドウ</summary>
     private readonly Dictionary<string, (NavigationItem Item, DetachedPageWindow Window)> _windows = [];
 
     /// <summary>ページを持つもの</summary>
@@ -75,17 +83,30 @@ public sealed class PageDetacher
 
     /// <summary>ページを別のウィンドウに外す</summary>
     /// <param name="item">外す項目</param>
-    /// <param name="unparent">メインの表示領域を、別の項目へ移す処理。ページを作る前に呼ぶ</param>
-    /// <param name="pageSizeDip">メインの表示領域の大きさ。大きさを覚えていないときの、ウィンドウの大きさに使う</param>
+    /// <param name="unparent">
+    /// メインの表示領域を、別の項目へ移す処理。
+    /// ページを作る前に呼ぶ。
+    /// </param>
+    /// <param name="pageSizeDip">
+    /// メインの表示領域の大きさ。
+    /// 大きさを覚えていないときの、ウィンドウの大きさに使う。
+    /// </param>
     /// <param name="main">メインのウィンドウ</param>
-    /// <param name="at">ウィンドウを置く位置。ドラッグで離した位置を、物理ピクセルで渡す。無ければ、メインウィンドウから少しずらして置く</param>
+    /// <param name="at">
+    /// ウィンドウを置く位置。
+    /// ドラッグで離した位置を、物理ピクセルで渡す。
+    /// 無ければ、メインウィンドウから少しずらして置く。
+    /// </param>
     /// <returns>外す処理の完了を表すタスク</returns>
     /// <remarks>
-    /// すでに外している項目は、前に出すだけ。
-    /// ページは、外すウィンドウ用に新しく作る。WebView2 を持つページは、別のウィンドウへ付け替えると、日本語入力が効かなくなるため。
-    /// 引き継げるページ (<see cref="IHandoverPage"/>)は、スコープを捨てず、同じスコープから新しいページを作り、画面の内容を引き継ぐ。
-    /// ウィンドウを閉じるときも、同じ形でメインのページへ戻す。
-    /// 引き継げないページは、メインに残る同じ機能のページを先に捨てて、新しく作る。同じ機能のページが 2 つ生きたままにならず、メモリも持ち続けない。ウィンドウを閉じたら、外したページを破棄する。
+    /// すでに外している項目は前に出すだけ。
+    /// ページは外すウィンドウ用に新しく作る。
+    /// WebView2 を持つページは別のウィンドウへ付け替えると、日本語入力が効かなくなるため。
+    /// 引き継げるページ (<see cref="IHandoverPage"/>)はスコープを捨てず、同じスコープから新しいページを作り、画面の内容を引き継ぐ。
+    /// ウィンドウを閉じるときも同じ形でメインのページへ戻す。
+    /// 引き継げないページはメインに残る同じ機能のページを先に捨てて、新しく作る。
+    /// 同じ機能のページが 2 つ生きたままにならず、メモリも持ち続けない。
+    /// ウィンドウを閉じたら、外したページを破棄する。
     /// </remarks>
     public async Task OpenAsync(NavigationItem item, Action unparent, Windows.Foundation.Size pageSizeDip, AppWindow main, PointInt32? at)
     {
@@ -150,12 +171,15 @@ public sealed class PageDetacher
         window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, window.BringToFront);
     }
 
-    /// <summary>外したウィンドウを閉じるとき、引き継げるページを、メインのページへ作り直して渡す</summary>
+    /// <summary>外したウィンドウを閉じるとき、引き継げるページをメインのページへ作り直して渡す</summary>
     /// <param name="key">項目のキー</param>
     /// <param name="window">閉じるウィンドウ</param>
     /// <param name="source">外していたページ</param>
     /// <returns>引き継ぎの完了を表すタスク</returns>
-    /// <remarks>メインのページは、サイドバーで項目を押したときに出る。それまでの出力は、新しいページが画面の準備ができるまでためる。</remarks>
+    /// <remarks>
+    /// メインのページはサイドバーで項目を押したときに出る
+    /// それまでの出力は新しいページが画面の準備ができるまでためる
+    /// </remarks>
     private async Task ReturnToMainAsync(string key, DetachedPageWindow window, IHandoverPage source)
     {
         await source.PrepareHandoverAsync();
@@ -174,13 +198,19 @@ public sealed class PageDetacher
     /// <summary>ウィンドウの大きさと位置を決める</summary>
     /// <param name="window">外したウィンドウ</param>
     /// <param name="key">大きさを覚えるキー</param>
-    /// <param name="pageSizeDip">覚えていないときの、ページの大きさ</param>
+    /// <param name="pageSizeDip">覚えていないときの、ページの大きさ。</param>
     /// <param name="main">メインのウィンドウ</param>
-    /// <param name="at">置く位置。ドラッグで離した位置。無ければ、メインウィンドウから少しずらす</param>
+    /// <param name="at">
+    /// 置く位置。
+    /// ドラッグで離した位置。
+    /// 無ければ、メインウィンドウから少しずらす。
+    /// </param>
     /// <remarks>
-    /// 大きさは、覚えていればそれ、無ければメインの表示領域と同じ大きさ。
-    /// 位置は、ドラッグで離したときは、離した位置がタイトルバーの中央に来る位置。ボタンで外したときは、メインウィンドウの左上から少しずらした位置。
-    /// 位置は、覚えていても使わない。外した場所がそのまま出る方が、直観に合うため。
+    /// 大きさは覚えていればそれ、無ければメインの表示領域と同じ大きさ。
+    /// 位置はドラッグで離したときは、離した位置がタイトルバーの中央に来る位置。
+    /// ボタンで外したときはメインウィンドウの左上から少しずらした位置。
+    /// 位置は覚えていても使わない。
+    /// 外した場所がそのまま出る方が直観に合うため。
     /// </remarks>
     private void Place(DetachedPageWindow window, string key, Windows.Foundation.Size pageSizeDip, AppWindow main, PointInt32? at)
     {
@@ -203,7 +233,7 @@ public sealed class PageDetacher
     /// <summary>機能をオフにするとき、外したウィンドウを閉じる</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="key">オフにする機能のページの項目のキー</param>
-    /// <remarks>外したページの破棄は、ウィンドウの <c>Closed</c> で行う。</remarks>
+    /// <remarks>外したページの破棄はウィンドウの <c>Closed</c> で行う</remarks>
     private void OnPageEvicting(object? sender, string key)
     {
         if (_windows.TryGetValue(key, out var entry))

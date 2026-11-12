@@ -3,16 +3,18 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MmmSdk.WinUI.Utilities;
 
-/// <summary><see cref="TextBox"/> の拡張メソッド</summary>
+/// <summary>テキストボックスの拡張メソッド</summary>
 public static class TextBoxExtensions
 {
     /// <summary>キャレットが表示の外に出たとき、見える位置までスクロールするようにする</summary>
     /// <param name="textBox">対象の複数行の入力欄</param>
     /// <remarks>
-    /// 高さを固定した複数行の <see cref="TextBox"/> は、末尾で Enter を押したときなどに、キャレットは動くのに表示がスクロールされないことがある。
+    /// 高さを固定した複数行の <see cref="TextBox"/> は末尾で Enter を押したときなどに、キャレットは動くのに表示がスクロールされないことがある。
     /// キャレットが表示の中にあるときは何もしないので、<see cref="TextBox"/> 自身のスクロールとは重ならない。
-    /// 選択位置が変わるたびに、レイアウトが済んだあとで確かめる。縦方向だけを扱う。想定するのは折り返す入力欄。
-    /// 詳しい決まり (位置の取り方など)は、SDK の docs/controls.md の「TextBoxExtensions」。
+    /// 選択位置が変わるたびにレイアウトが済んだあとで確かめる。
+    /// 縦方向だけを扱う。
+    /// 想定するのは折り返す入力欄。
+    /// 詳しい決まり (位置の取り方など)は SDK の docs/controls.md の「TextBoxExtensions」。
     /// </remarks>
     public static void KeepCaretVisible(this TextBox textBox)
     {
@@ -29,7 +31,7 @@ public static class TextBoxExtensions
             });
     }
 
-    /// <summary>キャレットが表示の外にあれば、見える位置までスクロールする</summary>
+    /// <summary>キャレットが表示の外にあれば見える位置までスクロールする</summary>
     /// <param name="textBox">対象の入力欄</param>
     /// <param name="scrollViewer">入力欄の中のスクロール表示</param>
     private static void ScrollCaretIntoView(TextBox textBox, ScrollViewer scrollViewer)

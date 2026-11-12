@@ -1,9 +1,9 @@
 namespace MmmSdk.Core.Components.Paths;
 
-/// <summary>リンクのパスが指す先の種類。</summary>
+/// <summary>リンクのパスが指す先の種類</summary>
 public enum PathTargetKind
 {
-    /// <summary>パスが空。</summary>
+    /// <summary>パスが空</summary>
     Empty,
 
     /// <summary>URL</summary>
@@ -12,12 +12,12 @@ public enum PathTargetKind
     /// <summary>フォルダ</summary>
     Folder,
 
-    /// <summary>実行ファイルで、.exe・.bat 等。</summary>
+    /// <summary>実行ファイルで、.exe・.bat 等</summary>
     Executable,
 
     /// <summary>ファイル</summary>
     File,
 
-    /// <summary>ファイルにもフォルダにも見つからない。</summary>
+    /// <summary>ファイルにもフォルダにも見つからない</summary>
     NotFound,
 }

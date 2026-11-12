@@ -3,20 +3,24 @@ using MmmSdk.Core.Components.Shells;
 
 namespace MmmSdk.WinUI.Components.Terminal;
 
-/// <summary>
-/// ConPTY (Windows 擬似コンソール)でシェルを起動し、入出力をパイプでやり取りするセッション。
-/// </summary>
-/// <remarks>擬似コンソールとプロセスの起動は <see cref="PseudoConsole"/>。ここでは出力の読み取り・終了の通知・入力の確定を受け持つ。</remarks>
+/// <summary>ConPTY で動くシェルのセッション</summary>
+/// <remarks>
+/// ConPTY は Windows の擬似コンソール。
+/// シェルを起動し、入出力をパイプでやり取りする。
+/// 擬似コンソールとプロセスの起動は <see cref="PseudoConsole"/>。
+/// ここでは出力の読み取り・終了の通知・入力の確定を受け持つ。
+/// </remarks>
 public sealed class PseudoConsoleSession : ITerminalSession
 {
-    /// <summary>読み取り用のバッファの大きさ (バイト)</summary>
+    /// <summary>読み取り用のバッファの大きさ</summary>
+    /// <remarks>単位はバイト</remarks>
     private const int ReadBufferSize = 16 * 1024;
 
     /// <summary>出力を読み取り終わるのを待つ時間</summary>
     private static readonly TimeSpan ReadTimeout = TimeSpan.FromSeconds(1);
 
     /// <summary>起動中の擬似コンソール</summary>
-    /// <remarks>起動前・解放後は null。</remarks>
+    /// <remarks>起動前・解放後は null</remarks>
     private PseudoConsole? _console;
     /// <summary>プロセス終了の待機登録</summary>
     private RegisteredWaitHandle? _exitWait;
@@ -107,13 +111,17 @@ public sealed class PseudoConsoleSession : ITerminalSession
         }
     }
 
-    /// <summary>書き込む文字列が、利用者の入力か (端末が自動で返す報告ではないか)を調べる</summary>
+    /// <summary>書き込む文字列が利用者の入力かを調べる</summary>
     /// <param name="text">シェルへ書き込む文字列</param>
-    /// <returns>利用者の入力なら true。フォーカスの出入り・マウス・端末の問い合わせへの返事なら false</returns>
+    /// <returns>
+    /// 利用者の入力なら true
+    /// フォーカスの出入り・マウス・端末の問い合わせへの返事なら false
+    /// </returns>
     /// <remarks>
-    /// xterm.js は、アプリが求めたときに、フォーカスの出入りやマウスの位置を、キー入力と同じ経路で送ってくる。
-    /// これを入力として数えると、入力欄をクリックしただけで「入力があった」ことになる。
-    /// 矢印キー (<c>ESC [ A</c> など)は、終端が A〜D・H・F・~ なので、報告の終端 (I・O・c・R・n・t・M・m・y)で見分けられる。
+    /// 端末が自動で返す報告ではないかを見分ける。
+    /// xterm.js はアプリが求めたときに、フォーカスの出入りやマウスの位置をキー入力と同じ経路で送ってくる。
+    /// これを入力として数えると入力欄をクリックしただけで「入力があった」ことになる。
+    /// 矢印キー (<c>ESC [ A</c> など)は終端が A〜D・H・F・~ なので、報告の終端 (I・O・c・R・n・t・M・m・y)で見分けられる。
     /// </remarks>
     private static bool IsUserInput(string text)
     {
@@ -176,9 +184,13 @@ public sealed class PseudoConsoleSession : ITerminalSession
         Exited?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>現在の擬似コンソールを切り離す (解放は <see cref="Release"/>)</summary>
-    /// <returns>切り離した擬似コンソールと、出力を読み続けているタスク (無ければ null)</returns>
-    /// <remarks>以降は未起動の状態になる。呼び出しスレッドを止めない処理だけを行う。</remarks>
+    /// <summary>現在の擬似コンソールを切り離す</summary>
+    /// <returns>切り離した擬似コンソールと、出力を読み続けているタスク (無ければ null)。</returns>
+    /// <remarks>
+    /// 解放は <see cref="Release"/> で行う
+    /// 以降は未起動の状態になる
+    /// 呼び出しスレッドを止めない処理だけを行う
+    /// </remarks>
     private (PseudoConsole? Console, Task? ReadTask) Detach()
     {
         _exitWait?.Unregister(null);
@@ -191,11 +203,12 @@ public sealed class PseudoConsoleSession : ITerminalSession
         return (console, readTask);
     }
 
-    /// <summary>擬似コンソール・パイプ・プロセスを解放する。</summary>
+    /// <summary>擬似コンソール・パイプ・プロセスを解放する</summary>
     /// <param name="console">切り離した擬似コンソール</param>
     /// <param name="readTask">出力を読み続けているタスク</param>
     /// <remarks>
-    /// シェルがまだ動いていれば終了する。出力を読み続けたまま擬似コンソールを閉じ、読み取りが終わるのを待ってから、パイプを解放する。
+    /// シェルがまだ動いていれば終了する。
+    /// 出力を読み続けたまま擬似コンソールを閉じ、読み取りが終わるのを待ってから、パイプを解放する。
     /// 終了待ちで時間がかかることがあるため、UI スレッドからは直接呼ばない。
     /// </remarks>
     private static void Release(PseudoConsole? console, Task? readTask)
@@ -205,8 +218,9 @@ public sealed class PseudoConsoleSession : ITerminalSession
         console?.Dispose();
     }
 
-    /// <summary>シェルの出力を読み続けて通知する (パイプが閉じるまで)</summary>
+    /// <summary>シェルの出力を読み続けて通知する</summary>
     /// <param name="output">シェルからの出力パイプ</param>
+    /// <remarks>パイプが閉じるまで続ける</remarks>
     private void ReadLoop(Stream output)
     {
         var buffer = new byte[ReadBufferSize];

@@ -4,16 +4,19 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace MmmSdk.WinUI.Components.DaysOfWeek;
 
-/// <summary>日付の選択欄 (<see cref="CalendarDatePicker"/>)と、カレンダー (<see cref="CalendarView"/>)で、土曜に青、日曜と祝日に赤の線を、日の下に付ける添付プロパティ</summary>
+/// <summary>土日祝の色の線を日の下に付ける添付プロパティ</summary>
 /// <remarks>
-/// 日付の選択欄は、アプリの既定のスタイルで <see cref="IsEnabledProperty"/> を <see langword="true"/> にして、すべての選択欄に効かせる。
-/// 複数の日を選ぶカレンダー (<see cref="CalendarView"/>)は、作ったカレンダーに <see cref="SetIsEnabled"/> で付ける。
+/// 対象は日付の選択欄 (<see cref="CalendarDatePicker"/>)と、カレンダー (<see cref="CalendarView"/>)。
+/// 土曜に青、日曜と祝日に赤の線を、日の下に付ける。
+/// 日付の選択欄はアプリの既定のスタイルで <see cref="IsEnabledProperty"/> を <see langword="true"/> にして、すべての選択欄に効かせる。
+/// 複数の日を選ぶカレンダー (<see cref="CalendarView"/>)は作ったカレンダーに <see cref="SetIsEnabled"/> で付ける。
 /// 色は <see cref="WeekdayColors"/> で、曜日のボタンやスケジュールの日付と同じ。
-/// 日の数字は、カレンダーの内部の描画で書かれ、日ごとに文字の色を変えられない。そのため、日ごとに指定できる「密度の線」 (<see cref="CalendarViewDayItem.SetDensityColors"/>)を使う。
+/// 日の数字はカレンダーの内部の描画で書かれ、日ごとに文字の色を変えられない。
+/// そのため、日ごとに指定できる「密度の線」 (<see cref="CalendarViewDayItem.SetDensityColors"/>)を使う。
 /// </remarks>
 public static class CalendarHolidayColoring
 {
-    /// <summary>土日祝の色付けをするか (添付プロパティ)</summary>
+    /// <summary>土日祝の色付けをするか</summary>
     public static readonly DependencyProperty IsEnabledProperty = DependencyProperty.RegisterAttached(
         "IsEnabled", typeof(bool), typeof(CalendarHolidayColoring), new PropertyMetadata(false, OnIsEnabledChanged));
 
@@ -23,7 +26,7 @@ public static class CalendarHolidayColoring
     public static bool GetIsEnabled(DependencyObject element) => (bool)element.GetValue(IsEnabledProperty);
 
     /// <summary>土日祝の色付けをするかを設定する</summary>
-    /// <param name="element">日付の選択欄か、カレンダー</param>
+    /// <param name="element">日付の選択欄か、カレンダー。</param>
     /// <param name="value">色付けをするなら <see langword="true"/></param>
     public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IsEnabledProperty, value);
 
@@ -52,7 +55,7 @@ public static class CalendarHolidayColoring
         }
     }
 
-    /// <summary>カレンダーの日が作られる・使い回されるたびに、日の下の線の色を決める</summary>
+    /// <summary>カレンダーの日が作られる・使い回されるたびに日の下の線の色を決める</summary>
     /// <param name="sender">カレンダー</param>
     /// <param name="args">日の情報</param>
     private static void OnDayItemChanging(CalendarView sender, CalendarViewDayItemChangingEventArgs args)

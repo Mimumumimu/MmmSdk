@@ -3,13 +3,11 @@ using System.Text;
 
 namespace MmmSdk.Core.Components.Logging;
 
-/// <summary>
-/// エラーを日付ごとのファイルに追記するログ
-/// </summary>
+/// <summary>エラーを日付ごとのファイルに追記するログ</summary>
 /// <param name="directoryPath">ログを置くフォルダー</param>
 /// <remarks>
 /// 落ちる直前 (未処理例外・復旧できない失敗)に呼ばれることを想定して、同期で書き、書き終えてファイルを閉じてから戻る。
-/// ログを書けないこと自体は、元のエラーの報告を妨げないよう、例外にせず null を返す。
+/// ログを書けないこと自体は元のエラーの報告を妨げないよう、例外にせず null を返す。
 /// </remarks>
 public sealed class ErrorLog(string directoryPath)
 {
@@ -22,7 +20,10 @@ public sealed class ErrorLog(string directoryPath)
     /// <summary>例外をログに追記する</summary>
     /// <param name="context">どこで起きたか (呼び出し元が分かる短い説明)</param>
     /// <param name="exception">記録する例外 (内部例外とスタックトレースを含めて書く)</param>
-    /// <returns>書き込んだファイルのパス。書き込めなかったときは null</returns>
+    /// <returns>
+    /// 書き込んだファイルのパス
+    /// 書き込めなかったときは null
+    /// </returns>
     public string? Write(string context, Exception exception)
     {
         var now = DateTimeOffset.Now;

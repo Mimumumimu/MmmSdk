@@ -9,27 +9,35 @@ using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace MmmSdk.WinUI.Utilities;
 
-/// <summary>Window の拡張メソッド (Win32 を直接使う処理)</summary>
+/// <summary>Window の拡張メソッド</summary>
+/// <remarks>Win32 を直接使う処理</remarks>
 public static class WindowExtensions
 {
     /// <summary>ウィンドウを前面に出す</summary>
     /// <param name="window">対象のウィンドウ</param>
-    /// <remarks>表示 (<c>Activate</c>)のあとに呼ぶ。別のアプリが前面にあると、Windows の制限で前面にならないことがある。</remarks>
+    /// <remarks>
+    /// 表示 (<c>Activate</c>)のあとに呼ぶ
+    /// 別のアプリが前面にあると Windows の制限で前面にならないことがある
+    /// </remarks>
     public static void SetForeground(this Window window)
         => window.AppWindow.SetForeground();
 
     /// <summary>ウィンドウを前面に出す</summary>
     /// <param name="appWindow">対象のウィンドウ</param>
-    /// <remarks>別のアプリが前面にあると、Windows の制限で前面にならないことがある。<see cref="SetForeground(Window)"/> の <see cref="AppWindow"/> 版。</remarks>
+    /// <remarks>
+    /// 別のアプリが前面にあると Windows の制限で前面にならないことがある
+    /// <see cref="SetForeground(Window)"/> の <see cref="AppWindow"/> 版
+    /// </remarks>
     public static void SetForeground(this AppWindow appWindow)
         => PInvoke.SetForegroundWindow((HWND)Win32Interop.GetWindowFromWindowId(appWindow.Id));
 
-    /// <summary>トレイ・最小化・非表示から確実に戻して、前面に出す</summary>
+    /// <summary>トレイ・最小化・非表示から確実に戻して前面に出す</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <remarks>
-    /// 別の仮想デスクトップ (Win+Tab のデスクトップ)にあるときは、いま見ているデスクトップへ移してから、復元 (最小化しているとき)→ 表示 → 前面化の順に行う。
-    /// 移さずに前面にすると、Windows がウィンドウのあるデスクトップへ切り替えてしまうため。
-    /// 別のアプリが前面にあると、Windows の制限で前面にならないことがある。関連は <see cref="SetForeground(Window)"/>。
+    /// 別の仮想デスクトップ (Win+Tab のデスクトップ)にあるときはいま見ているデスクトップへ移してから、復元 (最小化しているとき)→ 表示 → 前面化の順に行う。
+    /// 移さずに前面にすると Windows がウィンドウのあるデスクトップへ切り替えてしまうため。
+    /// 別のアプリが前面にあると Windows の制限で前面にならないことがある。
+    /// 関連は <see cref="SetForeground(Window)"/>。
     /// </remarks>
     public static void BringToFront(this Window window)
     {
@@ -45,11 +53,14 @@ public static class WindowExtensions
 
     /// <summary>ウィンドウが見えていて、アプリが前面にないときだけ、タスクバーのボタンを点滅させる</summary>
     /// <param name="appWindow">対象のウィンドウ</param>
-    /// <returns>点滅させたとき true。トレイへ退避している・最小化している・アプリのウィンドウが前面にあるときは、何もせず false</returns>
+    /// <returns>
+    /// 点滅させたとき true
+    /// トレイへ退避している・最小化している・アプリのウィンドウが前面にあるときは何もせず false
+    /// </returns>
     /// <remarks>
     /// 前面のウィンドウが自分のプロセスのものなら、別ウィンドウやモーダルを含め、アプリを使っている最中なので点滅させない。
-    /// 点滅は、アプリが前面に戻った時点で Windows が止める (<c>FLASHW_TIMERNOFG</c>)ので、止める呼び出しは要らない。
-    /// 最小化・トレイへの退避中は、タスクバーのボタンを使って気づいてもらう場面ではないため、対象にしない。
+    /// 点滅はアプリが前面に戻った時点で Windows が止める (<c>FLASHW_TIMERNOFG</c>)ので、止める呼び出しは要らない。
+    /// 最小化・トレイへの退避中はタスクバーのボタンを使って気づいてもらう場面ではないため、対象にしない。
     /// </remarks>
     public static unsafe bool FlashTaskbarIfInactive(this AppWindow appWindow)
     {
@@ -79,10 +90,15 @@ public static class WindowExtensions
         return true;
     }
 
-    /// <summary>【一時の計測】<see cref="BringToFront"/> と同じ手順で前面に出し、前面化の結果を文字列で返す</summary>
+    /// <summary>前面化の結果を文字列で返す計測</summary>
     /// <param name="window">対象のウィンドウ</param>
-    /// <returns>前面化の前後の前面ウィンドウと、<c>SetForegroundWindow</c> の戻り値</returns>
-    /// <remarks>通知のクリックで画面が後ろに残る原因を調べるための一時の関数。原因が決まったら消す。</remarks>
+    /// <returns>前面化の前後の前面ウィンドウと、<c>SetForegroundWindow</c> の戻り値。</returns>
+    /// <remarks>
+    /// 一時の計測。
+    /// <see cref="BringToFront"/> と同じ手順で前面に出し、前面化の結果を文字列で返す。
+    /// 通知のクリックで画面が後ろに残る原因を調べるための一時の関数。
+    /// 原因が決まったら消す。
+    /// </remarks>
     public static string BringToFrontTraced(this Window window)
     {
         var hwnd = (HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id);
@@ -103,7 +119,7 @@ public static class WindowExtensions
         return $"SetForegroundWindow={(bool)accepted} / 最小化={minimized} / 前面が自分={isSelf} / 前={before} / 後={after}";
     }
 
-    /// <summary>【一時の計測】いまの前面ウィンドウを、ハンドルとプロセス名で表す</summary>
+    /// <summary>【一時の計測】いまの前面ウィンドウをハンドルとプロセス名で表す</summary>
     private static unsafe string DescribeForeground()
     {
         var foreground = PInvoke.GetForegroundWindow();
@@ -126,10 +142,11 @@ public static class WindowExtensions
         }
     }
 
-    /// <summary>アプリのアイコンを付け、タイトルバーを自分で描く (コンテンツをタイトルバーまで広げる)</summary>
+    /// <summary>アプリのアイコンを付けてタイトルバーを自分で描く</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="titleBar">ドラッグでウィンドウを動かせるタイトルバーの領域</param>
     /// <param name="iconPath">アイコンファイル (.ico)のパス</param>
+    /// <remarks>コンテンツをタイトルバーまで広げる</remarks>
     public static void UseCustomTitleBar(this Window window, UIElement titleBar, string iconPath)
     {
         window.AppWindow.SetIcon(iconPath);
@@ -137,12 +154,12 @@ public static class WindowExtensions
         window.SetTitleBar(titleBar);
     }
 
-    /// <summary>タイトルバーの上に置いたボタンの範囲を、ドラッグ・ダブルクリックの対象から外す</summary>
+    /// <summary>タイトルバーの上に置いたボタンの範囲をドラッグ・ダブルクリックの対象から外す</summary>
     /// <param name="window">対象のウィンドウ (<see cref="UseCustomTitleBar"/> を済ませたもの)</param>
     /// <param name="element">タイトルバーの上に置いた要素</param>
     /// <remarks>
     /// 押せない状態のボタンを連打すると、そこがタイトルバーとして扱われ、ダブルクリックでウィンドウが最大化されるため、範囲を指定して防ぐ。
-    /// 外せる範囲は、ウィンドウごとに 1 つの要素だけで、呼ぶたびに前の指定を置き換える。
+    /// 外せる範囲はウィンドウごとに 1 つの要素だけで、呼ぶたびに前の指定を置き換える。
     /// </remarks>
     public static void KeepClickableInTitleBar(this Window window, FrameworkElement element)
     {
@@ -167,12 +184,20 @@ public static class WindowExtensions
         };
     }
 
-    /// <summary>最小化できない重ね合わせ型のウィンドウにする (最大化は引数で選ぶ)</summary>
+    /// <summary>最小化できない重ね合わせ型のウィンドウにする</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="isDialog">ダイアログ用の見た目 (<see cref="OverlappedPresenter.CreateForDialog"/>)にするか</param>
     /// <param name="isResizable">大きさを変えられるか</param>
-    /// <param name="minimumSize">最小の大きさで、単位は物理ピクセル。0 なら指定しない</param>
-    /// <param name="isMaximizable">最大化できるか。true なら、最大化ボタンとタイトルバーのダブルクリックで最大化できる。<paramref name="isResizable"/> が true のときだけ有効</param>
+    /// <param name="minimumSize">
+    /// 最小の大きさで、単位は物理ピクセル。
+    /// 0 なら指定しない。
+    /// </param>
+    /// <param name="isMaximizable">
+    /// 最大化できるか。
+    /// true なら、最大化ボタンとタイトルバーのダブルクリックで最大化できる。
+    /// <paramref name="isResizable"/> が true のときだけ有効。
+    /// </param>
+    /// <remarks>最大化は引数で選ぶ</remarks>
     public static void UseFixedPresenter(this Window window, bool isDialog, bool isResizable, SizeInt32 minimumSize = default, bool isMaximizable = false)
     {
         var presenter = isDialog ? OverlappedPresenter.CreateForDialog() : OverlappedPresenter.Create();
@@ -190,12 +215,17 @@ public static class WindowExtensions
         window.AppWindow.SetPresenter(presenter);
     }
 
-    /// <summary>クライアント領域の大きさを、論理サイズ (DIP)と倍率から決める</summary>
+    /// <summary>クライアント領域の大きさを論理サイズと倍率から決める</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="width">幅 (DIP)</param>
     /// <param name="height">高さ (DIP)</param>
     /// <param name="scale">DPI 倍率 (<see cref="GetDpiScale"/> や <c>XamlRoot.RasterizationScale</c>)</param>
-    /// <param name="roundUp">端数を切り上げるか。false なら切り捨て。中身をちょうど収めたいときは true</param>
+    /// <param name="roundUp">
+    /// 端数を切り上げるか
+    /// false なら切り捨て
+    /// 中身をちょうど収めたいときは true
+    /// </param>
+    /// <remarks>論理サイズの単位は DIP</remarks>
     public static void ResizeClientDip(this Window window, double width, double height, double scale, bool roundUp = false)
     {
         var w = roundUp ? Math.Ceiling(width * scale) : Math.Floor(width * scale);
@@ -203,15 +233,25 @@ public static class WindowExtensions
         window.AppWindow.ResizeClient(new SizeInt32((int)w, (int)h));
     }
 
-    /// <summary>ウィンドウの高さを、中身の高さにちょうど合わせる (幅は変えない)</summary>
+    /// <summary>ウィンドウの高さを中身の高さにちょうど合わせる</summary>
     /// <param name="window">対象のウィンドウ</param>
-    /// <param name="content">中身の最上位の要素。ウィンドウの内容で、画面に載っていること</param>
-    /// <param name="width">幅で、単位は DIP。中身の高さを測るときの幅</param>
-    /// <returns>大きさを変えたとき true。測れなかったとき (まだ画面に載る前・閉じたあと)は false で、何もしない</returns>
+    /// <param name="content">
+    /// 中身の最上位の要素。
+    /// ウィンドウの内容で、画面に載っていること。
+    /// </param>
+    /// <param name="width">
+    /// 幅で、単位は DIP。
+    /// 中身の高さを測るときの幅。
+    /// </param>
+    /// <returns>
+    /// 大きさを変えたとき true。
+    /// 測れなかったとき (まだ画面に載る前・閉じたあと)は false で、何もしない。
+    /// </returns>
     /// <remarks>
+    /// 幅は変えない。
     /// 中身が出入りする画面 (お知らせ・入力欄の切り替え)で、出入りのあとに測り直すために使う。
     /// 測り直しを順番待ちに回すと、閉じたあとに実行されることがある (閉じたウィンドウは <see cref="Window.AppWindow"/> が無く、載る前は <c>XamlRoot</c> が無い)ので、測れないときは何もしない。
-    /// 呼び出し側が、大きさを変えたあとに、位置を置き直す。
+    /// 呼び出し側が大きさを変えたあとに、位置を置き直す。
     /// </remarks>
     public static bool ResizeToContentHeight(this Window window, FrameworkElement content, double width)
     {
@@ -228,10 +268,16 @@ public static class WindowExtensions
         return true;
     }
 
-    /// <summary>指定した範囲の中央に置く (作業領域からはみ出す分は内側へ寄せる)</summary>
+    /// <summary>指定した範囲の中央に置く</summary>
     /// <param name="window">対象のウィンドウ</param>
-    /// <param name="bounds">中央に合わせる範囲で、物理ピクセル。親ウィンドウや作業領域</param>
-    /// <remarks>収める作業領域は、その範囲にいちばん近いモニターのもの。</remarks>
+    /// <param name="bounds">
+    /// 中央に合わせる範囲で、物理ピクセル。
+    /// 親ウィンドウや作業領域。
+    /// </param>
+    /// <remarks>
+    /// 作業領域からはみ出す分は内側へ寄せる
+    /// 収める作業領域はその範囲にいちばん近いモニターのもの
+    /// </remarks>
     public static void MoveCentered(this Window window, RectInt32 bounds)
     {
         var size = window.AppWindow.Size;
@@ -240,10 +286,14 @@ public static class WindowExtensions
         window.AppWindow.Move(WindowPlacement.ClampToWorkArea(position, size, workArea));
     }
 
-    /// <summary>ウィンドウの DPI 倍率 (100% で 1.0)</summary>
+    /// <summary>ウィンドウの DPI 倍率</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <returns>ウィンドウがあるモニターの DPI 倍率</returns>
-    /// <remarks>表示する前に大きさを決めるために使う。<c>XamlRoot</c> は表示するまで無いため。</remarks>
+    /// <remarks>
+    /// 100% で 1.0
+    /// 表示する前に大きさを決めるために使う
+    /// <c>XamlRoot</c> は表示するまで無いため
+    /// </remarks>
     public static double GetDpiScale(this Window window)
         => PInvoke.GetDpiForWindow((HWND)Win32Interop.GetWindowFromWindowId(window.AppWindow.Id)) / 96.0;
 }

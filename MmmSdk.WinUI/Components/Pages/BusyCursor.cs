@@ -2,7 +2,8 @@ using Microsoft.UI.Dispatching;
 
 namespace MmmSdk.WinUI.Components.Pages;
 
-/// <summary><see cref="IBusyCursor"/> の実装 (始めた数を数える)</summary>
+/// <summary>処理待ちの形の実装</summary>
+/// <remarks>始めた数を数える</remarks>
 public sealed class BusyCursor : IBusyCursor
 {
     /// <summary>続いている処理待ちの数</summary>
@@ -45,9 +46,12 @@ public sealed class BusyCursor : IBusyCursor
         await WaitForRenderAsync();
     }
 
-    /// <summary>画面の描画が済むまで待つ (UI スレッドで呼ぶ)</summary>
+    /// <summary>画面の描画が済むまで待つ</summary>
     /// <returns>待ちの完了を表すタスク</returns>
-    /// <remarks>低い優先度で呼ばれるので、すでに待っている描画・入力のあとに動く。</remarks>
+    /// <remarks>
+    /// UI スレッドで呼ぶ。
+    /// 低い優先度で呼ばれるので、すでに待っている描画・入力のあとに動く。
+    /// </remarks>
     private static Task WaitForRenderAsync()
     {
         var source = new TaskCompletionSource();
@@ -69,7 +73,7 @@ public sealed class BusyCursor : IBusyCursor
         }
     }
 
-    /// <summary>1 回の <see cref="Begin"/> に対応する入れ物</summary>
+    /// <summary>1 回の開始に対応する入れ物</summary>
     /// <param name="owner">数えている <see cref="BusyCursor"/></param>
     private sealed class Scope(BusyCursor owner) : IDisposable
     {

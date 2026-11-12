@@ -7,7 +7,10 @@ using Windows.Storage.Streams;
 namespace MmmSdk.WinUI.Components.Attachments;
 
 /// <summary>添付のサムネイル画像</summary>
-/// <remarks>XAML の <c>x:Bind</c> から関数として呼ぶ。ファイルを開いたままにしない (削除できなくなるため)よう、中身をメモリに読み込んでから表示する。</remarks>
+/// <remarks>
+/// XAML の <c>x:Bind</c> から関数として呼ぶ。
+/// ファイルを開いたままにしない (削除できなくなるため)よう、中身をメモリに読み込んでから表示する。
+/// </remarks>
 public static class ThumbnailImage
 {
     /// <summary>デコードする高さ</summary>
@@ -16,7 +19,10 @@ public static class ThumbnailImage
 
     /// <summary>画像ファイルからサムネイルを作る</summary>
     /// <param name="path">画像ファイルのパス</param>
-    /// <returns>サムネイルで、読み込みは後から終わる。パスが空なら null</returns>
+    /// <returns>
+    /// サムネイルで、読み込みは後から終わる。
+    /// パスが空なら null。
+    /// </returns>
     public static BitmapImage? FromFile(string? path)
     {
         if (string.IsNullOrEmpty(path))

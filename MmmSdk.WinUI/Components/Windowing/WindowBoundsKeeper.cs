@@ -8,23 +8,29 @@ using Windows.Graphics;
 
 namespace MmmSdk.WinUI.Components.Windowing;
 
-/// <summary>ウィンドウの位置と大きさを覚えて、次の起動で復元する</summary>
+/// <summary>ウィンドウの位置と大きさを覚えて次の起動で復元する</summary>
 /// <remarks>
-/// 作ったときに、保存した位置と大きさを復元する。保存が無い、または今のモニター構成で十分に見えない (画面外になる)ときは、
-/// 既定の大きさにして、位置は指定した初期位置にする。大きさは論理サイズで DPI に合わせ、初期位置は <see cref="DefaultWindowPlacement"/> で、既定は Windows に任せる。
+/// 作ったときに保存した位置と大きさを復元する。
+/// 保存が無いか、今のモニター構成で十分に見えない (画面外になる)ときは、既定の大きさにする。
+/// そのときの位置は指定した初期位置にする。
+/// 大きさは論理サイズで DPI に合わせ、初期位置は <see cref="DefaultWindowPlacement"/> で、既定は Windows に任せる。
 /// 位置・大きさが変わったら、動かし終わるのを待ってから (<see cref="SaveDelay"/>)保存する。
-/// 最小化・最大化・非表示の間は保存しない。最小化の座標や、最大化の大きさを、復元の対象にしないため。
-/// UI スレッドで <see cref="Attach"/> する。ウィンドウに結び付いて動き、ウィンドウが閉じたら自分で後始末する。呼び出し側が持ち続けたり、破棄したりしなくてよい。
+/// 最小化・最大化・非表示の間は保存しない。
+/// 最小化の座標や、最大化の大きさを、復元の対象にしないため。
+/// UI スレッドで <see cref="Attach"/> する。
+/// ウィンドウに結び付いて動き、ウィンドウが閉じたら自分で後始末する。
+/// 呼び出し側が持ち続けたり、破棄したりしなくてよい。
 /// </remarks>
 public sealed class WindowBoundsKeeper
 {
     /// <summary>復元する位置を「十分に見える」とみなす、ウィンドウ面積に対する見えている割合</summary>
     private const double VisibleRatio = 0.5;
 
-    /// <summary>初期位置を作業領域の端から離す余白 (DIP)</summary>
+    /// <summary>初期位置を作業領域の端から離す余白</summary>
     private const double ScreenMarginDip = 16;
 
-    /// <summary>位置・大きさが変わってから保存するまでの待ち時間 (動かしている間は保存しない)</summary>
+    /// <summary>位置・大きさが変わってから保存するまでの待ち時間</summary>
+    /// <remarks>動かしている間は保存しない</remarks>
     private static readonly TimeSpan SaveDelay = TimeSpan.FromSeconds(1);
 
     /// <summary>対象のウィンドウ</summary>
@@ -42,24 +48,39 @@ public sealed class WindowBoundsKeeper
     /// <summary>後始末を済ませたか</summary>
     private bool _disposed;
 
-    /// <summary>位置と大きさを復元して、変更の監視を始める</summary>
+    /// <summary>位置と大きさを復元して変更の監視を始める</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="positions">位置と大きさの保存・復元</param>
     /// <param name="key">ウィンドウを区別するキー</param>
-    /// <param name="defaultWidthDip">保存が無いときの幅。単位は論理サイズの DIP</param>
-    /// <param name="defaultHeightDip">保存が無いときの高さ。単位は論理サイズの DIP</param>
+    /// <param name="defaultWidthDip">
+    /// 保存が無いときの幅
+    /// 単位は論理サイズの DIP
+    /// </param>
+    /// <param name="defaultHeightDip">
+    /// 保存が無いときの高さ
+    /// 単位は論理サイズの DIP
+    /// </param>
     /// <param name="defaultPlacement">保存が無いときの初期位置</param>
-    /// <remarks>戻り値は無い。ウィンドウのイベントの購読で生き続け、ウィンドウが閉じたら止まる。</remarks>
+    /// <remarks>
+    /// 戻り値は無い。
+    /// ウィンドウのイベントの購読で生き続け、ウィンドウが閉じたら止まる。
+    /// </remarks>
     public static void Attach(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip,
         DefaultWindowPlacement defaultPlacement = DefaultWindowPlacement.System)
         => _ = new WindowBoundsKeeper(window, positions, key, defaultWidthDip, defaultHeightDip, defaultPlacement);
 
-    /// <summary>位置と大きさを復元して、変更の監視を始める</summary>
+    /// <summary>位置と大きさを復元して変更の監視を始める</summary>
     /// <param name="window">対象のウィンドウ</param>
     /// <param name="positions">位置と大きさの保存・復元</param>
     /// <param name="key">ウィンドウを区別するキー</param>
-    /// <param name="defaultWidthDip">保存が無いときの幅。単位は論理サイズの DIP</param>
-    /// <param name="defaultHeightDip">保存が無いときの高さ。単位は論理サイズの DIP</param>
+    /// <param name="defaultWidthDip">
+    /// 保存が無いときの幅
+    /// 単位は論理サイズの DIP
+    /// </param>
+    /// <param name="defaultHeightDip">
+    /// 保存が無いときの高さ
+    /// 単位は論理サイズの DIP
+    /// </param>
     /// <param name="defaultPlacement">保存が無いときの初期位置</param>
     private WindowBoundsKeeper(Window window, IWindowPositionService positions, string key, double defaultWidthDip, double defaultHeightDip,
         DefaultWindowPlacement defaultPlacement)
@@ -78,7 +99,8 @@ public sealed class WindowBoundsKeeper
         window.Closed += OnClosed;
     }
 
-    /// <summary>後始末をする (変更の監視とタイマーを止める)</summary>
+    /// <summary>後始末をする</summary>
+    /// <remarks>変更の監視とタイマーを止める</remarks>
     private void Detach()
     {
         if (_disposed)
@@ -93,10 +115,11 @@ public sealed class WindowBoundsKeeper
         _window.Closed -= OnClosed;
     }
 
-    /// <summary>保存した位置と大きさを復元する。使えなければ既定の大きさにする</summary>
+    /// <summary>保存した位置と大きさを復元する</summary>
     /// <param name="defaultWidthDip">既定の幅 (DIP)</param>
     /// <param name="defaultHeightDip">既定の高さ (DIP)</param>
     /// <param name="defaultPlacement">既定の初期位置</param>
+    /// <remarks>使えなければ既定の大きさにする</remarks>
     private void Restore(double defaultWidthDip, double defaultHeightDip, DefaultWindowPlacement defaultPlacement)
     {
         if (_positions.LoadBounds(_key) is { Width: > 0, Height: > 0 } saved
@@ -129,9 +152,10 @@ public sealed class WindowBoundsKeeper
         }
     }
 
-    /// <summary>位置・大きさが変わったら、保存を遅らせて待つ (動かしている間は、待ち直す)</summary>
+    /// <summary>位置・大きさが変わったら保存を遅らせて待つ</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="args">変更の情報</param>
+    /// <remarks>動かしている間は待ち直す</remarks>
     private void OnChanged(AppWindow sender, AppWindowChangedEventArgs args)
     {
         if (args.DidPositionChange || args.DidSizeChange)
@@ -141,12 +165,15 @@ public sealed class WindowBoundsKeeper
         }
     }
 
-    /// <summary>動かし終わったら、位置と大きさを保存する</summary>
+    /// <summary>動かし終わったら位置と大きさを保存する</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="args">イベントの情報</param>
     /// <remarks>
-    /// 保存に失敗 (ロック・権限・ディスク)しても、位置と大きさが戻らないだけで、ウィンドウは使える。<c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける。次の変更でやり直す。
-    /// 設定を読めず保存できない状態では、何もしない。例外にならない。
+    /// 保存に失敗 (ロック・権限・ディスク)しても、位置と大きさが戻らないだけで、ウィンドウは使える。
+    /// <c>async void</c> の例外は受け皿が無くアプリごと落ちるため、この失敗だけを受ける。
+    /// 次の変更でやり直す。
+    /// 設定を読めず保存できない状態では何もしない。
+    /// 例外にならない。
     /// </remarks>
     private async void OnTimerTick(DispatcherQueueTimer sender, object args)
     {
@@ -170,7 +197,7 @@ public sealed class WindowBoundsKeeper
         }
     }
 
-    /// <summary>ウィンドウが閉じたら、後始末をする</summary>
+    /// <summary>ウィンドウが閉じたら後始末をする</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="args">閉じたイベントの情報</param>
     private void OnClosed(object sender, WindowEventArgs args) => Detach();

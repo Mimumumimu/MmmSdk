@@ -3,17 +3,19 @@ using Windows.Win32.System.Ole;
 
 namespace MmmSdk.WinUI.Components.Clipboards;
 
-/// <summary>クリップボードに、どの種類の中身が載っているかを、持ち主のアプリに問い合わせずに調べる</summary>
+/// <summary>クリップボードにどの種類の中身が載っているかを持ち主のアプリに問い合わせずに調べる</summary>
 /// <remarks>
-/// <c>Windows.ApplicationModel.DataTransfer.Clipboard</c> の <c>GetContent</c> や <c>Contains</c> は、コピー元のアプリへ別プロセスの通信をして返事を待つ。
+/// <c>Windows.ApplicationModel.DataTransfer.Clipboard</c> の <c>GetContent</c> や <c>Contains</c> はコピー元のアプリへ別プロセスの通信をして返事を待つ。
 /// 返事が遅いと、待っている間 UI スレッドで画面の操作 (キー・マウス)が処理され続け、貼り付けなどのイベントの途中で WinUI が内部で失敗して強制終了する。
 /// ここの判定は <c>IsClipboardFormatAvailable</c> で、OS が持つ形式の一覧を見るだけなので、待たされない。
 /// 判定は「載っているかもしれない」の目安で、取り出しは別に <c>Clipboard.GetContent()</c> で行う。
-/// 迷うものは「ある」と答える。見落とすと、取り出す処理を飛ばして動きが変わるため。
+/// 迷うものは「ある」と答える。
+/// 見落とすと取り出す処理を飛ばして動きが変わるため。
 /// </remarks>
 public static class ClipboardFormats
 {
-    /// <summary>ファイルが載っている形式 (エクスプローラーのコピー・メールの添付ファイルなど、パスの無いファイルを含む)</summary>
+    /// <summary>ファイルが載っている形式</summary>
+    /// <remarks>エクスプローラーのコピー・メールの添付ファイルなど、パスの無いファイルを含む。</remarks>
     private static readonly uint[] FileFormats =
     [
         (uint)CLIPBOARD_FORMAT.CF_HDROP,
@@ -31,7 +33,8 @@ public static class ClipboardFormats
         PInvoke.RegisterClipboardFormat("PNG"),
     ];
 
-    /// <summary>テキストが載っている形式 (ほかの形式のテキストは、OS が <c>CF_UNICODETEXT</c> に変換して見せる)</summary>
+    /// <summary>テキストが載っている形式</summary>
+    /// <remarks>ほかの形式のテキストは OS が <c>CF_UNICODETEXT</c> に変換して見せる</remarks>
     private static readonly uint[] TextFormats =
     [
         (uint)CLIPBOARD_FORMAT.CF_UNICODETEXT,

@@ -3,16 +3,18 @@ using MmmSdk.Core.Components.Storage;
 
 namespace MmmSdk.Db.Sqlite.Components.Connections;
 
-/// <summary>
-/// SQLite のデータベースファイルを開いて、処理を実行する入口。アプリ全体で 1 つ。
-/// </summary>
-/// <param name="options">ファイルの場所と、版を上げるスクリプト</param>
+/// <summary>SQLite のデータベースファイルを開いて処理を実行する入口</summary>
+/// <param name="options">ファイルの場所と、版を上げるスクリプト。</param>
 /// <remarks>
+/// アプリ全体で 1 つ。
 /// 最初に開くとき、ファイルが無ければ作り、<c>PRAGMA user_version</c> より新しい版のスクリプトを順に 1 つのトランザクションで実行する。
-/// DB として開けない (<c>SQLITE_NOTADB</c>・<c>SQLITE_CORRUPT</c>)ときは、同じフォルダの <c>名前.broken-yyyyMMdd-HHmmss.db</c> へ名前を変えて退避し
-/// 同じ秒なら <c>-2</c> 以降にして、空の DB を作り直して <see cref="RecoveryMessage"/> に知らせる。自動では消さない。
-/// 接続は処理のたびに開いて閉じる。接続プールは使わない。閉じた接続がファイルを掴んだままにならず、退避やバックアップのコピーが妨げられないため。
-/// 失敗は、画面に出せるメッセージの <see cref="DataFileException"/> にして渡す。
+/// DB として開けない (<c>SQLITE_NOTADB</c>・<c>SQLITE_CORRUPT</c>)ときは同じフォルダの <c>名前.broken-yyyyMMdd-HHmmss.db</c> へ名前を変えて退避し。
+/// 同じ秒なら <c>-2</c> 以降にして、空の DB を作り直して <see cref="RecoveryMessage"/> に知らせる。
+/// 自動では消さない。
+/// 接続は処理のたびに開いて閉じる。
+/// 接続プールは使わない。
+/// 閉じた接続がファイルを掴んだままにならず、退避やバックアップのコピーが妨げられないため。
+/// 失敗は画面に出せるメッセージの <see cref="DataFileException"/> にして渡す。
 /// </remarks>
 public sealed class SqliteDatabase(SqliteDatabaseOptions options)
 {
@@ -37,24 +39,28 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
     /// <summary>SQLITE_NOTADB</summary>
     private const int SqliteNotADb = 26;
 
-    /// <summary>準備 (作成・退避・版の更新)を 1 度だけ行うためのロック</summary>
+    /// <summary>準備を 1 度だけ行うためのロック</summary>
+    /// <remarks>準備は作成・退避・版の更新</remarks>
     private readonly SemaphoreSlim _prepareLock = new(1, 1);
 
     /// <summary>準備が済んだか</summary>
     private volatile bool _prepared;
 
-    /// <summary>壊れたファイルを退避して作り直したときのメッセージ。通常は null</summary>
+    /// <summary>壊れたファイルを退避して作り直したときのメッセージ</summary>
     public string? RecoveryMessage { get; private set; }
 
     /// <summary>データベースのファイルのパス</summary>
     public string FilePath => options.FilePath;
 
-    /// <summary>接続を開いて、処理を実行する</summary>
+    /// <summary>接続を開いて処理を実行する</summary>
     /// <typeparam name="T">処理の結果の型</typeparam>
     /// <param name="work">開いた接続で行う処理</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>処理の結果</returns>
-    /// <exception cref="DataFileException">開けない・実行中に失敗した。メッセージは画面に出せる。</exception>
+    /// <exception cref="DataFileException">
+    /// 開けない・実行中に失敗した
+    /// メッセージは画面に出せる
+    /// </exception>
     public async Task<T> RunAsync<T>(Func<SqliteConnection, Task<T>> work, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(work);
@@ -79,11 +85,14 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         }
     }
 
-    /// <summary>接続を開いて、結果を返さない処理を実行する</summary>
+    /// <summary>接続を開いて結果を返さない処理を実行する</summary>
     /// <param name="work">開いた接続で行う処理</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>処理の完了を表すタスク</returns>
-    /// <exception cref="DataFileException">開けない・実行中に失敗した。メッセージは画面に出せる。</exception>
+    /// <exception cref="DataFileException">
+    /// 開けない・実行中に失敗した
+    /// メッセージは画面に出せる
+    /// </exception>
     public Task RunAsync(Func<SqliteConnection, Task> work, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(work);
@@ -102,7 +111,10 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
     /// 書き込みの許可を最初に取る (<c>BEGIN IMMEDIATE</c>)ので、読んでから書く処理の途中で、ほかの書き込みに割り込まれない。
     /// 処理が例外になったときは取り消す。
     /// </remarks>
-    /// <exception cref="DataFileException">開けない・実行中に失敗した。メッセージは画面に出せる。</exception>
+    /// <exception cref="DataFileException">
+    /// 開けない・実行中に失敗した
+    /// メッセージは画面に出せる
+    /// </exception>
     public Task RunInTransactionAsync(Func<SqliteConnection, SqliteTransaction, Task> work, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(work);
@@ -115,7 +127,10 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
     }
 
     /// <summary>接続を作って開く</summary>
-    /// <returns>開いた接続。呼ぶ側が閉じる</returns>
+    /// <returns>
+    /// 開いた接続
+    /// 呼ぶ側が閉じる
+    /// </returns>
     private SqliteConnection Open()
     {
         var connection = new SqliteConnection(ConnectionString());
@@ -212,7 +227,10 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
     /// <summary>データベースの版を読む</summary>
     /// <param name="connection">開いた接続</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
-    /// <returns>版で、新しいファイルは 0。壊れたファイルは、ここで例外になる</returns>
+    /// <returns>
+    /// 版で、新しいファイルは 0。
+    /// 壊れたファイルはここで例外になる。
+    /// </returns>
     private static async Task<int> ReadVersionAsync(SqliteConnection connection, CancellationToken cancellationToken)
     {
         await using var command = connection.CreateCommand();
@@ -234,7 +252,7 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>壊れたファイルを、同じフォルダの別の名前へ移す</summary>
+    /// <summary>壊れたファイルを同じフォルダの別の名前へ移す</summary>
     /// <returns>画面に出せるメッセージ</returns>
     private string MoveBrokenFile()
     {
@@ -253,7 +271,7 @@ public sealed class SqliteDatabase(SqliteDatabaseOptions options)
         return $"データベースのファイルが壊れていたため、「{Path.GetFileName(target)}」へ名前を変えて残し、新しく作り直しました。";
     }
 
-    /// <summary>失敗を、画面に出せる 1 行のメッセージにする</summary>
+    /// <summary>失敗を画面に出せる 1 行のメッセージにする</summary>
     /// <param name="ex">SQLite の失敗</param>
     /// <returns>原因ごとのメッセージ</returns>
     private static string Describe(SqliteException ex) => ex.SqliteErrorCode switch

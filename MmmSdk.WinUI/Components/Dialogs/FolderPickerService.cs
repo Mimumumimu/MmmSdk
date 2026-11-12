@@ -23,10 +23,14 @@ public sealed class FolderPickerService(IDialogHost dialogs) : IFolderPickerServ
         return result?.Path is { } path ? Path.EndsInDirectorySeparator(path) ? path : path + Path.DirectorySeparatorChar : null;
     }
 
-    /// <summary>入力されたパスから、実際にあるフォルダを探す</summary>
+    /// <summary>入力されたパスから実際にあるフォルダを探す</summary>
     /// <param name="path">入力されたパス</param>
-    /// <returns>あるフォルダのパス。無いときは、存在する一番近い親。見つからないときは null</returns>
-    /// <remarks>「D:」のようにドライブだけの入力は、ドライブの直下 (「D:\」)として扱う。</remarks>
+    /// <returns>
+    /// あるフォルダのパス
+    /// 無いときは存在する一番近い親
+    /// 見つからないときは null
+    /// </returns>
+    /// <remarks>「D:」のようにドライブだけの入力はドライブの直下 (「D:\」)として扱う</remarks>
     private static string? FindExistingDirectory(string? path)
     {
         var trimmed = path?.Trim();

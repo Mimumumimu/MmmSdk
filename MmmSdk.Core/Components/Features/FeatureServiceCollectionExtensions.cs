@@ -3,13 +3,21 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MmmSdk.Core.Components.Features;
 
-/// <summary>機能 (プラグイン)が、ホストへ自分を登録するための拡張メソッド (UI に依存しないもの)</summary>
+/// <summary>機能がホストへ自分を登録するための拡張メソッド</summary>
+/// <remarks>
+/// 機能はプラグインとして登録する
+/// UI に依存しないもの
+/// </remarks>
 public static class FeatureServiceCollectionExtensions
 {
-    /// <summary>機能のオン・オフの管理 (<see cref="FeatureService"/>)と、機能が状態を調べる口 (<see cref="IFeatureStatus"/>)を登録する</summary>
+    /// <summary>機能のオン・オフの管理と機能が状態を調べる口を登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
-    /// <remarks>ホストが 1 回だけ呼ぶ。<see cref="Settings.ISettingsStore"/> を先に登録しておくこと。</remarks>
+    /// <remarks>
+    /// 登録するのは <see cref="FeatureService"/> と <see cref="IFeatureStatus"/>
+    /// ホストが 1 回だけ呼ぶ
+    /// <see cref="Settings.ISettingsStore"/> を先に登録しておくこと
+    /// </remarks>
     public static IServiceCollection AddFeatureService(this IServiceCollection services)
     {
         services.AddSingleton<FeatureService>();
@@ -18,28 +26,42 @@ public static class FeatureServiceCollectionExtensions
 
     /// <summary>設定でオン・オフを切り替えられる機能として登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="featureKey">機能のキー。設定ファイルにも使うので、決めたら変えない</param>
+    /// <param name="featureKey">
+    /// 機能のキー。
+    /// 設定ファイルにも使うので、決めたら変えない。
+    /// </param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
     /// <param name="defaultEnabled">保存が無いとき (初回起動)のオン・オフ</param>
-    /// <param name="availableWhen">機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。null なら常に使える</param>
+    /// <param name="availableWhen">
+    /// 機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。
+    /// null なら常に使える。
+    /// </param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
     /// 機能の <c>Add&lt;機能&gt;()</c> の中で、ページ・トレイメニュー・起動時の準備などの登録に、同じキーを渡す。
-    /// 設定ページの「機能」の一覧に並ぶ。利用者が決めた並びが無いときは、機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)の順。
+    /// 設定ページの「機能」の一覧に並ぶ。
+    /// 利用者が決めた並びが無いときは機能の並び順の値 (<see cref="AddFeaturePlugin{TPlugin}"/>)の順。
     /// </remarks>
     public static IServiceCollection AddFeature(this IServiceCollection services, string featureKey, string displayName, bool defaultEnabled = true, Func<IServiceProvider, bool>? availableWhen = null)
         => services.AddSingleton(new FeatureInfo(featureKey, displayName, defaultEnabled, FeatureRegistrationScope.CurrentOrder, AvailableWhen: availableWhen));
 
-    /// <summary>オフにできない機能として登録する (設定ページの「機能」の一覧に、スイッチなしで出し、並び順だけ使う)</summary>
+    /// <summary>オフにできない機能として登録する</summary>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="featureKey">機能のキー。設定ファイルにも使うので、決めたら変えない</param>
+    /// <param name="featureKey">
+    /// 機能のキー。
+    /// 設定ファイルにも使うので、決めたら変えない。
+    /// </param>
     /// <param name="displayName">設定ページに出す機能の名前</param>
-    /// <param name="availableWhen">機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。null なら常に使える</param>
+    /// <param name="availableWhen">
+    /// 機能が使える条件で、<see cref="FeatureInfo.AvailableWhen"/> になる。
+    /// null なら常に使える。
+    /// </param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
-    /// 常にオンなので、起動時の準備・トレイメニューの登録には、キーを渡さなくてよい。
-    /// サイドバーのページ・設定の部品の登録には、並び順を使うために同じキーを渡す。
-    /// 使える条件を満たさないときは、オンにできない機能でも、画面に出ない。
+    /// 設定ページの「機能」の一覧に、スイッチなしで出し、並び順だけ使う。
+    /// 常にオンなので、起動時の準備・トレイメニューの登録にはキーを渡さなくてよい。
+    /// サイドバーのページ・設定の部品の登録には並び順を使うために同じキーを渡す。
+    /// 使える条件を満たさないときはオンにできない機能でも、画面に出ない。
     /// </remarks>
     public static IServiceCollection AddAlwaysOnFeature(this IServiceCollection services, string featureKey, string displayName, Func<IServiceProvider, bool>? availableWhen = null)
         => services.AddSingleton(new FeatureInfo(featureKey, displayName, true, FeatureRegistrationScope.CurrentOrder, false, availableWhen));
@@ -47,9 +69,16 @@ public static class FeatureServiceCollectionExtensions
     /// <summary>起動時の準備を登録する</summary>
     /// <typeparam name="TTask">起動時の準備の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="featureKey">属する機能のキーで、<see cref="AddFeature"/> で登録したもの。オフにできない機能・共通の準備は null</param>
+    /// <param name="featureKey">
+    /// 属する機能のキーで、<see cref="AddFeature"/> で登録したもの。
+    /// オフにできない機能・共通の準備は null。
+    /// </param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
-    /// <remarks>登録した順に実行される。機能がオフの間は実行しない。オンにしたときに実行する。</remarks>
+    /// <remarks>
+    /// 登録した順に実行される
+    /// 機能がオフの間は実行しない
+    /// オンにしたときに実行する
+    /// </remarks>
     public static IServiceCollection AddStartupTask<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TTask>(this IServiceCollection services, string? featureKey = null)
         where TTask : class, IStartupTask
     {
@@ -57,16 +86,27 @@ public static class FeatureServiceCollectionExtensions
         return services.AddSingleton(new StartupTaskRegistration(typeof(TTask), featureKey));
     }
 
-    /// <summary>機能 (プラグイン)を、入口から登録する</summary>
+    /// <summary>機能を入口から登録する</summary>
     /// <typeparam name="TPlugin">機能の入口の型</typeparam>
     /// <param name="services">登録先のサービスコレクション</param>
-    /// <param name="order">機能の並び順の値。小さいほど先で、サイドバー・設定の機能の一覧・設定の部品の並びに使う。<paramref name="trayOrder"/> が null のときは、トレイメニューにも使う</param>
-    /// <param name="trayOrder">トレイメニューの並び順の値で、小さいほど先。値が大きいほど下で、メニューが開く位置のカーソルに近い。null なら <paramref name="order"/></param>
+    /// <param name="order">
+    /// 機能の並び順の値。
+    /// 小さいほど先で、サイドバー・設定の機能の一覧・設定の部品の並びに使う。
+    /// <paramref name="trayOrder"/> が null のときはトレイメニューにも使う。
+    /// </param>
+    /// <param name="trayOrder">
+    /// トレイメニューの並び順の値で、小さいほど先。
+    /// 値が大きいほど下で、メニューが開く位置のカーソルに近い。
+    /// null なら <paramref name="order"/>。
+    /// </param>
     /// <returns>登録先のサービスコレクション (続けて登録するため)</returns>
     /// <remarks>
-    /// 画面の並びは <paramref name="order"/> と <paramref name="trayOrder"/> で決まり、登録の順には依らない。同じ値は登録順。
-    /// トレイメニューは下から開くので、サイドバー (上ほどよく使う)とは向きが逆になる。よく使う機能ほど、トレイの値を大きくする。
-    /// 起動時の準備だけは、順序に依存するものがあるので、登録した順に実行する。
+    /// 機能はプラグインとして登録する。
+    /// 画面の並びは <paramref name="order"/> と <paramref name="trayOrder"/> で決まり、登録の順には依らない。
+    /// 同じ値は登録順。
+    /// トレイメニューは下から開くので、サイドバー (上ほどよく使う)とは向きが逆になる。
+    /// よく使う機能ほど、トレイの値を大きくする。
+    /// 起動時の準備だけは順序に依存するものがあるので、登録した順に実行する。
     /// </remarks>
     public static IServiceCollection AddFeaturePlugin<TPlugin>(this IServiceCollection services, int order, int? trayOrder = null)
         where TPlugin : IFeaturePlugin, new()

@@ -5,27 +5,35 @@ using Windows.Media.Render;
 
 namespace MmmSdk.WinUI.Components.Audio;
 
-/// <summary>
-/// 出力ノードだけの <see cref="AudioGraph"/> を動かして、音声機器を眠らせない。アプリ全体で 1 つ。
-/// </summary>
+/// <summary>音声機器を眠らせない</summary>
 /// <remarks>
-/// 入力ノードを持たせないので、音声エンジンが無音を流し続け、アプリのコールバックは無い。CPU をほぼ使わない。
+/// 出力ノードだけの <see cref="AudioGraph"/> を動かす。
+/// アプリ全体で 1 つ。
+/// 入力ノードを持たせないので、音声エンジンが無音を流し続け、アプリのコールバックは無い。
+/// CPU をほぼ使わない。
 /// グラフは出力機器に結び付くので、既定の出力機器が変わったとき・グラフが続けられなくなったとき (機器の取り外しなど)は、作り直す。
-/// 機器の変更は、流している間だけ受け取る。止めている間は、何にも触れない。
+/// 機器の変更は流している間だけ受け取る。
+/// 止めている間は何にも触れない。
 /// 開始・停止・作り直しは 1 つずつ順に行う。
 /// </remarks>
 public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
 {
-    /// <summary>1 区間の長さの希望で、サンプル数。長くして、エンジンの起床の回数を減らす。機器が許す範囲に丸められる</summary>
+    /// <summary>1 区間の長さの希望</summary>
+    /// <remarks>
+    /// 長くして、エンジンの起床の回数を減らす。
+    /// 機器が許す範囲に丸められる。
+    /// </remarks>
     private const uint DesiredSamplesPerQuantum = 4800;
 
     /// <summary>開始・停止・作り直しを 1 つずつ行うための排他</summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
-    /// <summary>今の無音のグラフ (流していないときは null)</summary>
+    /// <summary>今の無音のグラフ</summary>
+    /// <remarks>流していないときは null</remarks>
     private AudioGraph? _graph;
 
-    /// <summary>流してほしい状態か (機器が無くて流せていなくても、true の間は、機器が現れたら流す)</summary>
+    /// <summary>流してほしい状態か</summary>
+    /// <remarks>機器が無くて流せていなくても、true の間は機器が現れたら流す。</remarks>
     private bool _wanted;
 
     /// <summary>破棄したか</summary>
@@ -54,8 +62,11 @@ public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
         await RebuildAsync(onlyIfMissing: false);
     }
 
-    /// <summary>機器の変更の受け取りをやめ、グラフを破棄する</summary>
-    /// <remarks>グラフの破棄は止めることを含む。続けられなくなったグラフでも例外にならないよう、<c>Stop</c> は呼ばない。</remarks>
+    /// <summary>機器の変更の受け取りをやめグラフを破棄する</summary>
+    /// <remarks>
+    /// グラフの破棄は止めることを含む。
+    /// 続けられなくなったグラフでも例外にならないよう、<c>Stop</c> は呼ばない。
+    /// </remarks>
     public void Dispose()
     {
         if (_disposed)
@@ -68,9 +79,10 @@ public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
         CloseGraph();
     }
 
-    /// <summary>グラフを作り直す (流してほしくなければ、閉じるだけ)</summary>
-    /// <param name="onlyIfMissing">true なら、すでに流れているときは何もしない</param>
+    /// <summary>グラフを作り直す</summary>
+    /// <param name="onlyIfMissing">true なら、すでに流れているときは何もしない。</param>
     /// <returns>無音を流している状態になったら true</returns>
+    /// <remarks>流してほしくなければ、閉じるだけにする。</remarks>
     private async Task<bool> RebuildAsync(bool onlyIfMissing)
     {
         await _gate.WaitAsync();
@@ -99,8 +111,14 @@ public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
     }
 
     /// <summary>出力ノードだけのグラフを作って動かす</summary>
-    /// <returns>動かせたら true。出力機器が無いなど、作れなかったら false</returns>
-    /// <remarks>作れないのは機器の状態による予測できる失敗なので、例外にしない。機器が変わったら、また試す。</remarks>
+    /// <returns>
+    /// 動かせたら true。
+    /// 出力機器が無いなど、作れなかったら false。
+    /// </returns>
+    /// <remarks>
+    /// 作れないのは機器の状態による予測できる失敗なので、例外にしない。
+    /// 機器が変わったら、また試す。
+    /// </remarks>
     private async Task<bool> TryOpenGraphAsync()
     {
         var settings = new AudioGraphSettings(AudioRenderCategory.Media)
@@ -128,7 +146,8 @@ public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
         return true;
     }
 
-    /// <summary>グラフを止めて破棄する (無ければ何もしない)</summary>
+    /// <summary>グラフを止めて破棄する</summary>
+    /// <remarks>無ければ何もしない</remarks>
     private void CloseGraph()
     {
         if (_graph is not { } graph)
@@ -140,7 +159,7 @@ public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
         graph.Dispose();
     }
 
-    /// <summary>既定の出力機器が変わったら、流し直す</summary>
+    /// <summary>既定の出力機器が変わったら流し直す</summary>
     /// <param name="sender">イベントの発生元 (使わない)</param>
     /// <param name="args">変更の内容</param>
     /// <remarks>通知は UI スレッドとは限らないが、グラフの操作は排他の中で行うので、どのスレッドでもよい。</remarks>
@@ -152,7 +171,7 @@ public sealed class AudioKeepAlive : IAudioKeepAlive, IDisposable
         }
     }
 
-    /// <summary>グラフが続けられなくなったら、作り直す</summary>
+    /// <summary>グラフが続けられなくなったら作り直す</summary>
     /// <param name="sender">続けられなくなったグラフ</param>
     /// <param name="args">原因 (使わない)</param>
     private void OnUnrecoverableErrorOccurred(AudioGraph sender, AudioGraphUnrecoverableErrorOccurredEventArgs args)

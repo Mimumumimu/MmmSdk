@@ -8,7 +8,7 @@ namespace MmmSdk.WinUI.Utilities;
 /// <summary>ウィンドウを作業領域の中に収める計算</summary>
 public static class WindowPlacement
 {
-    /// <summary>ウィンドウ全体が作業領域に収まるよう、位置をずらす</summary>
+    /// <summary>ウィンドウ全体が作業領域に収まるよう位置をずらす</summary>
     /// <param name="position">ウィンドウの左上の位置 (物理ピクセル)</param>
     /// <param name="size">ウィンドウの大きさ (物理ピクセル)</param>
     /// <param name="workArea">収める作業領域</param>
@@ -23,10 +23,13 @@ public static class WindowPlacement
         return new PointInt32(clamped.X, clamped.Y);
     }
 
-    /// <summary>ウィンドウの矩形が、全モニターの作業領域に対して、十分に見えているか</summary>
+    /// <summary>ウィンドウの矩形が全モニターの作業領域に対して、十分に見えているか</summary>
     /// <param name="window">ウィンドウの矩形 (物理ピクセル)</param>
-    /// <param name="minRatio">見えている割合の下限で、0〜1。面積に対する割合</param>
-    /// <returns>十分に見えていれば true (保存した位置が、今のモニター構成で画面外にならないかの判定に使う)</returns>
+    /// <param name="minRatio">
+    /// 見えている割合の下限で、0〜1。
+    /// 面積に対する割合。
+    /// </param>
+    /// <returns>十分に見えていれば true (保存した位置が今のモニター構成で画面外にならないかの判定に使う)</returns>
     public static bool IsVisibleEnough(RectInt32 window, double minRatio)
     {
         // FindAll の返り値は foreach で列挙すると InvalidCastException になることがあるので、Count とインデクサで回す

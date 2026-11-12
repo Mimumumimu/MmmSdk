@@ -2,44 +2,55 @@ using System.Text;
 
 namespace MmmSdk.WinUI.Components.Terminal;
 
-/// <summary>ターミナルの出力に、指定した文字列が出たことを見つける</summary>
+/// <summary>ターミナルの出力に指定した文字列が出たことを見つける</summary>
 /// <remarks>
-/// 色やカーソル移動などの制御文字と空白を除いて探す。画面を描き直す CLI は、文字の途中に制御文字を挟んだり、出力のかたまりの境目で文字列を分けたりするため。
+/// 色やカーソル移動などの制御文字と空白を除いて探す。
+/// 画面を描き直す CLI は文字の途中に制御文字を挟んだり、出力のかたまりの境目で文字列を分けたりするため。
 /// 大文字小文字は区別しない。
 /// 見つけたら一度だけ <see cref="Matched"/> を通知し、<see cref="ITerminalSession.InputWritten"/> (利用者の入力)があるまで、探すのを止める。
 /// CLI は同じ確認の枠を何度も描き直すので、止めないと、利用者が別の場所に移ったあとも、描き直しのたびに通知が来る。
-/// 利用者の入力の直後は、CLI が画面全体を描き直し、前に出た文字も、もう一度出力に出る。
-/// そこで、入力のあとの出力が一度途切れる (<see cref="SettleQuietMilliseconds"/>)までは、探さない。
-/// 考え中のスピナーなどで出力が途切れないときは、入力から <see cref="SettleMaxMilliseconds"/> で打ち切って探す。
+/// 利用者の入力の直後は CLI が画面全体を描き直し、前に出た文字ももう一度出力に出る。
+/// そこで、入力のあとの出力が一度途切れる (<see cref="SettleQuietMilliseconds"/>)までは探さない。
+/// 考え中のスピナーなどで出力が途切れないときは入力から <see cref="SettleMaxMilliseconds"/> で打ち切って探す。
 /// 出力はバックグラウンドのスレッドから届くので、通知もそのスレッドから行う。
 /// </remarks>
 public sealed class TerminalOutputWatcher : IDisposable
 {
-    /// <summary>入力のあと、出力がこの時間 (ミリ秒)途切れたら、描き直しが済んだとして探し始める</summary>
+    /// <summary>出力が途切れたとみなす時間</summary>
+    /// <remarks>入力のあと、出力がこの時間途切れたら、描き直しが済んだとして探し始める。</remarks>
     public const int SettleQuietMilliseconds = 150;
 
-    /// <summary>入力のあと、出力が途切れなくても、この時間 (ミリ秒)で探し始める</summary>
+    /// <summary>探し始める最長の時間</summary>
+    /// <remarks>入力のあと、出力が途切れなくても、この時間で探し始める。</remarks>
     public const int SettleMaxMilliseconds = 500;
 
     /// <summary>探す対象のターミナル</summary>
     private readonly ITerminalSession _session;
     /// <summary>状態を守るロック</summary>
     private readonly Lock _gate = new();
-    /// <summary>制御文字と空白を除いた、これまでの出力 (文字列の途中で分かれた分を探すために、末尾だけ残す)</summary>
+    /// <summary>制御文字と空白を除いたこれまでの出力</summary>
+    /// <remarks>文字列の途中で分かれた分を探すために末尾だけ残す</remarks>
     private readonly StringBuilder _buffer = new();
-    /// <summary>探す文字列 (空白を除いたもの)</summary>
+    /// <summary>探す文字列</summary>
+    /// <remarks>空白を除いたもの</remarks>
     private string[] _patterns = [];
-    /// <summary>出力の末尾に残す文字数 (最も長い文字列より 1 短い)</summary>
+    /// <summary>出力の末尾に残す文字数</summary>
+    /// <remarks>最も長い文字列より 1 短い</remarks>
     private int _tailLength;
     /// <summary>制御文字を読み飛ばしている途中の状態</summary>
     private ScanState _state = ScanState.Text;
     /// <summary>見つけて通知済みで、利用者の入力を待っているか</summary>
     private bool _matched;
-    /// <summary>利用者の入力のあとの、描き直しが済むのを待っているか</summary>
+    /// <summary>利用者の入力のあとの描き直しが済むのを待っているか</summary>
     private bool _settling;
-    /// <summary>利用者の入力があった時刻 (<see cref="Environment.TickCount64"/>)</summary>
+    /// <summary>利用者の入力があった時刻</summary>
+    /// <remarks><see cref="Environment.TickCount64"/> の値</remarks>
     private long _inputTick;
-    /// <summary>最後に出力が届いた時刻で、<see cref="Environment.TickCount64"/> の値。入力の直後は、入力の時刻</summary>
+    /// <summary>最後に出力が届いた時刻</summary>
+    /// <remarks>
+    /// <see cref="Environment.TickCount64"/> の値
+    /// 入力の直後は入力の時刻
+    /// </remarks>
     private long _lastOutputTick;
 
     /// <summary>ターミナルの出力と入力を見張る</summary>
@@ -52,12 +63,19 @@ public sealed class TerminalOutputWatcher : IDisposable
     }
 
     /// <summary>文字列が見つかった</summary>
-    /// <remarks>引数は、空白を除いた、見つかった文字列。バックグラウンドのスレッドから通知される。</remarks>
+    /// <remarks>
+    /// 引数は空白を除いた、見つかった文字列。
+    /// バックグラウンドのスレッドから通知される。
+    /// </remarks>
     public event EventHandler<string>? Matched;
 
-    /// <summary>探す文字列を、まとめて差し替える</summary>
+    /// <summary>探す文字列をまとめて差し替える</summary>
     /// <param name="patterns">探す文字列</param>
-    /// <remarks>空白と制御文字は無視する。空になる文字列は使わない。それまでの出力と、通知済みの状態は捨てる。</remarks>
+    /// <remarks>
+    /// 空白と制御文字は無視する
+    /// 空になる文字列は使わない
+    /// それまでの出力と通知済みの状態は捨てる
+    /// </remarks>
     public void SetPatterns(IEnumerable<string> patterns)
     {
         var normalized = patterns
@@ -118,9 +136,10 @@ public sealed class TerminalOutputWatcher : IDisposable
         }
     }
 
-    /// <summary>利用者の入力があったときの処理 (探すのを再開する)</summary>
+    /// <summary>利用者の入力があったときの処理</summary>
     /// <param name="sender">イベントの送信元</param>
     /// <param name="e">イベントの情報</param>
+    /// <remarks>探すのを再開する</remarks>
     private void OnInputWritten(object? sender, EventArgs e)
     {
         lock (_gate)
@@ -132,9 +151,15 @@ public sealed class TerminalOutputWatcher : IDisposable
         }
     }
 
-    /// <summary>入力のあとの描き直しが済んだかを調べる (出力が届くたびに呼ぶ)</summary>
-    /// <returns>済んだ (この出力から探す)なら true。まだ描き直しの最中なら false</returns>
-    /// <remarks>出力が <see cref="SettleQuietMilliseconds"/> 途切れたとき、または入力から <see cref="SettleMaxMilliseconds"/> たったときに、済んだとする。</remarks>
+    /// <summary>入力のあとの描き直しが済んだかを調べる</summary>
+    /// <returns>
+    /// 済んだ (この出力から探す)なら true
+    /// まだ描き直しの最中なら false
+    /// </returns>
+    /// <remarks>
+    /// 出力が届くたびに呼ぶ。
+    /// 出力が <see cref="SettleQuietMilliseconds"/> 途切れたとき、または入力から <see cref="SettleMaxMilliseconds"/> たったときに、済んだとする。
+    /// </remarks>
     private bool FinishSettling()
     {
         var now = Environment.TickCount64;
@@ -153,7 +178,7 @@ public sealed class TerminalOutputWatcher : IDisposable
         return true;
     }
 
-    /// <summary>出力と状態を捨てて、探すのを再開できる状態に戻す</summary>
+    /// <summary>出力と状態を捨てて探すのを再開できる状態に戻す</summary>
     private void Reset()
     {
         _buffer.Clear();
@@ -161,7 +186,7 @@ public sealed class TerminalOutputWatcher : IDisposable
         _matched = false;
     }
 
-    /// <summary>出力から制御文字と空白を除いて、末尾に足す</summary>
+    /// <summary>出力から制御文字と空白を除いて末尾に足す</summary>
     /// <param name="text">届いた出力</param>
     /// <remarks>制御文字がかたまりの境目で途切れても読み飛ばせるよう、途中の状態を持ち越す。</remarks>
     private void Append(string text)
@@ -221,14 +246,18 @@ public sealed class TerminalOutputWatcher : IDisposable
     }
 
     /// <summary>出力に含まれている文字列を探す</summary>
-    /// <returns>見つかった文字列。無ければ null</returns>
+    /// <returns>
+    /// 見つかった文字列
+    /// 無ければ null
+    /// </returns>
     private string? Find()
     {
         var output = _buffer.ToString();
         return _patterns.FirstOrDefault(pattern => output.Contains(pattern, StringComparison.OrdinalIgnoreCase));
     }
 
-    /// <summary>出力の末尾だけを残す (文字列の途中で分かれた分を、次の出力と合わせて探せるように)</summary>
+    /// <summary>出力の末尾だけを残す</summary>
+    /// <remarks>文字列の途中で分かれた分を次の出力と合わせて探せるようにする</remarks>
     private void Trim()
     {
         if (_buffer.Length > _tailLength)
@@ -237,7 +266,7 @@ public sealed class TerminalOutputWatcher : IDisposable
         }
     }
 
-    /// <summary>探す文字列から、空白と制御文字を除く</summary>
+    /// <summary>探す文字列から空白と制御文字を除く</summary>
     /// <param name="pattern">探す文字列</param>
     /// <returns>空白と制御文字を除いた文字列</returns>
     private static string Normalize(string pattern)
@@ -252,10 +281,12 @@ public sealed class TerminalOutputWatcher : IDisposable
         /// <summary>ESC のあと</summary>
         Escape,
 
-        /// <summary>ESC [ のあと (色やカーソル移動など)</summary>
+        /// <summary>ESC [ のあと</summary>
+        /// <remarks>色やカーソル移動など</remarks>
         Csi,
 
-        /// <summary>OSC・DCS などの文字列の制御 (BEL か ESC \ で終わる)</summary>
+        /// <summary>OSC・DCS などの文字列の制御</summary>
+        /// <remarks>BEL か ESC \ で終わる</remarks>
         String,
 
         /// <summary>文字列の制御の中で、ESC のあと</summary>

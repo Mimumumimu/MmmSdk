@@ -1,11 +1,16 @@
 namespace MmmSdk.Core.Components.DaysOfWeek;
 
-/// <summary>曜日フラグ (月〜日のビット OR)</summary>
-/// <remarks>値は、保存する数 (JSON・DB の列)と同じ。月 = 1・火 = 2・水 = 4・木 = 8・金 = 16・土 = 32・日 = 64 を足した数で、0 から 127。</remarks>
+/// <summary>曜日フラグ</summary>
+/// <remarks>
+/// 月〜日のビット OR。
+/// 値は保存する数 (JSON・DB の列)と同じ。
+/// 月 = 1・火 = 2・水 = 4・木 = 8・金 = 16・土 = 32・日 = 64 を足した数で、0 から 127。
+/// </remarks>
 [Flags]
 public enum Weekdays
 {
-    /// <summary>1 つも選んでいない (「毎日」と同じ意味で扱うかは、使う側が決める)</summary>
+    /// <summary>1 つも選んでいない</summary>
+    /// <remarks>「毎日」と同じ意味で扱うかは使う側が決める</remarks>
     None = 0,
     /// <summary>月曜日</summary>
     Monday = 1,

@@ -7,12 +7,13 @@ namespace MmmSdk.WinUI.Controls;
 
 /// <summary>押すとリンクを開く領域</summary>
 /// <remarks>
-/// <see cref="IsLinkEnabled"/> のときだけ、マウスを乗せると手の形のカーソルと背景で押せることを示す。押したときの処理は <c>Tapped</c> で受ける側が行う。
+/// <see cref="IsLinkEnabled"/> のときだけ、マウスを乗せると手の形のカーソルと背景で押せることを示す。
+/// 押したときの処理は <c>Tapped</c> で受ける側が行う。
 /// カーソルの形 (<c>ProtectedCursor</c>)は派生クラスからしか変えられないため、<see cref="Grid"/> を派生させている。
 /// </remarks>
 public sealed partial class LinkArea : Grid
 {
-    /// <summary><see cref="IsLinkEnabled"/> の依存関係プロパティ</summary>
+    /// <summary>リンクが有効かの依存関係プロパティ</summary>
     public static readonly DependencyProperty IsLinkEnabledProperty = DependencyProperty.Register(
         nameof(IsLinkEnabled), typeof(bool), typeof(LinkArea), new PropertyMetadata(false, (d, _) => ((LinkArea)d).UpdateLook()));
 
@@ -39,7 +40,7 @@ public sealed partial class LinkArea : Grid
         set => SetValue(IsLinkEnabledProperty, value);
     }
 
-    /// <summary>マウスが乗っているかを変えて、見た目を合わせる</summary>
+    /// <summary>マウスが乗っているかを変えて見た目を合わせる</summary>
     /// <param name="value">マウスが乗っているか</param>
     private void SetPointerOver(bool value)
     {
@@ -47,7 +48,7 @@ public sealed partial class LinkArea : Grid
         UpdateLook();
     }
 
-    /// <summary>カーソルと背景を、押せるか・マウスが乗っているかに合わせる</summary>
+    /// <summary>カーソルと背景を押せるか・マウスが乗っているかに合わせる</summary>
     private void UpdateLook()
     {
         ProtectedCursor = IsLinkEnabled ? InputSystemCursor.Create(InputSystemCursorShape.Hand) : null;

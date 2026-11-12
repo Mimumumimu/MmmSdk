@@ -2,27 +2,31 @@ using Microsoft.Data.Sqlite;
 
 namespace MmmSdk.Db.Sqlite.Components.Connections;
 
-/// <summary>
-/// データベースの形を、あるべき形 (<see cref="SqliteDatabaseOptions.SchemaSql"/>)と比べて、足りないものを足す。
-/// </summary>
+/// <summary>データベースの形をあるべき形と比べて足りないものを足す</summary>
 /// <remarks>
-/// 足すのは、足りない列と、足りない表・索引だけ。型の変更・削除は直せないので、番号つきのスクリプトで行う。
-/// 列の名前の変更は、比べる前に、<see cref="SqliteDatabaseOptions.ColumnRenames"/> で行う。
-/// 足りない列は、あるべき形の <c>CREATE TABLE</c> に書いた定義のまま、<c>ALTER TABLE ... ADD COLUMN</c> で表の末尾に付ける。
-/// 版の番号 (<c>PRAGMA user_version</c>)には頼らない。どの版の DB でも、何度流しても、同じ結果になる。
+/// あるべき形は <see cref="SqliteDatabaseOptions.SchemaSql"/>。
+/// 足すのは足りない列と、足りない表・索引だけ。
+/// 型の変更・削除は直せないので、番号つきのスクリプトで行う。
+/// 列の名前の変更は比べる前に、<see cref="SqliteDatabaseOptions.ColumnRenames"/> で行う。
+/// 足りない列はあるべき形の <c>CREATE TABLE</c> に書いた定義のまま、<c>ALTER TABLE ... ADD COLUMN</c> で表の末尾に付ける。
+/// 版の番号 (<c>PRAGMA user_version</c>)には頼らない。
+/// どの版の DB でも、何度流しても、同じ結果になる。
 /// </remarks>
 internal static class SqliteSchemaRepair
 {
-    /// <summary>列の定義ではない、表の制約の書き出しの語</summary>
+    /// <summary>列の定義ではない表の制約の書き出しの語</summary>
     private static readonly HashSet<string> ConstraintKeywords = new(StringComparer.OrdinalIgnoreCase) { "CONSTRAINT", "PRIMARY", "UNIQUE", "CHECK", "FOREIGN" };
 
-    /// <summary>古い名前の列がある表だけ、列の名前を変える</summary>
+    /// <summary>古い名前の列がある表だけ列の名前を変える</summary>
     /// <param name="connection">開いた接続</param>
     /// <param name="transaction">書き込みのトランザクション</param>
     /// <param name="renames">列の名前の変更</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>変更の完了を表すタスク</returns>
-    /// <remarks>表が無い・古い名前の列が無い・新しい名前の列がすでにある場合は、何もしない。値は、列を作り直さずに引き継がれる。</remarks>
+    /// <remarks>
+    /// 表が無い・古い名前の列が無い・新しい名前の列がすでにある場合は何もしない
+    /// 値は列を作り直さずに引き継がれる
+    /// </remarks>
     public static async Task RenameColumnsAsync(SqliteConnection connection, SqliteTransaction transaction, IReadOnlyList<SqliteColumnRename> renames, CancellationToken cancellationToken)
     {
         foreach (var rename in renames)
@@ -42,8 +46,9 @@ internal static class SqliteSchemaRepair
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>置き換えの完了を表すタスク</returns>
     /// <remarks>
-    /// あるべき形の点検のあとに行う。新しい列が、制約つきで足されたあとにするため。
-    /// 古い列を落とすので、2 回目からは、古い列が無く、何もしない。
+    /// あるべき形の点検のあとに行う。
+    /// 新しい列が制約つきで足されたあとにするため。
+    /// 古い列を落とすので、2 回目からは古い列が無く、何もしない。
     /// </remarks>
     public static async Task ReplaceColumnsAsync(SqliteConnection connection, SqliteTransaction transaction, IReadOnlyList<SqliteColumnReplacement> replacements, CancellationToken cancellationToken)
     {
@@ -58,13 +63,16 @@ internal static class SqliteSchemaRepair
         }
     }
 
-    /// <summary>あるべき形と実際の DB を比べて、足りないものを足す</summary>
+    /// <summary>あるべき形と実際の DB を比べて足りないものを足す</summary>
     /// <param name="connection">開いた接続</param>
     /// <param name="transaction">書き込みのトランザクション</param>
     /// <param name="schemaSql">あるべき表と索引の SQL (<c>CREATE TABLE IF NOT EXISTS</c> と <c>CREATE INDEX IF NOT EXISTS</c> だけ)</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
     /// <returns>点検の完了を表すタスク</returns>
-    /// <remarks>先に、すでにある表の足りない列を足し、そのあとで、あるべき形の SQL を流して、足りない表と索引を作る。列を使う索引は、列を足してからでないと作れないため。</remarks>
+    /// <remarks>
+    /// 先に、すでにある表の足りない列を足し、そのあとで、あるべき形の SQL を流して、足りない表と索引を作る。
+    /// 列を使う索引は列を足してからでないと作れないため。
+    /// </remarks>
     public static async Task RepairAsync(SqliteConnection connection, SqliteTransaction transaction, string schemaSql, CancellationToken cancellationToken)
     {
         foreach (var (table, createSql) in await ReadExpectedTablesAsync(schemaSql, cancellationToken).ConfigureAwait(false))
@@ -88,10 +96,14 @@ internal static class SqliteSchemaRepair
         await ExecuteAsync(connection, transaction, schemaSql, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>あるべき形の SQL を、メモリ上の空の DB に流して、表の名前と <c>CREATE TABLE</c> の文を読む</summary>
+    /// <summary>あるべき形の SQL から表の名前と作成の文を読む</summary>
     /// <param name="schemaSql">あるべき表と索引の SQL</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
-    /// <returns>表の名前と、<c>CREATE TABLE</c> の文の組</returns>
+    /// <returns>表の名前と、<c>CREATE TABLE</c> の文の組。</returns>
+    /// <remarks>
+    /// あるべき形の SQL をメモリ上の空の DB に流す
+    /// 読むのは表の名前と <c>CREATE TABLE</c> の文
+    /// </remarks>
     private static async Task<List<(string Table, string CreateSql)>> ReadExpectedTablesAsync(string schemaSql, CancellationToken cancellationToken)
     {
         await using var memory = new SqliteConnection("Data Source=:memory:");
@@ -114,7 +126,10 @@ internal static class SqliteSchemaRepair
     /// <param name="transaction">トランザクション</param>
     /// <param name="table">表の名前</param>
     /// <param name="cancellationToken">キャンセルを監視するトークン</param>
-    /// <returns>列の名前で、大文字小文字は区別しない。表が無いときは空</returns>
+    /// <returns>
+    /// 列の名前で、大文字小文字は区別しない。
+    /// 表が無いときは空。
+    /// </returns>
     private static async Task<HashSet<string>> ReadColumnNamesAsync(SqliteConnection connection, SqliteTransaction transaction, string table, CancellationToken cancellationToken)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -129,9 +144,13 @@ internal static class SqliteSchemaRepair
         return names;
     }
 
-    /// <summary><c>CREATE TABLE</c> の文から、列の定義を 1 つずつ取り出す</summary>
+    /// <summary>作成の文から列の定義を 1 つずつ取り出す</summary>
     /// <param name="createSql"><c>CREATE TABLE</c> の文 (表の中にコメントを含まないこと)</param>
-    /// <returns>列の名前と、<c>ADD COLUMN</c> にそのまま使える定義の組。表の制約 (<c>PRIMARY KEY</c> など)は含まない</returns>
+    /// <returns>
+    /// 列の名前と、<c>ADD COLUMN</c> にそのまま使える定義の組。
+    /// 表の制約 (<c>PRIMARY KEY</c> など)は含まない。
+    /// </returns>
+    /// <remarks>取り出す元は <c>CREATE TABLE</c> の文</remarks>
     private static IEnumerable<(string Name, string Definition)> ColumnDefinitions(string createSql)
     {
         var open = createSql.IndexOf('(');
@@ -196,9 +215,12 @@ internal static class SqliteSchemaRepair
         }
     }
 
-    /// <summary>表の中の 1 つの項目から、列の名前と定義を取り出す</summary>
+    /// <summary>表の中の 1 つの項目から列の名前と定義を取り出す</summary>
     /// <param name="segment">カンマで区切った 1 つの項目</param>
-    /// <returns>列の名前と定義。列ではない (表の制約)ときは null</returns>
+    /// <returns>
+    /// 列の名前と定義
+    /// 列ではない (表の制約)ときは null
+    /// </returns>
     private static (string Name, string Definition)? ToColumn(string segment)
     {
         var text = segment.Trim();
@@ -230,7 +252,7 @@ internal static class SqliteSchemaRepair
         return (name, text);
     }
 
-    /// <summary>名前を、SQL の識別子として引用する</summary>
+    /// <summary>名前を SQL の識別子として引用する</summary>
     /// <param name="name">表の名前</param>
     /// <returns>二重引用符で囲んだ名前</returns>
     private static string Quote(string name) => $"\"{name.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";

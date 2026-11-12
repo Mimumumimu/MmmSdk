@@ -7,14 +7,17 @@ using Windows.Win32.UI.Shell;
 
 namespace MmmSdk.WinUI.Interop;
 
-/// <summary>仮想デスクトップ (Win+Tab で切り替えるデスクトップ)の補助</summary>
+/// <summary>仮想デスクトップの補助</summary>
+/// <remarks>仮想デスクトップは Win+Tab で切り替えるデスクトップ</remarks>
 internal static partial class NativeMethods
 {
-    /// <summary>ウィンドウを、いま見ている仮想デスクトップへ移す</summary>
+    /// <summary>ウィンドウをいま見ている仮想デスクトップへ移す</summary>
     /// <param name="hWnd">自分のアプリのウィンドウのハンドル</param>
     /// <remarks>
     /// すでに同じデスクトップにあるとき、いま見ているデスクトップが分からないときは、何もしない。
-    /// 他のアプリのウィンドウは移せない。これは Windows の制限で、移せるのは呼び出したアプリ自身のウィンドウだけ。UI スレッド (STA)から呼ぶ。
+    /// 他のアプリのウィンドウは移せない。
+    /// これは Windows の制限で、移せるのは呼び出したアプリ自身のウィンドウだけ。
+    /// UI スレッド (STA)から呼ぶ。
     /// </remarks>
     public static unsafe void MoveToCurrentVirtualDesktop(nint hWnd)
     {
@@ -53,10 +56,15 @@ internal static partial class NativeMethods
 
     /// <summary>いま見ているデスクトップの ID を調べる</summary>
     /// <param name="manager">仮想デスクトップの管理 (COM)</param>
-    /// <returns>デスクトップの ID。調べられなければ <see cref="Guid.Empty"/></returns>
+    /// <returns>
+    /// デスクトップの ID
+    /// 調べられなければ <see cref="Guid.Empty"/>
+    /// </returns>
     /// <remarks>
-    /// Windows が保存している「いまのデスクトップ」(エクスプローラーが、デスクトップを切り替えるたびに書く値)を読む。<c>IVirtualDesktopManager</c> には、いまのデスクトップを返す口が無い。
-    /// 読めないときは、前面のウィンドウが属するデスクトップを使う。ただし、トレイのメニューの直後は、前面が非表示の内部ウィンドウで、調べられない。
+    /// Windows が保存している「いまのデスクトップ」(エクスプローラーがデスクトップを切り替えるたびに書く値)を読む。
+    /// <c>IVirtualDesktopManager</c> にはいまのデスクトップを返す口が無い。
+    /// 読めないときは前面のウィンドウが属するデスクトップを使う。
+    /// ただし、トレイのメニューの直後は前面が非表示の内部ウィンドウで、調べられない。
     /// </remarks>
     private static unsafe Guid GetCurrentVirtualDesktopId(IVirtualDesktopManager* manager)
     {

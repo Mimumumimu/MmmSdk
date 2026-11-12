@@ -11,43 +11,54 @@ using static MmmSdk.WinUI.Interop.NativeMethods;
 
 namespace MmmSdk.WinUI.Components.Tray;
 
-/// <summary>
-/// トレイメニューの項目を自分で描く。方式はオーナードロー。
-/// </summary>
+/// <summary>トレイメニューの項目を自分で描く</summary>
 /// <remarks>
+/// 方式はオーナードロー。
 /// Win32 の標準メニューは文字のフォント・大きさ・色をアプリから変えられないため、項目の大きさの計測と描画を引き受ける。
-/// 枠 (外周・影)は Windows が描く。ダーク／ライトは uxtheme で合わせてある。
-/// メニューを開くたびに作り、閉じたら破棄する。その時点の DPI・テーマで描くため。
+/// 枠 (外周・影)は Windows が描く。
+/// ダーク／ライトは uxtheme で合わせてある。
+/// メニューを開くたびに作り、閉じたら破棄する。
+/// その時点の DPI・テーマで描くため。
 /// </remarks>
 internal sealed unsafe class TrayMenuRenderer : IDisposable
 {
     /// <summary>文字のフォント</summary>
-    /// <remarks>先頭から順に、入っているものを使う。</remarks>
+    /// <remarks>先頭から順に入っているものを使う</remarks>
     private static readonly string[] FontFaces = ["BIZ UDGothic", "Yu Gothic UI", "Segoe UI"];
 
-    /// <summary>文字の大きさ (pt)</summary>
+    /// <summary>文字の大きさ</summary>
     private const int FontSizePoint = 12;
 
-    /// <summary>実際に使う文字のフォント (<see cref="FontFaces"/> のうち、入っている最初のもの)</summary>
-    /// <remarks>列挙は重いので、メニューを開くたびではなく、最初に 1 度だけ求める。起動後にインストールされたフォントは、次の起動まで使わない。</remarks>
+    /// <summary>実際に使う文字のフォント</summary>
+    /// <remarks>
+    /// <see cref="FontFaces"/> のうち、入っている最初のもの。
+    /// 列挙は重いので、メニューを開くたびではなく、最初に 1 度だけ求める。
+    /// 起動後にインストールされたフォントは次の起動まで使わない。
+    /// </remarks>
     private static readonly string FontFace = FindInstalledFont(FontFaces) ?? FontFaces[^1];
 
     /// <summary>サブメニューの矢印に使うアイコンフォント</summary>
-    /// <remarks>先頭から順に、入っているものを使う。</remarks>
+    /// <remarks>先頭から順に入っているものを使う</remarks>
     private static readonly string[] IconFontFaces = ["Segoe Fluent Icons", "Segoe MDL2 Assets"];
 
-    /// <summary>実際に使うアイコンフォント。どれも入っていなければ null (矢印を描かない)</summary>
-    /// <remarks>文字のフォント (<see cref="FontFace"/>)と同じく、最初に 1 度だけ求める。</remarks>
+    /// <summary>実際に使うアイコンフォント</summary>
+    /// <remarks>
+    /// どれも入っていなければ null。
+    /// その場合は矢印を描かない。
+    /// 文字のフォント (<see cref="FontFace"/>)と同じく、最初に 1 度だけ求める。
+    /// </remarks>
     private static readonly string? IconFontFace = FindInstalledFont(IconFontFaces);
 
-    /// <summary>右向きの山形で、ChevronRight。</summary>
+    /// <summary>右向きの山形</summary>
+    /// <remarks>ChevronRight のこと</remarks>
     private const string ChevronGlyph = "";
 
     #region 寸法 (96 DPI のときの px)
 
     /// <summary>文字の左の余白</summary>
     private const int PaddingLeft = 36;
-    /// <summary>文字の右の余白 (サブメニューの矢印が無いとき)</summary>
+    /// <summary>文字の右の余白</summary>
+    /// <remarks>サブメニューの矢印が無いときの余白</remarks>
     private const int PaddingRight = 24;
     /// <summary>サブメニューの矢印の領域の幅</summary>
     private const int ArrowArea = 32;
@@ -71,10 +82,14 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     #endregion
 
     /// <summary>項目ごとの描画内容</summary>
-    /// <remarks>itemData には「添字 + 1」を入れる。0 は未設定と区別するため。</remarks>
+    /// <remarks>
+    /// itemData には「添字 + 1」を入れる
+    /// 0 は未設定と区別するため
+    /// </remarks>
     private readonly List<Entry> _entries = [];
 
-    /// <summary>DPI の倍率 (96 DPI を 1.0 とする)</summary>
+    /// <summary>DPI の倍率</summary>
+    /// <remarks>96 DPI を 1.0 とする</remarks>
     private readonly double _scale;
     /// <summary>配色</summary>
     private readonly Palette _palette;
@@ -94,8 +109,11 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     private readonly int _lineHeight;
 
     /// <summary>指定位置のモニターの DPI と現在のテーマで描く準備をする</summary>
-    /// <param name="x">メニューを出す位置の X。この位置のモニターの DPI で描く。</param>
-    /// <param name="y">メニューを出す位置の Y。</param>
+    /// <param name="x">
+    /// メニューを出す位置の X
+    /// この位置のモニターの DPI で描く
+    /// </param>
+    /// <param name="y">メニューを出す位置の Y</param>
     public TrayMenuRenderer(int x, int y)
     {
         var monitor = PInvoke.MonitorFromPoint(new System.Drawing.Point(x, y), MONITOR_FROM_FLAGS.MONITOR_DEFAULTTONEAREST);
@@ -114,7 +132,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
     #region 項目の追加
 
-    /// <summary>コマンドの項目を追加する。</summary>
+    /// <summary>コマンドの項目を追加する</summary>
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="id">コマンド ID (押せない項目は 0)</param>
     /// <param name="text">表示する文字</param>
@@ -122,7 +140,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     public void AppendCommand(HMENU menu, int id, string text, bool isEnabled)
         => Append(menu, MENU_ITEM_FLAGS.MF_STRING | (isEnabled ? 0 : MENU_ITEM_FLAGS.MF_GRAYED), (nuint)id, new Entry(text, IsSeparator: false, HasSubmenu: false));
 
-    /// <summary>サブメニューを開く項目を追加する。</summary>
+    /// <summary>サブメニューを開く項目を追加する</summary>
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="submenu">開くサブメニューのハンドル</param>
     /// <param name="text">表示する文字</param>
@@ -135,10 +153,10 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     public void AppendSeparator(HMENU menu)
         => Append(menu, MENU_ITEM_FLAGS.MF_SEPARATOR, 0, new Entry("", IsSeparator: true, HasSubmenu: false));
 
-    /// <summary>項目を追加して、描画内容を覚えておく</summary>
+    /// <summary>項目を追加して描画内容を覚えておく</summary>
     /// <param name="menu">追加先のメニューのハンドル</param>
     /// <param name="flags">項目の種類を示すフラグ (<c>MF_*</c>)</param>
-    /// <param name="idOrSubmenu">コマンド ID、またはサブメニューのハンドル</param>
+    /// <param name="idOrSubmenu">コマンド ID、またはサブメニューのハンドル。</param>
     /// <param name="entry">項目の描画内容</param>
     private void Append(HMENU menu, MENU_ITEM_FLAGS flags, nuint idOrSubmenu, Entry entry)
     {
@@ -146,7 +164,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         AppendOwnerDrawMenu(menu, flags, idOrSubmenu, (nuint)_entries.Count);
     }
 
-    /// <summary>メニューの背景を合わせ、チェックマーク用の左の余白を無くす</summary>
+    /// <summary>メニューの背景を合わせチェックマーク用の左の余白を無くす</summary>
     /// <param name="menu">対象のメニューのハンドル</param>
     /// <remarks>サブメニューを含むメニュー全体が対象。 サブメニューにも反映させるため、項目をすべて追加したあとに呼ぶ。</remarks>
     public void ApplyTo(HMENU menu)
@@ -166,7 +184,10 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
     #region 計測・描画 (WM_MEASUREITEM / WM_DRAWITEM)
 
     /// <summary>項目の大きさを計測する</summary>
-    /// <param name="item">計測する項目の情報。大きさを書き込む</param>
+    /// <param name="item">
+    /// 計測する項目の情報
+    /// 大きさを書き込む
+    /// </param>
     public void Measure(MEASUREITEMSTRUCT* item)
     {
         if (GetEntry(item->itemData) is not { } entry) return;
@@ -239,7 +260,10 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
     /// <summary>itemData から描画内容を引く</summary>
     /// <param name="itemData">項目に持たせた値 (添字 + 1)</param>
-    /// <returns>描画内容。無ければ null</returns>
+    /// <returns>
+    /// 描画内容
+    /// 無ければ null
+    /// </returns>
     private Entry? GetEntry(nuint itemData)
     {
         var index = (int)itemData - 1;
@@ -250,7 +274,7 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
     #region フォント・寸法
 
-    /// <summary>96 DPI のときの px を、実際の px にする</summary>
+    /// <summary>96 DPI のときの px を実際の px にする</summary>
     /// <param name="value">96 DPI のときの px</param>
     /// <returns>実際の px</returns>
     private int Px(double value) => (int)Math.Round(value * _scale);
@@ -275,11 +299,15 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         }
     }
 
-    /// <summary>文字列を 1 つ描く (または大きさを測る)</summary>
+    /// <summary>文字列を 1 つ描く</summary>
     /// <param name="hdc">描画先のデバイスコンテキスト</param>
     /// <param name="text">描く文字列</param>
-    /// <param name="bounds">描く範囲。<c>DT_CALCRECT</c> のときは、必要な大きさを書き込む</param>
+    /// <param name="bounds">
+    /// 描く範囲
+    /// <c>DT_CALCRECT</c> のときは必要な大きさを書き込む
+    /// </param>
     /// <param name="format">描き方のフラグ</param>
+    /// <remarks>大きさを測るときにも使う</remarks>
     private static void DrawText(HDC hdc, string text, ref RECT bounds, DRAW_TEXT_FORMAT format)
     {
         fixed (char* chars = text)
@@ -291,7 +319,10 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
     /// <summary>フォントを作る</summary>
     /// <param name="face">フォント名</param>
-    /// <param name="height">文字の高さで、論理単位。負なら文字の高さ</param>
+    /// <param name="height">
+    /// 文字の高さで、論理単位。
+    /// 負なら文字の高さ。
+    /// </param>
     /// <returns>フォントのハンドル</returns>
     private static HFONT CreateFont(string face, int height)
     {
@@ -306,9 +337,12 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         return PInvoke.CreateFontIndirect(in logFont);
     }
 
-    /// <summary>候補のうち、この PC に入っている最初のフォント名。</summary>
+    /// <summary>候補のうち、この PC に入っている最初のフォント名</summary>
     /// <param name="faces">フォント名の候補 (優先順)</param>
-    /// <returns>入っている最初のフォント名。1 つも無ければ null</returns>
+    /// <returns>
+    /// 入っている最初のフォント名
+    /// 1 つも無ければ null
+    /// </returns>
     /// <remarks>無い名前を指定しても GDI は別のフォントで代用して作れてしまうため、先に有無を調べる。</remarks>
     private static string? FindInstalledFont(string[] faces)
     {
@@ -334,12 +368,12 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         }
     }
 
-    /// <summary>フォントが見つかったことを記録して、列挙を止める</summary>
+    /// <summary>フォントが見つかったことを記録して列挙を止める</summary>
     /// <param name="logFont">見つかったフォントの情報</param>
     /// <param name="textMetric">見つかったフォントの寸法</param>
     /// <param name="fontType">フォントの種類</param>
     /// <param name="found">見つかったことを書き込む先 (int へのポインタ)</param>
-    /// <returns>列挙を続けるなら 0 以外、止めるなら 0</returns>
+    /// <returns>列挙を続けるなら 0 以外、止めるなら 0。</returns>
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static int OnFontFound(LOGFONTW* logFont, TEXTMETRICW* textMetric, uint fontType, LPARAM found)
     {
@@ -352,9 +386,15 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
 
     #region 配色
 
-    /// <summary>アプリのダークモード設定で、Windows の「アプリ モード」。</summary>
-    /// <returns>ダークモードなら true。読めなければ false</returns>
-    /// <remarks>メニューの枠は uxtheme がこの設定に従うので、中身も同じ設定に合わせる。</remarks>
+    /// <summary>アプリのダークモード設定</summary>
+    /// <returns>
+    /// ダークモードなら true
+    /// 読めなければ false
+    /// </returns>
+    /// <remarks>
+    /// Windows の「アプリ モード」のこと。
+    /// メニューの枠は uxtheme がこの設定に従うので、中身も同じ設定に合わせる。
+    /// </remarks>
     private static bool IsDarkMode()
     {
         try
@@ -367,12 +407,13 @@ internal sealed unsafe class TrayMenuRenderer : IDisposable
         }
     }
 
-    /// <summary>色で、COLORREF の 0x00BBGGRR。</summary>
+    /// <summary>色</summary>
     /// <param name="Background">背景</param>
     /// <param name="Hover">選択中の項目の背景</param>
     /// <param name="Separator">区切り線</param>
     /// <param name="Text">文字</param>
     /// <param name="DisabledText">押せない項目の文字</param>
+    /// <remarks>COLORREF の 0x00BBGGRR</remarks>
     private sealed record Palette(uint Background, uint Hover, uint Separator, uint Text, uint DisabledText)
     {
         /// <summary>ダークモードの配色</summary>
