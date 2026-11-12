@@ -11,7 +11,7 @@ namespace MmmSdk.WinUI.Components.Pages;
 public sealed partial class NavigationItem(string key, string title, string glyph) : ObservableObject
 {
     /// <summary>子の項目の字下げ (サイドバーの項目の左の余白)</summary>
-    private const double ChildIndent = 24;
+    private const double ChildIndent = 12;
 
     /// <summary>画面を識別するキー</summary>
     public string Key { get; } = key;
@@ -26,8 +26,20 @@ public sealed partial class NavigationItem(string key, string title, string glyp
     /// <remarks>子の項目は、親の項目の下に字下げして並べる。開閉は無く、常に出す。</remarks>
     public bool IsChild { get; init; }
 
-    /// <summary>項目の中身の左の余白 (子の項目だけ字下げする)</summary>
-    public Thickness Indent => new(IsChild ? ChildIndent : 0, 0, 0, 0);
+    /// <summary>項目の中身の左の余白</summary>
+    /// <remarks>子の項目だけ字下げする。アイコンだけのときは、字下げしない。</remarks>
+    public Thickness Indent => new(IsChild && !IsCompact ? ChildIndent : 0, 0, 0, 0);
+
+    /// <summary>サイドバーがアイコンだけの幅か</summary>
+    /// <remarks>ホストが、サイドバーの開閉に合わせて決める。アイコンだけのときは、文字と外すボタンが隠れるので、項目名をツールチップで出し、知らせの印はアイコンの角に重ねる。</remarks>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Indent))]
+    [NotifyPropertyChangedFor(nameof(CompactToolTip))]
+    public partial bool IsCompact { get; set; }
+
+    /// <summary>アイコンだけのときに出すツールチップ</summary>
+    /// <remarks>中身は項目名。文字が出ているときは null。</remarks>
+    public string? CompactToolTip => IsCompact ? Title : null;
 
     /// <summary>ページを別のウィンドウに外せるか</summary>
     /// <remarks>登録のときに、機能が決める。外せない項目には、外すボタンを出さず、ドラッグでも外せない。</remarks>

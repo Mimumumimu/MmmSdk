@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MmmSdk.Core.Components.Features;
+using MmmSdk.Core.Components.Settings;
+using MmmSdk.Core.Utilities;
 
 namespace MmmSdk.WinUI.Components.Pages;
 
@@ -13,18 +15,61 @@ public sealed partial class NavigationHostViewModel : ObservableObject
     /// <summary>機能のオン・オフ</summary>
     private readonly FeatureService _features;
 
+    /// <summary>サイドバーの開閉を保存する設定のキー</summary>
+    private const string PaneOpenKey = "Navigation.IsPaneOpen";
+
+    /// <summary>設定ストア</summary>
+    private readonly ISettingsStore _settings;
+
     /// <summary>登録されたページから、サイドバーの項目を作る</summary>
     /// <param name="pages">各機能が登録したページ</param>
     /// <param name="features">機能のオン・オフ</param>
-    /// <remarks>オンの機能の項目だけを並べる。最初は上部の先頭の項目を選択した状態にする。</remarks>
-    public NavigationHostViewModel(IEnumerable<NavigationPage> pages, FeatureService features)
+    /// <param name="settings">設定ストア</param>
+    /// <remarks>オンの機能の項目だけを並べる。最初は上部の先頭の項目を選択した状態にする。サイドバーの開閉は、前回の状態を設定から戻す。</remarks>
+    public NavigationHostViewModel(IEnumerable<NavigationPage> pages, FeatureService features, ISettingsStore settings)
     {
         _pages = [.. pages];
         _features = features;
+        _settings = settings;
         MenuItems = [];
         FooterItems = [];
+        IsPaneOpen = settings.Get(PaneOpenKey, true);
+        ApplyCompact();
+        _isLoaded = true;
         Refresh();
         SelectedItem = MenuItems.FirstOrDefault();
+    }
+
+    /// <summary>サイドバーを広げて文字を出しているか</summary>
+    /// <remarks>偽のときは、アイコンだけの幅にする。タイトルバーの <see cref="NavigationPaneToggleButton"/> で切り替わり、次の起動でも保つ。</remarks>
+    [ObservableProperty]
+    public partial bool IsPaneOpen { get; set; }
+
+    /// <summary>サイドバーの開閉が変わったら、項目の見た目を合わせて、設定に保存する</summary>
+    /// <param name="value">新しい開閉の状態</param>
+    /// <remarks>作るときに設定から戻した値は、保存し直さない。</remarks>
+    partial void OnIsPaneOpenChanged(bool value)
+    {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
+        ApplyCompact();
+        _settings.SetAsync(PaneOpenKey, value).Forget();
+    }
+
+    /// <summary>設定からサイドバーの開閉を戻し終えたか</summary>
+    private bool _isLoaded;
+
+    /// <summary>登録されたすべての項目に、アイコンだけの幅かを伝える</summary>
+    /// <remarks>機能のオフで、サイドバーに無い項目にも伝える。オンに戻したとき、見た目が食い違わないため。</remarks>
+    private void ApplyCompact()
+    {
+        foreach (var page in _pages)
+        {
+            page.Item.IsCompact = !IsPaneOpen;
+        }
     }
 
     /// <summary>サイドバー上部の項目</summary>

@@ -210,12 +210,12 @@ public sealed partial class NavigationHost : UserControl
     /// <summary>項目にマウスを乗せたら、外すボタンを出す</summary>
     /// <param name="sender">項目の部品</param>
     /// <param name="e">イベントの情報</param>
-    private void OnItemPointerEntered(object sender, PointerRoutedEventArgs e) => SetDetachButtonShown((Grid)sender, true);
+    private void OnItemPointerEntered(object sender, PointerRoutedEventArgs e) => SetDetachButtonShown((NavigationViewItem)sender, true);
 
     /// <summary>項目からマウスが出たら、外すボタンを隠す</summary>
     /// <param name="sender">項目の部品</param>
     /// <param name="e">イベントの情報</param>
-    private void OnItemPointerExited(object sender, PointerRoutedEventArgs e) => SetDetachButtonShown((Grid)sender, false);
+    private void OnItemPointerExited(object sender, PointerRoutedEventArgs e) => SetDetachButtonShown((NavigationViewItem)sender, false);
 
     /// <summary>外すボタンを押したら、ページを外す</summary>
     /// <param name="sender">外すボタン</param>
@@ -229,12 +229,17 @@ public sealed partial class NavigationHost : UserControl
     }
 
     /// <summary>項目の外すボタンを、出す・隠す</summary>
-    /// <param name="itemPanel">項目の部品</param>
+    /// <param name="item">項目の部品</param>
     /// <param name="shown">出すか</param>
-    /// <remarks>隠している間は、押せないようにもする。右端を押して、意図せず外れないため。</remarks>
-    private static void SetDetachButtonShown(Grid itemPanel, bool shown)
+    /// <remarks>隠している間は、押せないようにもする。右端を押して、意図せず外れないため。アイコンだけの幅のときは、中身ごと隠れているので、何もしない。</remarks>
+    private static void SetDetachButtonShown(NavigationViewItem item, bool shown)
     {
-        foreach (var button in itemPanel.Children.OfType<Button>())
+        if (item.Content is not Grid panel)
+        {
+            return;
+        }
+
+        foreach (var button in panel.Children.OfType<Button>())
         {
             button.Opacity = shown ? 1 : 0;
             button.IsHitTestVisible = shown;
@@ -270,6 +275,11 @@ public sealed partial class NavigationHost : UserControl
     /// <param name="element">項目の部品か、その中のボタン</param>
     /// <returns>項目。取り出せなければ null</returns>
     private static NavigationItem? ItemOf(object element) => (element as FrameworkElement)?.Tag as NavigationItem;
+
+    /// <summary>文字つきの幅のときだけ、項目の文字を出すための表示の切り替え</summary>
+    /// <param name="isCompact">サイドバーがアイコンだけの幅か</param>
+    /// <returns>アイコンだけの幅でないなら表示</returns>
+    public static Visibility VisibleWhenExpanded(bool isCompact) => isCompact ? Visibility.Collapsed : Visibility.Visible;
 
     /// <summary>外している項目にだけ、外している印を出すための表示の切り替え</summary>
     /// <param name="isDetached">外しているか</param>

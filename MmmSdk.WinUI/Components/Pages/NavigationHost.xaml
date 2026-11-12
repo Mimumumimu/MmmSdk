@@ -8,6 +8,7 @@
     <NavigationView
         FooterMenuItemsSource="{x:Bind ViewModel.FooterItems}"
         IsBackButtonVisible="Collapsed"
+        IsPaneOpen="{x:Bind ViewModel.IsPaneOpen, Mode=TwoWay}"
         IsPaneToggleButtonVisible="False"
         IsSettingsVisible="False"
         MenuItemsSource="{x:Bind ViewModel.MenuItems}"
@@ -16,66 +17,73 @@
         SelectedItem="{x:Bind ViewModel.SelectedItem, Mode=TwoWay}">
 
         <!--
+            項目の根は NavigationViewItem にして、アイコンは標準の置き場 (Icon)に入れる。
+            アイコンを中身の中に描くと、アイコンだけの幅のとき、標準の枠が中身に渡す幅が狭く、アイコンが半分に切れる。Icon が空だと、標準の枠は、アイコンの列を 8 に縮める。
             子の項目は、親の項目の下に、字下げして並べる。IsChild と Indent で決める。
             項目は、外へドラッグして別のウィンドウに外せる。ドラッグは、OS のドラッグの仕組みを使わず、項目の上でマウスの動きを追って見分ける。マウスを乗せると右端に出るボタンでも外せる。外している間は、右端に、外している印を出す。
             Tag は、イベントの処理が、どの項目かを知るため
+            サイドバーがアイコンだけの幅のときは、文字・外すボタン・外している印を出さず、項目名はツールチップで出す。
+            知らせの印は標準の InfoBadge に入れる。広い幅では右端に、アイコンだけの幅ではアイコンの角に、標準の枠が置く。色は標準の注意色で、OS のアクセント色に連動させない。標準の点は直径 6 前後で、気づきにくいので、12 にする。
         -->
         <NavigationView.MenuItemTemplate>
             <DataTemplate x:DataType="local:NavigationItem">
-                <Grid
-                    Margin="{x:Bind Indent}"
-                    Background="Transparent"
+                <NavigationViewItem
+                    Margin="{x:Bind Indent, Mode=OneWay}"
                     CanDrag="{x:Bind CanDetach}"
-                    ColumnSpacing="12"
                     DragStarting="OnItemDragStarting"
                     DropCompleted="OnItemDropCompleted"
                     PointerEntered="OnItemPointerEntered"
                     PointerExited="OnItemPointerExited"
                     Tapped="OnItemTapped"
-                    Tag="{x:Bind}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <FontIcon FontSize="16" Glyph="{x:Bind Glyph}" />
-                    <TextBlock
-                        Grid.Column="1"
-                        VerticalAlignment="Center"
-                        Text="{x:Bind Title}" />
-                    <Button
-                        Grid.Column="2"
-                        MinWidth="0"
-                        MinHeight="0"
-                        Margin="0,0,-8,0"
-                        Padding="6"
-                        AutomationProperties.Name="別のウィンドウで開く"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="OnItemDetachClick"
-                        IsHitTestVisible="False"
-                        Opacity="0"
-                        Tag="{x:Bind}"
-                        ToolTipService.ToolTip="別のウィンドウで開く"
-                        Visibility="{x:Bind local:NavigationHost.VisibleWhenCanDetach(CanDetach, IsDetached), Mode=OneWay}">
-                        <FontIcon FontSize="12" Glyph="&#xE8A7;" />
-                    </Button>
-                    <FontIcon
-                        Grid.Column="2"
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Glyph="&#xE8A7;"
-                        Visibility="{x:Bind local:NavigationHost.VisibleWhenDetached(IsDetached), Mode=OneWay}" />
-                    <!-- HasBadge が真のとき、知らせの印を右端に出す。色は標準の注意色で、OS のアクセント色に連動させない。標準の点のバッジは直径 6 前後で、気づきにくかった -->
-                    <Ellipse
-                        Grid.Column="3"
-                        Width="12"
-                        Height="12"
-                        VerticalAlignment="Center"
-                        Fill="{ThemeResource SystemFillColorCautionBrush}"
-                        Visibility="{x:Bind local:NavigationHost.VisibleWhenBadge(ShowsBadge), Mode=OneWay}" />
-                </Grid>
+                    Tag="{x:Bind}"
+                    ToolTipService.Placement="Right"
+                    ToolTipService.ToolTip="{x:Bind CompactToolTip, Mode=OneWay}">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{x:Bind Glyph}" />
+                    </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge
+                            Width="12"
+                            Height="12"
+                            MinWidth="12"
+                            Background="{ThemeResource SystemFillColorCautionBrush}"
+                            Visibility="{x:Bind local:NavigationHost.VisibleWhenBadge(ShowsBadge), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
+                    <Grid
+                        ColumnSpacing="12"
+                        Visibility="{x:Bind local:NavigationHost.VisibleWhenExpanded(IsCompact), Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            Text="{x:Bind Title}" />
+                        <Button
+                            Grid.Column="1"
+                            MinWidth="0"
+                            MinHeight="0"
+                            Margin="0,0,-8,0"
+                            Padding="6"
+                            AutomationProperties.Name="別のウィンドウで開く"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="OnItemDetachClick"
+                            IsHitTestVisible="False"
+                            Opacity="0"
+                            Tag="{x:Bind}"
+                            ToolTipService.ToolTip="別のウィンドウで開く"
+                            Visibility="{x:Bind local:NavigationHost.VisibleWhenCanDetach(CanDetach, IsDetached), Mode=OneWay}">
+                            <FontIcon FontSize="12" Glyph="&#xE8A7;" />
+                        </Button>
+                        <FontIcon
+                            Grid.Column="1"
+                            FontSize="12"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Glyph="&#xE8A7;"
+                            Visibility="{x:Bind local:NavigationHost.VisibleWhenDetached(IsDetached), Mode=OneWay}" />
+                    </Grid>
+                </NavigationViewItem>
             </DataTemplate>
         </NavigationView.MenuItemTemplate>
 

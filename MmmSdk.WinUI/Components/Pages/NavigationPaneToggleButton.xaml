@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="MmmSdk.WinUI.Components.Pages.NavigationPaneToggleButton"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ボタンにフォーカスを取らせない。取ると、入力中の欄からフォーカスが外れ、白い枠が出るため。戻る・進むのボタンと同じ作り -->
+    <Button
+        AllowFocusOnInteraction="False"
+        IsTabStop="False"
+        Width="40"
+        Height="32"
+        Padding="0"
+        Background="Transparent"
+        BorderThickness="0"
+        Click="OnClick"
+        CornerRadius="4"
+        ToolTipService.ToolTip="サイドバーの幅を切り替える">
+        <FontIcon FontSize="14" Glyph="&#xE8A0;" />
+    </Button>
+</UserControl>
