@@ -59,6 +59,7 @@
 - Mutex 名は `Local\{appName}_{EXE パスの SHA256}`。アプリごとに `appName` を変える
 - EXE のパスで区別するので、Debug / Release など別パスの EXE は同時に起動できる
 - Mutex はプロセス終了まで保持する。GC で解放されないようフィールドで持つ。呼び出し側も、Guard をアプリのフィールドで持ち続けること
+- WinUI のアプリは `AppHost` (`MmmSdk.WinUI.Components.Hosting`)が作って持つ。`App` で直接作らない
 
 ## VisualTreeSearch (`MmmSdk.WinUI.Utilities`)
 

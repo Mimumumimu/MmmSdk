@@ -85,6 +85,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 | `MmmSdk.WinUI.Components.Attachments` | 添付の画像を JPEG に変換する (`IImageConverter` / `ImageConverter`)・サムネイル (`ThumbnailImage.FromFile` で、`x:Bind` から呼ぶ) |
 | `MmmSdk.WinUI.Components.DaysOfWeek` | 月〜日の 7 つのトグルボタンの曜日の選択欄 `WeekdayPicker` で、土は青、日は赤の文字と、土日の文字の色 `WeekdayColors` と、`CalendarDatePicker` のカレンダーで、土曜に青、日曜と祝日に赤の線を日の下に付ける添付プロパティ `CalendarHolidayColoring` |
 | `MmmSdk.WinUI.Components.Errors` | 画面に出すエラー 1 件の状態 (`ErrorState` で、`InfoBar` に結び付ける)・復旧できないエラーの最後の受け皿 (`FatalErrorHandler`) |
+| `MmmSdk.WinUI.Components.Hosting` | WinUI のアプリの起動と終了の骨格 `AppHost`。多重起動の確認・エラーログと `FatalErrorHandler` の用意・Host の組み立て・起動の失敗の報告・終了の順序を持つ |
 | `MmmSdk.WinUI.Controls` | `TimeInputBox`(時刻の入力欄)・`LinkArea`(押せる領域)・`RefreshButton`(ページの見出しの行の右端に置く、アイコンだけの更新ボタン)・`OverflowRowLayout`(`ItemsRepeater` の要素を 1 行に並べ、収まらない分を隠すレイアウト)・`TreeGridView`(木構造の列と、入力列を持つ表で、固定の列・上に固定する行・仮想化に対応) |
 | `MmmSdk.WinUI.Utilities` | Window の拡張メソッド (前面に出す `SetForeground`・トレイや最小化から戻して前面に出す `BringToFront` (別の仮想デスクトップにあるときは、見ているデスクトップへ移してから出す)・DPI 倍率 `GetDpiScale`・タイトルバー `UseCustomTitleBar`・`UseFixedPresenter`・`ResizeClientDip`・`MoveCentered` など、クラスは `WindowExtensions`)・作業領域に収める計算 (`WindowPlacement`)・標準のメッセージボックス (`NativeMessageBox`)・IME のオン/オフ (`ImeControl`)・`TreeView` の選択を ViewModel と合わせる補助 (`TreeViewExtensions`)・ビジュアルツリーの検索 (`VisualTreeSearch`)・入力した直後に、要素の下へ短く出して消える警告の吹き出し (`WarningBubble`)・複数行の `TextBox` で、キャレットが表示の外に出たらスクロールする (`TextBoxExtensions.KeepCaretVisible`) |
 | `MmmSdk.WinUI` | DI への登録 (`AddMmmSdkWinUI` / `AddMmmSdkTray`) |
@@ -110,6 +111,7 @@ JSON ファイルへの保存、アプリ共通の設定ストア、ウィンド
 - Microsoft.Data.Sqlite … `MmmSdk.Db.Sqlite` のみ
 - WebView2 + [xterm.js](https://xtermjs.org/) 6.0.0 / addon-fit 0.11.0 / addon-serialize 0.14.0 を、ターミナル描画と、ページを別のウィンドウへ移すときの画面の引き継ぎに使う。いずれも MIT で、`MmmSdk.WinUI/Components/Terminal/Assets/` に同梱し、ライセンスファイルも同じ場所に置く
 - Microsoft.Extensions.DependencyInjection.Abstractions (DI 登録用の拡張メソッド)
+- Microsoft.Extensions.Hosting … `MmmSdk.WinUI` のみ (`AppHost` が Host を組み立てる)
 - System.Text.Json (ソース生成)で、トリミング・AOT でも動く形にする。`MmmSdk.Core` は `IsTrimmable` / `IsAotCompatible` を有効にして、ビルドが検査する
 
 ## 必要環境
@@ -154,7 +156,7 @@ services.AddMmmSdkWinUI();
 | --- | --- |
 | `AddMmmSdkCore(dataDirectory)` | `IJsonFileStore`・`ISettingsStore`・`IWindowPositionService`・`IPathOpener`・`ISecretStore` を登録する。すべて Singleton で、実装の型ではなくインターフェースで受け取るので、ViewModel のテストでモックに差し替えられる |
 | `AddFeatureService()` | `FeatureService`・`IFeatureStatus` を登録する。Singleton で、機能のオン・オフの管理を行う。ホストが 1 回だけ呼び、`ISettingsStore` を先に登録しておく |
-| `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`。`TrayIcon` は Singleton。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく |
+| `AddMmmSdkTray(options)` | `TrayIconOptions`・`TrayIcon`。`TrayIcon` は Singleton。トレイを使うアプリだけが呼ぶ。`TrayIcon` は `FatalErrorHandler` を受け取るので、アプリが先に `AddSingleton(fatalErrors)` で登録しておく。`AppHost` を使うアプリは、`AppHost.Build` が登録する |
 | `AddMmmSdkWinUI()` | `INotificationDialogService`・`Func<NotificationWindow>`(通知ウィンドウを作る処理)・`DialogService`(`IDialogService` と `IDialogHost` が同じインスタンスを返す)・`IFilePickerService`・`IFolderPickerService`・`IImageConverter`・`IClipboardService`・`ISpeechService` は、すべて Singleton で、`NotificationWindow`・`NotificationWindowViewModel` は Transient |
 
 ## 使い方
@@ -372,6 +374,7 @@ NativeMessageBox.ShowError("起動できませんでした。", "MyApp");
 
 ```csharp
 // アプリの最初 (Host を作る前)に作って付ける。DI にも登録して、トレイなどの SDK の部品に渡す
+// WinUI のアプリは、下の「アプリの起動と終了」の AppHost が、この作成・AttachTo・DI への登録を行う
 var fatalErrors = new FatalErrorHandler(new ErrorLog(Path.Combine(AppContext.BaseDirectory, "Logs")), "MyApp");
 fatalErrors.AttachTo(this);                       // this は Application
 services.AddSingleton(fatalErrors);
@@ -417,6 +420,39 @@ Error.Clear();                           // 消す
 var guard = new SingleInstanceGuard("MyApp");   // アプリ起動の最初に作って、フィールドで持ち続ける
 if (!guard.IsFirstInstance) { /* すでに起動している。メッセージを出して終了する */ }
 ```
+
+WinUI のアプリは、`AppHost` がこの確認を行います。
+
+### アプリの起動と終了 (`AppHost`)
+
+WinUI のアプリの `App` に、起動と終了の骨格を書き写さずに済みます。`App` に書くのは、DI の登録と、起動の途中でする画面の準備だけです。
+
+```csharp
+public App()
+{
+    _appHost = new AppHost(this, "MyApp", logDirectory);   // 多重起動の確認・エラーログ・未処理の例外の受け皿
+    InitializeComponent();
+    _appHost.Build(ConfigureServices);                     // Host を組み立てる。ConfigureServices の中で AddMmmSdkWinUI() を呼ぶ
+}
+
+protected override async void OnLaunched(LaunchActivatedEventArgs args)
+{
+    await _appHost.LaunchAsync(StartAsync);                // 失敗したら、ログ → ダイアログ → 終了
+}
+
+private async Task StartAsync()
+{
+    await _appHost.StartHostAsync();
+    var services = _appHost.Services;
+    // ここにアプリごとの起動の処理を書く
+}
+
+private Task ExitAsync() => _appHost.ExitAsync(_window);   // 準備 → ウィンドウを閉じる → Host の停止と破棄 → Application.Exit
+```
+
+- `Build` は、時刻・`ErrorLog`・`FatalErrorHandler` を DI に登録し、設定とログの既定は無効にします
+- `ExitAsync` は二重に実行しません。終了の入口が複数あり、Host の停止を待つ間に、別の入口から続けて呼ばれうるためです
+- `Application` を継承する基底クラスにしていません。`App.xaml` の根の要素を変えずに済ませるためです
 
 ### 定期処理の合図 (`ITicker`)
 
